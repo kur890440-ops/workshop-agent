@@ -36,17 +36,18 @@ func NewOpenRouterClient(apiKey, baseURL, model string) (*OpenRouterClient, erro
 	baseURL = strings.TrimSuffix(baseURL, "/")
 
 	return &OpenRouterClient{
-		APIKey:  apiKey,
-		BaseURL: baseURL,
-		Model:   model,
+		APIKey:     apiKey,
+		BaseURL:    baseURL,
+		Model:      model,
 		HTTPClient: &http.Client{Timeout: 30 * time.Second},
 	}, nil
 }
 
 func (c *OpenRouterClient) ParseCommand(ctx context.Context, text string) (*StructuredCommand, error) {
-	prompt := fmt.Sprintf(`Parse the user's request into JSON with these fields: action, product, material, quantity, attempted, scrap, date, channel, notes.
-Allowed actions: get_material_stock, record_production, assemble_product, record_shipment, calculate_requirements, get_product_stock, clarification.
-Return valid JSON only.
+	prompt := fmt.Sprintf(`Classify the user's request. Return ONE compact JSON object on ONE line.
+Allowed actions: get_all_material_stock, get_material_stock, get_purchase_needs, record_production, assemble_product, record_shipment, calculate_requirements, get_product_stock, clarification.
+Use get_all_material_stock for questions about all inventory or "какие у нас остатки". Use get_material_stock only for one named material. Use get_purchase_needs for what to buy, ordering, low stock, or replenishment.
+Use only these keys when needed: action, material, product, quantity, attempted, scrap, channel. Do not include null values, explanations, markdown, or notes.
 User request: %s`, text)
 
 	payload := map[string]any{
@@ -56,7 +57,7 @@ User request: %s`, text)
 			"content": prompt,
 		}},
 		"temperature": 0,
-		"max_tokens":  256,
+		"max_tokens":  128,
 		"response_format": map[string]string{
 			"type": "json_object",
 		},

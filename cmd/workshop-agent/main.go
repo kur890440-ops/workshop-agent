@@ -72,7 +72,7 @@ func main() {
 	agentSvc := agent.NewWorkshopAgent(llmClient, wsSvc, invSvc, prodSvc)
 	_ = agentSvc
 
-	bot, err := telegram.NewBot(cfg.TelegramBotToken, wsSvc, invSvc, prodSvc, auditSvc)
+	bot, err := telegram.NewBot(cfg.TelegramBotToken, wsSvc, invSvc, prodSvc, auditSvc, agentSvc)
 	if err != nil {
 		log.Fatalf("failed to initialize Telegram bot: %v", err)
 	}

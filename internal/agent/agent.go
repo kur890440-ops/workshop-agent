@@ -3,6 +3,7 @@ package agent
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"workshop-agent/internal/inventory"
@@ -12,9 +13,9 @@ import (
 )
 
 type WorkshopAgent struct {
-	LLM llm.Client
-	WS  *workshops.Service
-	Inv *inventory.Service
+	LLM  llm.Client
+	WS   *workshops.Service
+	Inv  *inventory.Service
 	Prod *products.Service
 }
 
@@ -23,8 +24,18 @@ func NewWorkshopAgent(llmClient llm.Client, ws *workshops.Service, inv *inventor
 }
 
 func (a *WorkshopAgent) HandleMessage(ctx context.Context, userID int64, chatID int64, text string) (string, error) {
+	return a.HandleMessageForWorkshop(ctx, 1, userID, chatID, text)
+}
+
+func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshopID, userID, chatID int64, text string) (string, error) {
 	if text == "/start" {
 		return "Вы пока не подключены ни к одной мастерской. Используйте bootstrap через CLI или свяжите Telegram chat с workshop.", nil
+	}
+	if isAllStockQuestion(text) {
+		return a.formatAllMaterialStock(workshopID)
+	}
+	if isPurchaseQuestion(text) {
+		return a.formatPurchaseNeeds(workshopID)
 	}
 	cmd, err := a.LLM.ParseCommand(ctx, text)
 	if err != nil {
@@ -41,17 +52,23 @@ func (a *WorkshopAgent) HandleMessage(ctx context.Context, userID int64, chatID 
 		if materialName == "" {
 			return "Уточните, какой материал вы хотите проверить.", nil
 		}
-		stock, err := a.Inv.GetMaterialStock(1, materialName)
+		stock, err := a.Inv.GetMaterialStock(workshopID, materialName)
 		if err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("Остаток %s: %.2f", materialName, stock), nil
 	}
+	if cmd.Action == "get_all_material_stock" {
+		return a.formatAllMaterialStock(workshopID)
+	}
+	if cmd.Action == "get_purchase_needs" {
+		return a.formatPurchaseNeeds(workshopID)
+	}
 	if cmd.Action == "record_production" {
 		if cmd.Product == "" {
 			return "Уточните товар для производства.", nil
 		}
-		if _, err := a.Prod.GetProductByName(1, cmd.Product); err != nil {
+		if _, err := a.Prod.GetProductByName(workshopID, cmd.Product); err != nil {
 			return "", err
 		}
 		return fmt.Sprintf("Записать производство %s: произведено %.0f, брак %.0f. Подтверждение требуется.", cmd.Product, cmd.Attempted, cmd.Scrap), nil
@@ -81,6 +98,47 @@ func (a *WorkshopAgent) HandleMessage(ctx context.Context, userID int64, chatID 
 		return fmt.Sprintf("Остаток товара %s: проверяется по данным склада.", cmd.Product), nil
 	}
 	return fmt.Sprintf("Команда %s пока не поддержана в MVP.", cmd.Action), nil
+}
+
+func isAllStockQuestion(text string) bool {
+	lower := strings.ToLower(strings.TrimSpace(text))
+	return (strings.Contains(lower, "остат") || strings.Contains(lower, "сколько осталось")) &&
+		(strings.Contains(lower, "какие") || strings.Contains(lower, "все") || strings.Contains(lower, "в целом") || strings.Contains(lower, "у нас"))
+}
+
+func isPurchaseQuestion(text string) bool {
+	lower := strings.ToLower(strings.TrimSpace(text))
+	return strings.Contains(lower, "заказ") || strings.Contains(lower, "закуп") || strings.Contains(lower, "купить") || strings.Contains(lower, "покуп")
+}
+
+func (a *WorkshopAgent) formatAllMaterialStock(workshopID int64) (string, error) {
+	materials, err := a.Inv.ListMaterials(workshopID)
+	if err != nil {
+		return "", err
+	}
+	if len(materials) == 0 {
+		return "Материалы не найдены.", nil
+	}
+	result := "Текущие остатки материалов:\n"
+	for _, item := range materials {
+		result += fmt.Sprintf("- %v: %.2f %v\n", item["name"], item["current_stock"], item["base_unit"])
+	}
+	return result, nil
+}
+
+func (a *WorkshopAgent) formatPurchaseNeeds(workshopID int64) (string, error) {
+	needs, err := a.Inv.ListPurchaseNeeds(workshopID)
+	if err != nil {
+		return "", err
+	}
+	if len(needs) == 0 {
+		return "Закупка не требуется: все материалы выше минимального остатка.", nil
+	}
+	result := "Нужно заказать:\n"
+	for _, item := range needs {
+		result += fmt.Sprintf("- %v: %.2f %v (сейчас %.2f, минимум %.2f)\n", item["name"], item["order_quantity"], item["base_unit"], item["current_stock"], item["minimum_stock"])
+	}
+	return result, nil
 }
 
 func (a *WorkshopAgent) SaveSession(workshopID, chatID, userID int64, contextText, pendingAction string) error {

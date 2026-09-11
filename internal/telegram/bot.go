@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 	"sync"
 	"time"
 
+	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/products"
@@ -28,37 +30,38 @@ type Bot struct {
 	Audit      *audit.Service
 	Started    bool
 	HTTPClient *http.Client
+	Agent      *agent.WorkshopAgent
 	setupMu    sync.Mutex
 	setup      map[int64]*setupSession
 }
 
 type setupSession struct {
-	kind         string
-	stage        int
-	workshopID   int64
-	userID       int64
-	actorName    string
-	name         string
-	category     string
-	unit         string
-	stock        float64
-	minimum      float64
-	sku          string
-	productType  string
+	kind        string
+	stage       int
+	workshopID  int64
+	userID      int64
+	actorName   string
+	name        string
+	category    string
+	unit        string
+	stock       float64
+	minimum     float64
+	sku         string
+	productType string
 }
 
-func NewBot(token string, ws *workshops.Service, inv *inventory.Service, prod *products.Service, auditSvc *audit.Service) (*Bot, error) {
+func NewBot(token string, ws *workshops.Service, inv *inventory.Service, prod *products.Service, auditSvc *audit.Service, agentSvc *agent.WorkshopAgent) (*Bot, error) {
 	if token == "" {
 		return nil, logError("TELEGRAM_BOT_TOKEN is empty")
 	}
-	return &Bot{Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[int64]*setupSession)}, nil
+	return &Bot{Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Agent: agentSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[int64]*setupSession)}, nil
 }
 
 func logError(msg string) error {
 	return &botError{msg: msg}
 }
 
-type botError struct { msg string }
+type botError struct{ msg string }
 
 func (e *botError) Error() string { return e.msg }
 
@@ -286,6 +289,17 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 			return err
 		}
 		return b.sendMessage(chatID, fmt.Sprintf("Продукт %s обновлён: %s=%s", name, field, value))
+	}
+	if b.Agent != nil {
+		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
+		if err != nil {
+			return err
+		}
+		answer, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
+		if err != nil {
+			return b.sendMessage(chatID, fmt.Sprintf("Не удалось обработать запрос: %v", err))
+		}
+		return b.sendMessage(chatID, answer)
 	}
 	return b.sendMessage(chatID, "Команда не распознана. Используйте /start для справки.")
 }
