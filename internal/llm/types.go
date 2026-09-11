@@ -16,6 +16,12 @@ type StructuredCommand struct {
 	MaterialID int64   `json:"material_id,omitempty"`
 }
 
+type Usage struct {
+	PromptTokens     int `json:"prompt_tokens"`
+	CompletionTokens int `json:"completion_tokens"`
+	TotalTokens      int `json:"total_tokens"`
+}
+
 type Client interface {
-	ParseCommand(ctx context.Context, text string) (*StructuredCommand, error)
+	ParseCommand(ctx context.Context, text string) (*StructuredCommand, *Usage, error)
 }

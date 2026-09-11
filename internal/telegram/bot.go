@@ -17,6 +17,7 @@ import (
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
 	"workshop-agent/internal/inventory"
+	"workshop-agent/internal/llm"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/workshops"
@@ -295,13 +296,20 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		if err != nil {
 			return err
 		}
-		answer, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
+		answer, usage, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
 		if err != nil {
-			return b.sendMessage(chatID, fmt.Sprintf("Не удалось обработать запрос: %v", err))
+			return b.sendMessage(chatID, fmt.Sprintf("Не удалось обработать запрос: %v\n%s", err, formatTokenUsage(usage)))
 		}
-		return b.sendMessage(chatID, answer)
+		return b.sendMessage(chatID, answer+"\n\n"+formatTokenUsage(usage))
 	}
 	return b.sendMessage(chatID, "Команда не распознана. Используйте /start для справки.")
+}
+
+func formatTokenUsage(usage *llm.Usage) string {
+	if usage == nil || usage.TotalTokens == 0 {
+		return "Токены LLM: 0 (локальная обработка)"
+	}
+	return fmt.Sprintf("Токены LLM: %d (вход: %d, ответ: %d)", usage.TotalTokens, usage.PromptTokens, usage.CompletionTokens)
 }
 
 func (b *Bot) setupDatabase() error {

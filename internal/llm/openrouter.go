@@ -43,7 +43,7 @@ func NewOpenRouterClient(apiKey, baseURL, model string) (*OpenRouterClient, erro
 	}, nil
 }
 
-func (c *OpenRouterClient) ParseCommand(ctx context.Context, text string) (*StructuredCommand, error) {
+func (c *OpenRouterClient) ParseCommand(ctx context.Context, text string) (*StructuredCommand, *Usage, error) {
 	prompt := fmt.Sprintf(`Classify the user's request. Return ONE compact JSON object on ONE line.
 Allowed actions: get_all_material_stock, get_material_stock, get_purchase_needs, record_production, assemble_product, record_shipment, calculate_requirements, get_product_stock, clarification.
 Use get_all_material_stock for questions about all inventory or "какие у нас остатки". Use get_material_stock only for one named material. Use get_purchase_needs for what to buy, ordering, low stock, or replenishment.
@@ -57,7 +57,7 @@ User request: %s`, text)
 			"content": prompt,
 		}},
 		"temperature": 0,
-		"max_tokens":  128,
+		"max_tokens":  256,
 		"response_format": map[string]string{
 			"type": "json_object",
 		},
@@ -65,12 +65,12 @@ User request: %s`, text)
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return nil, fmt.Errorf("marshal llm payload: %w", err)
+		return nil, nil, fmt.Errorf("marshal llm payload: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.BaseURL+"/chat/completions", bytes.NewReader(body))
 	if err != nil {
-		return nil, fmt.Errorf("create llm request: %w", err)
+		return nil, nil, fmt.Errorf("create llm request: %w", err)
 	}
 
 	req.Header.Set("Authorization", "Bearer "+c.APIKey)
@@ -80,19 +80,20 @@ User request: %s`, text)
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("call llm provider: %w", err)
+		return nil, nil, fmt.Errorf("call llm provider: %w", err)
 	}
 	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read llm response: %w", err)
+		return nil, nil, fmt.Errorf("read llm response: %w", err)
 	}
 	if resp.StatusCode >= http.StatusBadRequest {
-		return nil, fmt.Errorf("llm provider returned %s: %s", resp.Status, strings.TrimSpace(string(data)))
+		return nil, nil, fmt.Errorf("llm provider returned %s: %s", resp.Status, strings.TrimSpace(string(data)))
 	}
 
 	var llmResp struct {
+		Usage   Usage `json:"usage"`
 		Choices []struct {
 			Message struct {
 				Content string `json:"content"`
@@ -100,10 +101,10 @@ User request: %s`, text)
 		} `json:"choices"`
 	}
 	if err := json.Unmarshal(data, &llmResp); err != nil {
-		return nil, fmt.Errorf("decode llm response: %w", err)
+		return nil, nil, fmt.Errorf("decode llm response: %w", err)
 	}
 	if len(llmResp.Choices) == 0 || strings.TrimSpace(llmResp.Choices[0].Message.Content) == "" {
-		return nil, errors.New("empty llm response")
+		return nil, &llmResp.Usage, errors.New("empty llm response")
 	}
 
 	content := strings.TrimSpace(llmResp.Choices[0].Message.Content)
@@ -113,11 +114,11 @@ User request: %s`, text)
 
 	var cmd StructuredCommand
 	if err := json.Unmarshal([]byte(content), &cmd); err != nil {
-		return nil, fmt.Errorf("parse llm json: %w; raw=%s", err, content)
+		return nil, &llmResp.Usage, fmt.Errorf("parse llm json: %w; raw=%s", err, content)
 	}
 	if cmd.Action == "" {
-		return nil, errors.New("llm response missing action field")
+		return nil, &llmResp.Usage, errors.New("llm response missing action field")
 	}
 
-	return &cmd, nil
+	return &cmd, &llmResp.Usage, nil
 }
