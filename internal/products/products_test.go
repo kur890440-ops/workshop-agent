@@ -3,12 +3,18 @@ package products
 import (
 	"path/filepath"
 	"testing"
+	"workshop-agent/internal/testkit"
 )
 
 func TestBOMNestedAndRequirements(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "bom_test.db")
 	bom := NewBOMService(dbPath)
 	defer bom.Close()
+	userID, _ := testkit.Owner(t, dbPath)
+	bom = bom.ForUser(userID)
+	if _, err := bom.DB().Exec(`INSERT INTO materials(workshop_id,name,category,base_unit) VALUES(1,'gypsum','raw','g')`); err != nil {
+		t.Fatal(err)
+	}
 	if err := bom.Init(); err != nil {
 		t.Fatal(err)
 	}

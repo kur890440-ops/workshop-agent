@@ -1,0 +1,47 @@
+{
+  "backup": "data\\workshop.db.backup-20260916T170812.405240800.db",
+  "tables": {
+    "materials": {
+      "rows": 19,
+      "unchanged": true
+    },
+    "products": {
+      "rows": 34,
+      "unchanged": true
+    },
+    "bom_items": {
+      "rows": 34,
+      "unchanged": true
+    },
+    "inventory_movements": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "product_movements": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "production_records": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "shipments": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "production_plans": {
+      "rows": 0,
+      "unchanged": true
+    }
+  },
+  "workshops_preserved": 18,
+  "current_context": [
+    [
+      1,
+      6
+    ]
+  ],
+  "owner_memberships": 18,
+  "integrity_check": "ok",
+  "foreign_key_check": []
+}

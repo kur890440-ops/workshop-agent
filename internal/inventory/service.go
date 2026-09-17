@@ -8,11 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"workshop-agent/internal/auth"
 	"workshop-agent/internal/storage"
 )
 
 type Service struct {
-	store *storage.Store
+	store  *storage.Store
+	userID int64
 }
 
 func NewService(path string) *Service {
@@ -71,7 +73,6 @@ func ConvertFromBase(unit string, qty float64) float64 {
 	}
 }
 
-
 func NormalizeUnit(unit string) string {
 	unit = strings.ToLower(strings.TrimSpace(unit))
 	switch unit {
@@ -91,7 +92,14 @@ func NormalizeUnit(unit string) string {
 }
 
 func (s *Service) CreateMaterial(workshopID int64, name, category, baseUnit string, currentStock, minimumStock float64, supplier string, leadTimeDays int, notes string) (int64, error) {
-	res, err := s.store.DB.Exec(`INSERT INTO materials (workshop_id, name, category, base_unit, current_stock, minimum_stock, supplier, lead_time_days, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, name, category, NormalizeUnit(baseUnit), ConvertToBase(baseUnit, currentStock), ConvertToBase(baseUnit, minimumStock), supplier, leadTimeDays, notes, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryWrite); err != nil {
+		return 0, err
+	}
+	baseUnit = CanonicalDisplayUnit(baseUnit)
+	if currentStock < 0 || minimumStock < 0 || math.IsNaN(currentStock) || math.IsNaN(minimumStock) || math.IsInf(ConvertToBase(baseUnit, currentStock), 0) || math.IsInf(ConvertToBase(baseUnit, minimumStock), 0) {
+		return 0, fmt.Errorf("invalid material quantity")
+	}
+	res, err := s.store.DB.Exec(`INSERT INTO materials (workshop_id, name, category, base_unit, display_unit, current_stock, minimum_stock, supplier, lead_time_days, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, name, category, NormalizeUnit(baseUnit), baseUnit, ConvertToBase(baseUnit, currentStock), ConvertToBase(baseUnit, minimumStock), supplier, leadTimeDays, notes, time.Now().Format(time.RFC3339), time.Now().Format(time.RFC3339))
 	if err != nil {
 		return 0, err
 	}
@@ -99,13 +107,16 @@ func (s *Service) CreateMaterial(workshopID int64, name, category, baseUnit stri
 	if err != nil {
 		return 0, err
 	}
-	if err := s.LogAudit(workshopID, "material", id, 0, "system", "create", "", "", "", fmt.Sprintf("created material %s", name)); err != nil {
+	if err := s.LogAudit(workshopID, "material", id, s.userID, "", "create", "", "", "", fmt.Sprintf("created material %s", name)); err != nil {
 		return 0, err
 	}
 	return id, nil
 }
 
 func (s *Service) UpdateMaterial(workshopID, materialID int64, fieldName, newValue string, actorUserID int64, actorName string) error {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryWrite); err != nil {
+		return err
+	}
 	var oldValue string
 	var currentField string
 
@@ -168,11 +179,17 @@ func (s *Service) UpdateMaterial(workshopID, materialID int64, fieldName, newVal
 }
 
 func (s *Service) LogAudit(workshopID int64, entityType string, entityID int64, actorUserID int64, actorName string, action string, fieldName string, oldValue string, newValue string, details string) error {
-	_, err := s.store.DB.Exec(`INSERT INTO audit_logs (workshop_id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, entityType, entityID, actorUserID, actorName, action, fieldName, oldValue, newValue, details, time.Now().Format(time.RFC3339))
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryWrite); err != nil {
+		return err
+	}
+	_, err := s.store.DB.Exec(`INSERT INTO audit_logs (workshop_id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, entityType, entityID, s.userID, actorName, action, fieldName, oldValue, newValue, details, time.Now().Format(time.RFC3339))
 	return err
 }
 
 func (s *Service) GetMaterialID(workshopID int64, name string) (int64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return 0, err
+	}
 	var id int64
 	err := s.store.DB.QueryRow(`SELECT id FROM materials WHERE workshop_id = ? AND LOWER(name) = LOWER(?) LIMIT 1`, workshopID, name).Scan(&id)
 	if err != nil {
@@ -182,6 +199,9 @@ func (s *Service) GetMaterialID(workshopID int64, name string) (int64, error) {
 }
 
 func (s *Service) GetMaterialStock(workshopID int64, name string) (float64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return 0, err
+	}
 	var stock float64
 	err := s.store.DB.QueryRow(`SELECT current_stock FROM materials WHERE workshop_id = ? AND LOWER(name) = LOWER(?) LIMIT 1`, workshopID, name).Scan(&stock)
 	if err != nil {
@@ -194,6 +214,9 @@ func (s *Service) GetMaterialStock(workshopID int64, name string) (float64, erro
 }
 
 func (s *Service) AdjustStock(workshopID int64, materialName string, delta float64) error {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryWrite); err != nil {
+		return err
+	}
 	var materialID int64
 	var stock float64
 	var unit string
@@ -205,16 +228,19 @@ func (s *Service) AdjustStock(workshopID int64, materialName string, delta float
 	if newStock < 0 {
 		return fmt.Errorf("negative stock for %s not allowed", materialName)
 	}
-	_, err = s.store.DB.Exec(`UPDATE materials SET current_stock = ?, updated_at = ? WHERE id = ?`, newStock, time.Now().Format(time.RFC3339), materialID)
+	_, err = s.store.DB.Exec(`UPDATE materials SET current_stock = ?, updated_at = ? WHERE id = ? AND workshop_id = ?`, newStock, time.Now().Format(time.RFC3339), materialID, workshopID)
 	if err != nil {
 		return err
 	}
-	_, err = s.store.DB.Exec(`INSERT INTO inventory_movements (workshop_id, material_id, date, quantity, movement_type, reference_type, user_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, materialID, time.Now().Format(time.RFC3339), delta, "manual_adjustment", "manual", 0, fmt.Sprintf("Manual adjustment for %s in %s", materialName, unit))
+	_, err = s.store.DB.Exec(`INSERT INTO inventory_movements (workshop_id, material_id, date, quantity, movement_type, reference_type, user_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, materialID, time.Now().Format(time.RFC3339), delta, "manual_adjustment", "manual", s.userID, fmt.Sprintf("Manual adjustment for %s in %s", materialName, unit))
 	return err
 }
 
 func (s *Service) ListMaterials(workshopID int64) ([]map[string]any, error) {
-	rows, err := s.store.DB.Query(`SELECT id, name, category, base_unit, current_stock, minimum_stock, supplier, lead_time_days, notes FROM materials WHERE workshop_id = ? ORDER BY name`, workshopID)
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return nil, err
+	}
+	rows, err := s.store.DB.Query(`SELECT id, name, category, base_unit, display_unit, current_stock, minimum_stock, supplier, lead_time_days, notes FROM materials WHERE workshop_id = ? ORDER BY name`, workshopID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,26 +248,39 @@ func (s *Service) ListMaterials(workshopID int64) ([]map[string]any, error) {
 	out := []map[string]any{}
 	for rows.Next() {
 		var id int64
-		var name, category, baseUnit, supplier, notes string
+		var name, category, baseUnit, displayUnit, supplier, notes string
 		var currentStock, minimumStock float64
 		var leadTimeDays int
-		if err := rows.Scan(&id, &name, &category, &baseUnit, &currentStock, &minimumStock, &supplier, &leadTimeDays, &notes); err != nil {
+		if err := rows.Scan(&id, &name, &category, &baseUnit, &displayUnit, &currentStock, &minimumStock, &supplier, &leadTimeDays, &notes); err != nil {
 			return nil, err
 		}
-		out = append(out, map[string]any{"id": id, "name": name, "category": category, "base_unit": baseUnit, "current_stock": currentStock, "minimum_stock": minimumStock, "supplier": supplier, "lead_time_days": leadTimeDays, "notes": notes})
+		out = append(out, map[string]any{"id": id, "name": name, "category": category, "base_unit": baseUnit, "display_unit": displayUnit, "current_stock": currentStock, "minimum_stock": minimumStock, "supplier": supplier, "lead_time_days": leadTimeDays, "notes": notes})
 	}
 	return out, rows.Err()
 }
 
 func (s *Service) CreateMaterialStockMovement(workshopID, materialID int64, qty float64, movementType, refType string, refID, userID int64, comment string) error {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryWrite); err != nil {
+		return err
+	}
 	if qty == 0 {
 		return nil
 	}
-	_, err := s.store.DB.Exec(`INSERT INTO inventory_movements (workshop_id, material_id, date, quantity, movement_type, reference_type, reference_id, user_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, materialID, time.Now().Format(time.RFC3339), qty, movementType, refType, refID, userID, comment)
+	var count int
+	if err := s.store.DB.QueryRow(`SELECT COUNT(*) FROM materials WHERE id=? AND workshop_id=?`, materialID, workshopID).Scan(&count); err != nil {
+		return err
+	}
+	if count != 1 {
+		return auth.ErrDenied
+	}
+	_, err := s.store.DB.Exec(`INSERT INTO inventory_movements (workshop_id, material_id, date, quantity, movement_type, reference_type, reference_id, user_id, comment) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, materialID, time.Now().Format(time.RFC3339), qty, movementType, refType, refID, s.userID, comment)
 	return err
 }
 
 func (s *Service) MaterialNeedsPurchase(workshopID int64, materialName string) (bool, float64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return false, 0, err
+	}
 	var currentStock, minimumStock float64
 	err := s.store.DB.QueryRow(`SELECT current_stock, minimum_stock FROM materials WHERE workshop_id = ? AND LOWER(name) = LOWER(?) LIMIT 1`, workshopID, materialName).Scan(&currentStock, &minimumStock)
 	if err != nil {
@@ -251,6 +290,9 @@ func (s *Service) MaterialNeedsPurchase(workshopID int64, materialName string) (
 }
 
 func (s *Service) MaterialPurchaseRecommendation(workshopID int64, materialName string, extraDemand float64) (float64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return 0, err
+	}
 	var currentStock, minimumStock float64
 	err := s.store.DB.QueryRow(`SELECT current_stock, minimum_stock FROM materials WHERE workshop_id = ? AND LOWER(name) = LOWER(?) LIMIT 1`, workshopID, materialName).Scan(&currentStock, &minimumStock)
 	if err != nil {
@@ -264,11 +306,14 @@ func (s *Service) MaterialPurchaseRecommendation(workshopID int64, materialName 
 }
 
 func (s *Service) ListPurchaseNeeds(workshopID int64) ([]map[string]any, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.InventoryRead); err != nil {
+		return nil, err
+	}
 	rows, err := s.store.DB.Query(`
-		SELECT id, name, category, base_unit, current_stock, minimum_stock, supplier, lead_time_days,
+		SELECT id, name, category, base_unit, display_unit, current_stock, minimum_stock, supplier, lead_time_days,
 		       (minimum_stock - current_stock) AS order_quantity
 		FROM materials
-		WHERE workshop_id = ? AND current_stock <= minimum_stock
+		WHERE workshop_id = ? AND current_stock < minimum_stock
 		ORDER BY order_quantity DESC, name`, workshopID)
 	if err != nil {
 		return nil, err
@@ -278,10 +323,10 @@ func (s *Service) ListPurchaseNeeds(workshopID int64) ([]map[string]any, error) 
 	needs := make([]map[string]any, 0)
 	for rows.Next() {
 		var id int64
-		var name, category, baseUnit, supplier string
+		var name, category, baseUnit, displayUnit, supplier string
 		var currentStock, minimumStock, orderQuantity float64
 		var leadTimeDays int
-		if err := rows.Scan(&id, &name, &category, &baseUnit, &currentStock, &minimumStock, &supplier, &leadTimeDays, &orderQuantity); err != nil {
+		if err := rows.Scan(&id, &name, &category, &baseUnit, &displayUnit, &currentStock, &minimumStock, &supplier, &leadTimeDays, &orderQuantity); err != nil {
 			return nil, err
 		}
 		needs = append(needs, map[string]any{
@@ -289,6 +334,7 @@ func (s *Service) ListPurchaseNeeds(workshopID int64) ([]map[string]any, error) 
 			"name":           name,
 			"category":       category,
 			"base_unit":      baseUnit,
+			"display_unit":   displayUnit,
 			"current_stock":  currentStock,
 			"minimum_stock":  minimumStock,
 			"order_quantity": orderQuantity,
@@ -298,3 +344,6 @@ func (s *Service) ListPurchaseNeeds(workshopID int64) ([]map[string]any, error) 
 	}
 	return needs, rows.Err()
 }
+
+// ForUser binds an internal user ID; authorization is rechecked on every operation.
+func (s *Service) ForUser(userID int64) *Service { bound := *s; bound.userID = userID; return &bound }

@@ -22,6 +22,14 @@ var requiredTables = []string{
 	"conversation_sessions",
 	"pending_actions",
 	"audit_logs",
+	"workshop_invites",
+	"user_workshop_context",
+	"user_preferences",
+	"workshop_settings",
+	"conversation_messages",
+	"working_memory",
+	"long_term_memory",
+	"memory_traces",
 }
 
 // InitDatabase creates the local database schema and verifies every required table.

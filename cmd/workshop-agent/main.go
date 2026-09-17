@@ -9,7 +9,9 @@ import (
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
 	"workshop-agent/internal/bootstrap"
+	"workshop-agent/internal/cli"
 	"workshop-agent/internal/config"
+	"workshop-agent/internal/experiment"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/products"
@@ -32,7 +34,46 @@ func main() {
 		fmt.Println("Все таблицы созданы или уже существовали. Данные не удалялись.")
 		return
 	}
+	if cli.IsCommand(os.Args[1:]) {
+		if err := cli.Run(cfg.DatabasePath, os.Args[1:], os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if len(os.Args) == 3 && os.Args[1] == "day11-memory-render" {
+		if err := experiment.RenderExisting(os.Args[2]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if len(os.Args) > 1 && os.Args[1] == "day11-memory-report" {
+		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
+		if err != nil {
+			log.Fatal(err)
+		}
+		path, err := experiment.RunDay11(context.Background(), client, "reports/day11-memory")
+		fmt.Println(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "semantic-report" {
+		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
+		if err != nil {
+			log.Fatal("LLM configuration invalid")
+		}
+		path, err := experiment.RunSemantic(context.Background(), client)
+		fmt.Println(path)
+		if err != nil {
+			log.Fatal("semantic report failed")
+		}
+		return
+	}
 
+	if len(os.Args) > 1 {
+		log.Fatal("Неизвестная команда. Используйте setup, memory, day11-memory-report или диагностические команды Identity & Access.")
+	}
 	if cfg.TelegramBotToken == "" {
 		log.Fatal("TELEGRAM_BOT_TOKEN is required in .env")
 	}
@@ -56,6 +97,8 @@ func main() {
 	}
 
 	wsSvc := workshops.NewService(cfg.DatabasePath)
+	wsSvc.InviteTTL = cfg.InviteTTL
+	wsSvc.InviteMaxUses = cfg.InviteMaxUses
 	defer wsSvc.Close()
 	invSvc := inventory.NewService(cfg.DatabasePath)
 	defer invSvc.Close()
@@ -70,6 +113,8 @@ func main() {
 	}
 
 	agentSvc := agent.NewWorkshopAgent(llmClient, wsSvc, invSvc, prodSvc)
+	agentSvc.Memory.MaxMessages = cfg.ShortTermMaxMessages
+	agentSvc.Memory.MaxTokens = cfg.ShortTermMaxTokens
 	_ = agentSvc
 
 	bot, err := telegram.NewBot(cfg.TelegramBotToken, wsSvc, invSvc, prodSvc, auditSvc, agentSvc)

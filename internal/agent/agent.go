@@ -4,30 +4,43 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"time"
 
+	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/memory"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/workshops"
 )
 
 type WorkshopAgent struct {
-	LLM  llm.Client
-	WS   *workshops.Service
-	Inv  *inventory.Service
-	Prod *products.Service
+	LLM    llm.Client
+	WS     *workshops.Service
+	Inv    *inventory.Service
+	Prod   *products.Service
+	Memory *memory.Service
 }
 
 func NewWorkshopAgent(llmClient llm.Client, ws *workshops.Service, inv *inventory.Service, prod *products.Service) *WorkshopAgent {
-	return &WorkshopAgent{LLM: llmClient, WS: ws, Inv: inv, Prod: prod}
+	return &WorkshopAgent{LLM: llmClient, WS: ws, Inv: inv, Prod: prod, Memory: memory.New(ws.DB())}
 }
 
 func (a *WorkshopAgent) HandleMessage(ctx context.Context, userID int64, chatID int64, text string) (string, *llm.Usage, error) {
-	return a.HandleMessageForWorkshop(ctx, 1, userID, chatID, text)
+	workshopID, err := a.WS.ActiveWorkshop(userID)
+	if err != nil {
+		return "", nil, err
+	}
+	return a.HandleMessageForWorkshop(ctx, workshopID, userID, chatID, text)
 }
 
-func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshopID, userID, chatID int64, text string) (string, *llm.Usage, error) {
+func (a *WorkshopAgent) handleLegacyMessage(ctx context.Context, workshopID, userID, chatID int64, text string) (string, *llm.Usage, error) {
+	if err := auth.Require(a.WS.DB(), userID, workshopID, auth.WorkshopRead); err != nil {
+		return "", nil, err
+	}
+	bound := *a
+	bound.Inv = a.Inv.ForUser(userID)
+	bound.Prod = a.Prod.ForUser(userID)
+	a = &bound
 	noLLM := &llm.Usage{}
 	if text == "/start" {
 		return "Вы пока не подключены ни к одной мастерской. Используйте bootstrap через CLI или свяжите Telegram chat с workshop.", noLLM, nil
@@ -51,6 +64,12 @@ func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshopID
 	if cmd == nil {
 		return "Не удалось понять запрос. Попробуйте сформулировать проще.", usage, nil
 	}
+	permission := map[string]auth.Permission{"record_production": auth.ProductionCreate, "assemble_product": auth.ProductionCreate, "record_shipment": auth.ShipmentsWrite, "calculate_requirements": auth.BOMRead, "get_product_stock": auth.ProductsRead}[cmd.Action]
+	if permission != "" {
+		if err := auth.Require(a.WS.DB(), userID, workshopID, permission); err != nil {
+			return "", usage, err
+		}
+	}
 	if cmd.Action == "clarification" {
 		return "Нужно уточнить данные: укажите конкретный материал, товар или количество.", usage, nil
 	}
@@ -59,11 +78,11 @@ func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshopID
 		if materialName == "" {
 			return "Уточните, какой материал вы хотите проверить.", usage, nil
 		}
-		stock, err := a.Inv.GetMaterialStock(workshopID, materialName)
+		item, err := a.Inv.MaterialByName(workshopID, materialName)
 		if err != nil {
 			return "", usage, err
 		}
-		return fmt.Sprintf("Остаток %s: %.2f", materialName, stock), usage, nil
+		return fmt.Sprintf("Остаток %s: %s", materialName, inventory.Quantity(item, "current_stock")), usage, nil
 	}
 	if cmd.Action == "get_all_material_stock" {
 		answer, err := a.formatAllMaterialStock(workshopID)
@@ -115,9 +134,21 @@ func isAllStockQuestion(text string) bool {
 		(strings.Contains(lower, "какие") || strings.Contains(lower, "все") || strings.Contains(lower, "в целом") || strings.Contains(lower, "у нас"))
 }
 
+// LocalReadCommand preserves existing deterministic read routes for adapters.
+func LocalReadCommand(text string) *llm.StructuredCommand {
+	if isAllStockQuestion(text) {
+		return &llm.StructuredCommand{Action: "get_all_material_stock"}
+	}
+	if isPurchaseQuestion(text) {
+		return &llm.StructuredCommand{Action: "get_purchase_needs"}
+	}
+	return nil
+}
+
 func isPurchaseQuestion(text string) bool {
 	lower := strings.ToLower(strings.TrimSpace(text))
-	return strings.Contains(lower, "заказ") || strings.Contains(lower, "закуп") || strings.Contains(lower, "купить") || strings.Contains(lower, "покуп")
+	orderingQuestion := strings.Contains(lower, "заказ") && (strings.Contains(lower, "что ") || strings.Contains(lower, "нужно") || strings.Contains(lower, "надо"))
+	return orderingQuestion || strings.Contains(lower, "закуп") || strings.Contains(lower, "купить") || strings.Contains(lower, "покуп")
 }
 
 func isAllProductQuestion(text string) bool {
@@ -136,7 +167,7 @@ func (a *WorkshopAgent) formatAllMaterialStock(workshopID int64) (string, error)
 	}
 	result := "Текущие остатки материалов:\n"
 	for _, item := range materials {
-		result += fmt.Sprintf("- %v: %.2f %v\n", item["name"], item["current_stock"], item["base_unit"])
+		result += fmt.Sprintf("- %v: %s\n", item["name"], inventory.Quantity(item, "current_stock"))
 	}
 	return result, nil
 }
@@ -166,12 +197,22 @@ func (a *WorkshopAgent) formatPurchaseNeeds(workshopID int64) (string, error) {
 	}
 	result := "Нужно заказать:\n"
 	for _, item := range needs {
-		result += fmt.Sprintf("- %v: %.2f %v (сейчас %.2f, минимум %.2f)\n", item["name"], item["order_quantity"], item["base_unit"], item["current_stock"], item["minimum_stock"])
+		result += fmt.Sprintf("- %v: %s (сейчас %s, минимум %s)\n", item["name"], inventory.Quantity(item, "order_quantity"), inventory.Quantity(item, "current_stock"), inventory.Quantity(item, "minimum_stock"))
 	}
 	return result, nil
 }
 
 func (a *WorkshopAgent) SaveSession(workshopID, chatID, userID int64, contextText, pendingAction string) error {
-	_, err := a.WS.DB().Exec(`INSERT INTO conversation_sessions (workshop_id, telegram_chat_id, user_id, last_context, pending_action, updated_at) VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT DO UPDATE SET last_context = excluded.last_context, pending_action = excluded.pending_action, updated_at = excluded.updated_at`, workshopID, chatID, userID, contextText, pendingAction, time.Now().Format(time.RFC3339))
-	return err
+	if err := auth.Require(a.WS.DB(), userID, workshopID, auth.WorkshopRead); err != nil {
+		return err
+	}
+	if pendingAction != "" {
+		return fmt.Errorf("use explicit working memory or pending action operations")
+	}
+	m := a.Memory.ForUser(userID)
+	sc, err := m.EnsureSession(memory.Scope{UserID: userID, WorkshopID: workshopID}, chatID)
+	if err != nil {
+		return err
+	}
+	return m.AppendShortTerm(sc, "assistant", contextText)
 }

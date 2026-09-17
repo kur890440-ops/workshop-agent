@@ -1,0 +1,321 @@
+{
+  "Model": "MiniMax/MiniMax-M3",
+  "Started": "2026-09-17T12:06:36.6252697Z",
+  "Passed": 18,
+  "Total": 18,
+  "Tokens": 24081,
+  "Results": [
+    {
+      "Text": "сколько второго?",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1036,
+        "completion_tokens": 130,
+        "total_tokens": 1166
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "какой остаток 2",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1037,
+        "completion_tokens": 131,
+        "total_tokens": 1168
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "остаток второго материала",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1038,
+        "completion_tokens": 127,
+        "total_tokens": 1165
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "сколько осталось кисточек?",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "кисточек"
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1039,
+        "completion_tokens": 121,
+        "total_tokens": 1160
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "а кисточек сколько?",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "кисточек"
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1038,
+        "completion_tokens": 124,
+        "total_tokens": 1162
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "покажи остаток позиции 2",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1040,
+        "completion_tokens": 89,
+        "total_tokens": 1129
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "сколько по второму пункту?",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1039,
+        "completion_tokens": 129,
+        "total_tokens": 1168
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "а третьего?",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 3
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1036,
+        "completion_tokens": 205,
+        "total_tokens": 1241
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "а его минимум?",
+      "Command": {
+        "reference": {
+          "kind": "last",
+          "entity_type": "material"
+        },
+        "action": "get_material_minimum"
+      },
+      "Usage": {
+        "prompt_tokens": 1037,
+        "completion_tokens": 120,
+        "total_tokens": 1157
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "сколько кисточик осталось?",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "кисточик"
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1039,
+        "completion_tokens": 417,
+        "total_tokens": 1456
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "какой остаток 2",
+      "Command": {
+        "reference": {
+          "kind": "list_position",
+          "entity_type": "material",
+          "position": 2
+        },
+        "action": "get_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1032,
+        "completion_tokens": 494,
+        "total_tokens": 1526
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "добавь 2",
+      "Command": {
+        "action": "clarification"
+      },
+      "Usage": {
+        "prompt_tokens": 1032,
+        "completion_tokens": 258,
+        "total_tokens": 1290
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "установи остаток гипса 10 кг",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "гипса"
+        },
+        "quantity_mode": "absolute",
+        "amount": 10,
+        "unit": "kg",
+        "action": "change_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 2111,
+        "completion_tokens": 244,
+        "total_tokens": 2355
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "добавь 2 кг гипса на склад",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "гипса"
+        },
+        "quantity_mode": "increase",
+        "amount": 2,
+        "unit": "kg",
+        "action": "change_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1043,
+        "completion_tokens": 119,
+        "total_tokens": 1162
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "спиши 0,5 кг гипса",
+      "Command": {
+        "reference": {
+          "kind": "name",
+          "entity_type": "material",
+          "name": "гипса"
+        },
+        "quantity_mode": "decrease",
+        "amount": 0.5,
+        "unit": "kg",
+        "action": "change_material_stock"
+      },
+      "Usage": {
+        "prompt_tokens": 1042,
+        "completion_tokens": 204,
+        "total_tokens": 1246
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "что нужно закупить?",
+      "Command": {
+        "action": "get_purchase_needs"
+      },
+      "Usage": {
+        "prompt_tokens": 2106,
+        "completion_tokens": 139,
+        "total_tokens": 2245
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "покажи текущую задачу",
+      "Command": {
+        "action": "get_task"
+      },
+      "Usage": {
+        "prompt_tokens": 1040,
+        "completion_tokens": 32,
+        "total_tokens": 1072
+      },
+      "Passed": true,
+      "Error": ""
+    },
+    {
+      "Text": "какой остаток 2",
+      "Command": {
+        "action": "clarification"
+      },
+      "Usage": {
+        "prompt_tokens": 1013,
+        "completion_tokens": 200,
+        "total_tokens": 1213
+      },
+      "Passed": true,
+      "Error": ""
+    }
+  ]
+}

@@ -3,15 +3,16 @@ package products
 import (
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
+	"workshop-agent/internal/auth"
 	"workshop-agent/internal/storage"
 )
 
 type Service struct {
-	store *storage.Store
+	store  *storage.Store
+	userID int64
 }
 
 func NewBOMService(path string) *Service {
@@ -35,6 +36,9 @@ func (s *Service) DB() *sql.DB {
 }
 
 func (s *Service) CreateProduct(workshopID int64, name, sku, productType string, currentStock, minimumStock float64, notes string) (int64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.ProductsWrite); err != nil {
+		return 0, err
+	}
 	res, err := s.store.DB.Exec(`INSERT INTO products (workshop_id, name, sku, product_type, current_stock, minimum_stock, notes, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, name, sku, productType, currentStock, minimumStock, notes, time.Now().Format(time.RFC3339))
 	if err != nil {
 		return 0, err
@@ -43,61 +47,14 @@ func (s *Service) CreateProduct(workshopID int64, name, sku, productType string,
 }
 
 func (s *Service) UpdateProduct(workshopID, productID int64, fieldName, newValue string, actorUserID int64, actorName string) error {
-	var oldValue string
-	var currentField string
-
-	switch fieldName {
-	case "name":
-		currentField = "name"
-		if err := s.store.DB.QueryRow(`SELECT name FROM products WHERE id = ? AND workshop_id = ?`, productID, workshopID).Scan(&oldValue); err != nil {
-			return err
-		}
-		_, err := s.store.DB.Exec(`UPDATE products SET name = ? WHERE id = ? AND workshop_id = ?`, newValue, productID, workshopID)
-		if err != nil {
-			return err
-		}
-		_, err = s.store.DB.Exec(`INSERT INTO audit_logs (workshop_id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, "product", productID, actorUserID, actorName, "update", currentField, oldValue, newValue, "product name changed", time.Now().Format(time.RFC3339))
-		return err
-	case "current_stock":
-		currentField = "current_stock"
-		var current float64
-		if err := s.store.DB.QueryRow(`SELECT current_stock FROM products WHERE id = ? AND workshop_id = ?`, productID, workshopID).Scan(&current); err != nil {
-			return err
-		}
-		oldValue = fmt.Sprintf("%v", current)
-		stock, err := strconv.ParseFloat(newValue, 64)
-		if err != nil {
-			return fmt.Errorf("invalid numeric value for current_stock: %w", err)
-		}
-		_, err = s.store.DB.Exec(`UPDATE products SET current_stock = ? WHERE id = ? AND workshop_id = ?`, stock, productID, workshopID)
-		if err != nil {
-			return err
-		}
-		_, err = s.store.DB.Exec(`INSERT INTO audit_logs (workshop_id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, "product", productID, actorUserID, actorName, "update", currentField, oldValue, newValue, "product stock changed", time.Now().Format(time.RFC3339))
-		return err
-	case "minimum_stock":
-		currentField = "minimum_stock"
-		var current float64
-		if err := s.store.DB.QueryRow(`SELECT minimum_stock FROM products WHERE id = ? AND workshop_id = ?`, productID, workshopID).Scan(&current); err != nil {
-			return err
-		}
-		oldValue = fmt.Sprintf("%v", current)
-		minStock, err := strconv.ParseFloat(newValue, 64)
-		if err != nil {
-			return fmt.Errorf("invalid numeric value for minimum_stock: %w", err)
-		}
-		_, err = s.store.DB.Exec(`UPDATE products SET minimum_stock = ? WHERE id = ? AND workshop_id = ?`, minStock, productID, workshopID)
-		if err != nil {
-			return err
-		}
-		_, err = s.store.DB.Exec(`INSERT INTO audit_logs (workshop_id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, "product", productID, actorUserID, actorName, "update", currentField, oldValue, newValue, "minimum stock changed", time.Now().Format(time.RFC3339))
-		return err
-	default:
-		return fmt.Errorf("unsupported product field: %s", fieldName)
-	}
+	_, err := s.ApplyEdit(workshopID, productID, Edit{Field: fieldName, Value: newValue})
+	return err
 }
 
 func (s *Service) GetProductByName(workshopID int64, name string) (int64, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.ProductsRead); err != nil {
+		return 0, err
+	}
 	var id int64
 	err := s.store.DB.QueryRow(`SELECT id FROM products WHERE workshop_id = ? AND name = ? LIMIT 1`, workshopID, name).Scan(&id)
 	if err != nil {
@@ -107,14 +64,39 @@ func (s *Service) GetProductByName(workshopID int64, name string) (int64, error)
 }
 
 func (s *Service) SetBOMItem(workshopID, productID int64, componentType string, materialID, componentProductID int64, qty float64, unit string, technicalLossPercent float64, notes string) error {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.BOMWrite); err != nil {
+		return err
+	}
 	if componentType != "material" && componentType != "product" {
 		return fmt.Errorf("invalid component_type %s", componentType)
+	}
+	var count int
+	if err := s.store.DB.QueryRow(`SELECT COUNT(*) FROM products WHERE id=? AND workshop_id=?`, productID, workshopID).Scan(&count); err != nil {
+		return err
+	}
+	if count != 1 {
+		return auth.ErrDenied
+	}
+	if componentType == "material" {
+		if err := s.store.DB.QueryRow(`SELECT COUNT(*) FROM materials WHERE id=? AND workshop_id=?`, materialID, workshopID).Scan(&count); err != nil {
+			return err
+		}
+	} else {
+		if err := s.store.DB.QueryRow(`SELECT COUNT(*) FROM products WHERE id=? AND workshop_id=?`, componentProductID, workshopID).Scan(&count); err != nil {
+			return err
+		}
+	}
+	if count != 1 {
+		return auth.ErrDenied
 	}
 	_, err := s.store.DB.Exec(`INSERT INTO bom_items (workshop_id, product_id, component_type, material_id, component_product_id, quantity, unit, technical_loss_percent, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`, workshopID, productID, componentType, materialID, componentProductID, qty, strings.TrimSpace(unit), technicalLossPercent, notes)
 	return err
 }
 
 func (s *Service) GetBOM(workshopID, productID int64) ([]map[string]any, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.BOMRead); err != nil {
+		return nil, err
+	}
 	rows, err := s.store.DB.Query(`SELECT id, component_type, material_id, component_product_id, quantity, unit, technical_loss_percent, notes FROM bom_items WHERE workshop_id = ? AND product_id = ?`, workshopID, productID)
 	if err != nil {
 		return nil, err
@@ -164,6 +146,9 @@ func CalculateRequirementForProduct(workshopID int64, productID int64, quantity 
 }
 
 func (s *Service) ListProducts(workshopID int64) ([]map[string]any, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.ProductsRead); err != nil {
+		return nil, err
+	}
 	rows, err := s.store.DB.Query(`SELECT id, name, sku, product_type, current_stock, minimum_stock, notes FROM products WHERE workshop_id = ? ORDER BY name`, workshopID)
 	if err != nil {
 		return nil, err
@@ -181,3 +166,6 @@ func (s *Service) ListProducts(workshopID int64) ([]map[string]any, error) {
 	}
 	return out, rows.Err()
 }
+
+// ForUser binds an internal user ID; authorization is rechecked on every operation.
+func (s *Service) ForUser(userID int64) *Service { bound := *s; bound.userID = userID; return &bound }

@@ -1,0 +1,70 @@
+{
+  "backup": "data\\workshop.db.backup-20260916T175504.400696900.db",
+  "migration_version": 101,
+  "unchanged_tables": {
+    "materials": {
+      "rows": 19,
+      "unchanged": true
+    },
+    "products": {
+      "rows": 34,
+      "unchanged": true
+    },
+    "bom_items": {
+      "rows": 34,
+      "unchanged": true
+    },
+    "inventory_movements": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "product_movements": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "production_records": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "shipments": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "production_plans": {
+      "rows": 0,
+      "unchanged": true
+    },
+    "users": {
+      "rows": 1,
+      "unchanged": true
+    },
+    "workshops": {
+      "rows": 18,
+      "unchanged": true
+    },
+    "workshop_members": {
+      "rows": 18,
+      "unchanged": true
+    }
+  },
+  "integrity_check": "ok",
+  "foreign_key_check": [],
+  "live_llm_calls": 24,
+  "provider_prompt_tokens": 12137,
+  "provider_completion_tokens": 5458,
+  "provider_total_tokens": 17595,
+  "controlled_identity_domain_current_equal": true,
+  "mobile_viewport": {
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "externalResources": 0
+  },
+  "go_tests": {
+    "passed": true,
+    "total": 41,
+    "day11_added": 21
+  },
+  "build": "passed",
+  "unknown_cli_command": "rejected_without_polling"
+}

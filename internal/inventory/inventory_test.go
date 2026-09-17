@@ -3,6 +3,7 @@ package inventory
 import (
 	"path/filepath"
 	"testing"
+	"workshop-agent/internal/testkit"
 )
 
 func TestQuantityConversions(t *testing.T) {
@@ -27,6 +28,8 @@ func TestMaterialStockBasic(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "inventory_test.db")
 	svc := NewService(dbPath)
 	defer svc.Close()
+	userID, _ := testkit.Owner(t, dbPath)
+	svc = svc.ForUser(userID)
 	if err := svc.Init(); err != nil {
 		t.Fatal(err)
 	}
@@ -49,6 +52,8 @@ func TestListPurchaseNeeds(t *testing.T) {
 	dbPath := filepath.Join(t.TempDir(), "purchase_needs_test.db")
 	svc := NewService(dbPath)
 	defer svc.Close()
+	userID, _ := testkit.Owner(t, dbPath)
+	svc = svc.ForUser(userID)
 
 	if _, err := svc.CreateMaterial(1, "Гипс", "сырьё", "kg", 2, 5, "Поставщик", 3, ""); err != nil {
 		t.Fatal(err)

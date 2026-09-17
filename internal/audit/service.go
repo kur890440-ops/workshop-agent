@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"time"
 
+	"workshop-agent/internal/auth"
 	"workshop-agent/internal/storage"
 )
 
 type Service struct {
-	store *storage.Store
+	store  *storage.Store
+	userID int64
 }
 
 func NewService(path string) *Service {
@@ -29,6 +31,9 @@ func (s *Service) DB() *sql.DB {
 }
 
 func (s *Service) Log(workshopID int64, entityType string, entityID int64, actorUserID int64, actorName string, action string, fieldName string, oldValue string, newValue string, details string) error {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.AuditRead); err != nil {
+		return err
+	}
 	_, err := s.store.DB.Exec(`
 		INSERT INTO audit_logs (
 			workshop_id, entity_type, entity_id, actor_user_id, actor_name,
@@ -42,6 +47,9 @@ func (s *Service) Log(workshopID int64, entityType string, entityID int64, actor
 }
 
 func (s *Service) ListByWorkshop(workshopID int64) ([]map[string]any, error) {
+	if err := auth.Require(s.store.DB, s.userID, workshopID, auth.AuditRead); err != nil {
+		return nil, err
+	}
 	rows, err := s.store.DB.Query(`
 		SELECT id, entity_type, entity_id, actor_user_id, actor_name, action, field_name, old_value, new_value, details, created_at
 		FROM audit_logs WHERE workshop_id = ? ORDER BY created_at DESC`, workshopID)
@@ -60,18 +68,21 @@ func (s *Service) ListByWorkshop(workshopID int64) ([]map[string]any, error) {
 			return nil, err
 		}
 		out = append(out, map[string]any{
-			"id": id,
-			"entity_type": entityType,
-			"entity_id": entityID,
+			"id":            id,
+			"entity_type":   entityType,
+			"entity_id":     entityID,
 			"actor_user_id": actorUserID.Int64,
-			"actor_name": actorName,
-			"action": action,
-			"field_name": fieldName,
-			"old_value": oldValue,
-			"new_value": newValue,
-			"details": details,
-			"created_at": createdAt,
+			"actor_name":    actorName,
+			"action":        action,
+			"field_name":    fieldName,
+			"old_value":     oldValue,
+			"new_value":     newValue,
+			"details":       details,
+			"created_at":    createdAt,
 		})
 	}
 	return out, rows.Err()
 }
+
+// ForUser binds an internal user ID; authorization is rechecked on every operation.
+func (s *Service) ForUser(userID int64) *Service { bound := *s; bound.userID = userID; return &bound }

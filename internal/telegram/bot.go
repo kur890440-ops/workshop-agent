@@ -1,13 +1,13 @@
 package telegram
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
+	"math"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -16,6 +16,7 @@ import (
 
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
+	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/products"
@@ -24,19 +25,32 @@ import (
 )
 
 type Bot struct {
-	Token      string
-	WS         *workshops.Service
-	Inv        *inventory.Service
-	Prod       *products.Service
-	Audit      *audit.Service
-	Started    bool
-	HTTPClient *http.Client
-	Agent      *agent.WorkshopAgent
-	setupMu    sync.Mutex
-	setup      map[int64]*setupSession
+	materialLists map[sessionKey]materialListContext
+	Token         string
+	WS            *workshops.Service
+	Inv           *inventory.Service
+	Prod          *products.Service
+	Audit         *audit.Service
+	Started       bool
+	HTTPClient    *http.Client
+	Agent         *agent.WorkshopAgent
+	setupMu       sync.Mutex
+	setup         map[sessionKey]*setupSession
+	uiMu          sync.Mutex
+	ui            map[sessionKey]*uiState
+	buttons       map[string]buttonAction
+	BotUsername   string
 }
 
 type setupSession struct {
+	composition *compositionInput
+	productID   int64
+	productIDs  []int64
+	edit        products.Edit
+	editExpires time.Time
+	editSession int64
+	materialIDs []int64
+	materialID  int64
 	kind        string
 	stage       int
 	workshopID  int64
@@ -55,7 +69,7 @@ func NewBot(token string, ws *workshops.Service, inv *inventory.Service, prod *p
 	if token == "" {
 		return nil, logError("TELEGRAM_BOT_TOKEN is empty")
 	}
-	return &Bot{Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Agent: agentSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[int64]*setupSession)}, nil
+	return &Bot{Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Agent: agentSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[sessionKey]*setupSession)}, nil
 }
 
 func logError(msg string) error {
@@ -84,11 +98,17 @@ func (b *Bot) Start() {
 			if update.UpdateID >= offset {
 				offset = update.UpdateID + 1
 			}
-			if update.Message == nil || strings.TrimSpace(update.Message.Text) == "" {
+			if update.CallbackQuery != nil {
+				if err := b.handleCallback(update.CallbackQuery); err != nil {
+					log.Printf("callback failed")
+				}
+				continue
+			}
+			if update.Message == nil {
 				continue
 			}
 			if err := b.handleMessage(update.Message); err != nil {
-				log.Printf("handle message error: %v", err)
+				log.Printf("handle message error")
 			}
 		}
 		if len(updates) == 0 {
@@ -98,15 +118,22 @@ func (b *Bot) Start() {
 }
 
 func (b *Bot) getUpdates(offset int64) ([]telegramUpdate, error) {
-	url := fmt.Sprintf("https://api.telegram.org/bot%s/getUpdates?offset=%d&timeout=30&allowed_updates=%s", b.Token, offset, urlQueryEscape("[\"message\"]"))
-	resp, err := b.HTTPClient.Get(url)
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/getUpdates?offset=%d&timeout=30&allowed_updates=%s", b.Token, offset, urlQueryEscape("[\"message\",\"callback_query\"]"))
+	// Long polling must outlive Telegram's 30-second wait. Keep ordinary API
+	// requests on the original short timeout and retain the configured transport.
+	pollClient := *b.HTTPClient
+	pollClient.Timeout = 45 * time.Second
+	resp, err := pollClient.Get(url)
 	if err != nil {
-		return nil, err
+		var networkError net.Error
+		if errors.As(err, &networkError) && networkError.Timeout() {
+			return nil, errors.New("Telegram getUpdates timed out after 45s")
+		}
+		return nil, errors.New("Telegram getUpdates connection failed")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("telegram getUpdates failed: status=%s body=%s", resp.Status, string(body))
+		return nil, fmt.Errorf("telegram getUpdates failed: status=%s", resp.Status)
 	}
 	var payload telegramResponse
 	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
@@ -118,59 +145,126 @@ func (b *Bot) getUpdates(offset int64) ([]telegramUpdate, error) {
 	return payload.Result, nil
 }
 
-func (b *Bot) handleMessage(msg *telegramMessage) error {
+func (b *Bot) processMessage(msg *telegramMessage) error {
 	if msg == nil {
 		return nil
 	}
+	if msg.Chat.Type != "private" {
+		return b.sendMessage(msg.Chat.ID, "Работа с мастерской доступна в личном чате с ботом. Откройте /start там.")
+	}
+	if msg.Chat.ID != msg.From.ID {
+		return auth.ErrDenied
+	}
 	text := strings.TrimSpace(msg.Text)
+	chatID := msg.Chat.ID
+	userID, err := b.WS.UpsertUser(msg.From.ID, msg.From.Username, msg.From.FirstName, msg.From.LastName)
+	if err != nil {
+		return b.sendMessage(chatID, publicError(err))
+	}
+	if err := b.trackMessage(msg, userID); err != nil {
+		return err
+	}
 	if text == "" {
 		return nil
 	}
-	chatID := msg.Chat.ID
-	userID := msg.From.ID
+	if isClearCommand(text) {
+		return b.clearPrompt(sessionKey{chatID, userID})
+	}
+	if handled, err := b.handleIdentityMessage(msg, userID, text); handled {
+		return err
+	}
+	if b.getSetup(chatID, userID) == nil && (strings.EqualFold(text, "задачи") || strings.EqualFold(text, "задача")) {
+		text = "/task"
+	}
+	if b.Agent != nil && (strings.HasPrefix(text, "/memory") || strings.HasPrefix(text, "/task") || strings.HasPrefix(text, "/session")) {
+		if text == "/session new" {
+			b.clearSetup(chatID, userID)
+			b.invalidateProductButtons(sessionKey{chatID, userID})
+			if err := b.dropAssembly(sessionKey{chatID, userID}); err != nil {
+				return err
+			}
+			b.forgetMaterialList(sessionKey{chatID, userID})
+			b.invalidateSemantic(sessionKey{chatID, userID})
+		}
+		workshopID, err := b.WS.ActiveWorkshop(userID)
+		if err != nil {
+			return err
+		}
+		answer, _, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
+		if err != nil {
+			return err
+		}
+		return b.sendMessage(chatID, answer)
+	}
 	username := msg.From.Username
 	if username == "" {
 		username = msg.From.FirstName
 	}
 	if text == "/setup_stop" {
-		b.clearSetup(chatID)
+		if s := b.getSetup(chatID, userID); s != nil && s.kind == "product_edit" && s.composition != nil {
+			return b.compositionMenu(sessionKey{chatID, userID}, s)
+		}
+		if s := b.getSetup(chatID, userID); s != nil && s.kind == "product_edit" {
+			b.clearSetup(chatID, userID)
+			return b.productsMenu(sessionKey{chatID, userID}, s.workshopID)
+		}
+		if err := b.dropAssembly(sessionKey{chatID, userID}); err != nil {
+			return err
+		}
+		b.clearSetup(chatID, userID)
 		return b.sendMessage(chatID, "Настройка остановлена. Введённые, но не сохранённые данные удалены из текущего диалога.")
 	}
-	if session := b.getSetup(chatID); session != nil {
+	materialAlias := strings.EqualFold(text, "материалы") || strings.EqualFold(text, "остатки")
+	if strings.EqualFold(text, "/products") || (isProductsCommand(text) && b.getSetup(chatID, userID) == nil) {
+		b.clearSetup(chatID, userID)
+		workshop, err := b.WS.ActiveWorkshop(userID)
+		if err != nil {
+			return err
+		}
+		return b.productsMenu(sessionKey{chatID, userID}, workshop)
+	}
+	if text == "/materials" || (materialAlias && b.getSetup(chatID, userID) == nil) {
+		workshopID, err := b.WS.ActiveWorkshop(userID)
+		if err != nil {
+			return err
+		}
+		return b.materialsMenu(sessionKey{chatID, userID}, workshopID)
+	}
+	if session := b.getSetup(chatID, userID); session != nil {
+		workshopID, err := b.WS.ActiveWorkshop(userID)
+		if err != nil || workshopID != session.workshopID {
+			b.clearSetup(chatID, userID)
+			return b.sendMessage(chatID, "Мастерская изменилась или доступ закрыт. Откройте меню заново: /materials.")
+		}
 		return b.handleSetupStep(chatID, text, session)
 	}
-	if strings.HasPrefix(text, "/start") {
-		if _, err := b.WS.RegisterUser(userID, username, msg.From.FirstName+" "+msg.From.LastName); err != nil {
-			return err
-		}
-		workshopID, err := b.WS.GetWorkshopByChat(chatID)
-		if err != nil || workshopID == 0 {
-			workshopID, err = b.WS.CreateWorkshop("Мастерская demo")
-			if err != nil {
-				return err
-			}
-		}
-		if err := b.WS.EnsureTelegramChat(chatID, workshopID, msg.Chat.Title); err != nil {
-			return err
-		}
-		if err := b.WS.AddMember(workshopID, userID, "owner"); err != nil {
-			return err
-		}
-		return b.sendMessage(chatID, "Мастерская готова. Доступные команды: /setup, /materials, /products, /to_order, /stock <название>, /edit_material <название> <поле> <значение>, /edit_product <название> <поле> <значение>, /audit")
+	if handled, err := b.assemblyMessage(sessionKey{chatID, userID}, text); handled {
+		return err
+	}
+	if handled, err := b.materialReference(sessionKey{chatID, userID}, text); handled {
+		return err
 	}
 	if text == "/setup" {
+		b.forgetMaterialList(sessionKey{chatID, userID})
+		workshopID, err := b.WS.ActiveWorkshop(userID)
+		if err != nil {
+			return err
+		}
+		if err := auth.Require(b.WS.DB(), userID, workshopID, auth.WorkshopManage); err != nil {
+			return err
+		}
 		if err := b.setupDatabase(); err != nil {
 			return b.sendMessage(chatID, fmt.Sprintf("Ошибка инициализации базы данных: %v", err))
 		}
-		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
+		workshopID, err = b.ensureWorkshop(chatID, userID, msg)
 		if err != nil {
 			return err
 		}
-		materials, err := b.Inv.ListMaterials(workshopID)
+		materials, err := b.Inv.ForUser(userID).ListMaterials(workshopID)
 		if err != nil {
 			return err
 		}
-		products, err := b.Prod.ListProducts(workshopID)
+		products, err := b.Prod.ForUser(userID).ListProducts(workshopID)
 		if err != nil {
 			return err
 		}
@@ -181,12 +275,18 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		if err != nil {
 			return err
 		}
+		if err := auth.Require(b.WS.DB(), userID, workshopID, auth.InventoryWrite); err != nil {
+			return err
+		}
 		b.startSetup(chatID, &setupSession{kind: "material", stage: 0, workshopID: workshopID, userID: userID, actorName: username})
 		return b.sendMessage(chatID, "Добавление материала начато. Введите название или /setup_stop для отмены.")
 	}
 	if text == "/setup_add_product" {
 		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
 		if err != nil {
+			return err
+		}
+		if err := auth.Require(b.WS.DB(), userID, workshopID, auth.ProductsWrite); err != nil {
 			return err
 		}
 		b.startSetup(chatID, &setupSession{kind: "product", stage: 0, workshopID: workshopID, userID: userID, actorName: username})
@@ -197,29 +297,14 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		if err != nil {
 			return err
 		}
-		materials, err := b.Inv.ListMaterials(workshopID)
-		if err != nil {
-			return err
-		}
-		return b.sendMessage(chatID, formatMaterials(materials))
-	}
-	if strings.HasPrefix(text, "/products") {
-		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
-		if err != nil {
-			return err
-		}
-		products, err := b.Prod.ListProducts(workshopID)
-		if err != nil {
-			return err
-		}
-		return b.sendMessage(chatID, formatProducts(products))
+		return b.materialsMenu(sessionKey{chatID, userID}, workshopID)
 	}
 	if text == "/to_order" || text == "/purchase" || text == "/buy" {
 		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
 		if err != nil {
 			return err
 		}
-		needs, err := b.Inv.ListPurchaseNeeds(workshopID)
+		needs, err := b.Inv.ForUser(userID).ListPurchaseNeeds(workshopID)
 		if err != nil {
 			return err
 		}
@@ -232,18 +317,19 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		}
 		name := strings.TrimSpace(strings.TrimPrefix(text, "/stock"))
 		name = strings.TrimSpace(name)
-		stock, err := b.Inv.GetMaterialStock(workshopID, name)
+		item, err := b.Inv.ForUser(userID).MaterialByName(workshopID, name)
 		if err != nil {
 			return err
 		}
-		return b.sendMessage(chatID, fmt.Sprintf("Остаток %s: %.2f", name, stock))
+		b.selectMaterial(sessionKey{chatID, userID}, workshopID, item["id"].(int64))
+		return b.sendMessage(chatID, fmt.Sprintf("Остаток %s: %s", name, inventory.Quantity(item, "current_stock")))
 	}
 	if strings.HasPrefix(text, "/audit") {
 		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
 		if err != nil {
 			return err
 		}
-		entries, err := b.Audit.ListByWorkshop(workshopID)
+		entries, err := b.Audit.ForUser(userID).ListByWorkshop(workshopID)
 		if err != nil {
 			return err
 		}
@@ -261,14 +347,23 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		name := parts[1]
 		field := parts[2]
 		value := strings.Join(parts[3:], " ")
-		materialID, err := b.Inv.GetMaterialID(workshopID, name)
+		materialID, err := b.Inv.ForUser(userID).GetMaterialID(workshopID, name)
 		if err != nil {
 			return err
 		}
-		if err := b.Inv.UpdateMaterial(workshopID, materialID, field, value, userID, username); err != nil {
+		if err := auth.Require(b.WS.DB(), userID, workshopID, auth.InventoryWrite); err != nil {
 			return err
 		}
-		return b.sendMessage(chatID, fmt.Sprintf("Материал %s обновлён: %s=%s", name, field, value))
+		item, err := b.Inv.ForUser(userID).Material(workshopID, materialID)
+		if err != nil {
+			return err
+		}
+		unit := inventory.DisplayUnit(item)
+		payload, _ := json.Marshal(map[string]string{"field": field, "value": value, "unit": unit})
+		if field == "current_stock" || field == "minimum_stock" {
+			value += " " + inventory.UnitLabel(unit)
+		}
+		return b.screen(sessionKey{chatID, userID}, fmt.Sprintf("Изменить материал %s: %s=%s?", name, field, value), choice{Text: "Подтвердить", Action: "edit_material", Workshop: workshopID, Target: materialID, Value: string(payload)}, choice{Text: "Отмена", Action: "home"})
 	}
 	if strings.HasPrefix(text, "/edit_product ") {
 		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
@@ -282,23 +377,27 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		name := parts[1]
 		field := parts[2]
 		value := strings.Join(parts[3:], " ")
-		productID, err := b.Prod.GetProductByName(workshopID, name)
+		productID, err := b.Prod.ForUser(userID).GetProductByName(workshopID, name)
 		if err != nil {
 			return err
 		}
-		if err := b.Prod.UpdateProduct(workshopID, productID, field, value, userID, username); err != nil {
+		if err := auth.Require(b.WS.DB(), userID, workshopID, auth.ProductsWrite); err != nil {
 			return err
 		}
-		return b.sendMessage(chatID, fmt.Sprintf("Продукт %s обновлён: %s=%s", name, field, value))
+		payload, _ := json.Marshal(map[string]string{"field": field, "value": value})
+		return b.screen(sessionKey{chatID, userID}, fmt.Sprintf("Изменить продукт %s: %s=%s?", name, field, value), choice{Text: "Подтвердить", Action: "edit_product", Workshop: workshopID, Target: productID, Value: string(payload)}, choice{Text: "Отмена", Action: "home"})
 	}
 	if b.Agent != nil {
 		workshopID, err := b.ensureWorkshop(chatID, userID, msg)
 		if err != nil {
 			return err
 		}
+		if handled, err := b.semanticMessage(sessionKey{chatID, userID}, workshopID, text); handled {
+			return err
+		}
 		answer, usage, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
 		if err != nil {
-			return b.sendMessage(chatID, fmt.Sprintf("Не удалось обработать запрос: %v\n%s", err, formatTokenUsage(usage)))
+			return b.sendMessage(chatID, publicError(err)+"\n"+formatTokenUsage(usage))
 		}
 		return b.sendMessage(chatID, answer+"\n\n"+formatTokenUsage(usage))
 	}
@@ -329,24 +428,40 @@ func (b *Bot) setupDatabase() error {
 }
 
 func (b *Bot) startSetup(chatID int64, session *setupSession) {
+	b.invalidateProductButtons(sessionKey{chatID, session.userID})
 	b.setupMu.Lock()
 	defer b.setupMu.Unlock()
-	b.setup[chatID] = session
+	b.setup[sessionKey{chatID, session.userID}] = session
 }
 
-func (b *Bot) getSetup(chatID int64) *setupSession {
+func (b *Bot) getSetup(chatID, userID int64) *setupSession {
 	b.setupMu.Lock()
 	defer b.setupMu.Unlock()
-	return b.setup[chatID]
+	return b.setup[sessionKey{chatID, userID}]
 }
 
-func (b *Bot) clearSetup(chatID int64) {
+func (b *Bot) clearSetup(chatID, userID int64) {
+	b.invalidateProductButtons(sessionKey{chatID, userID})
 	b.setupMu.Lock()
 	defer b.setupMu.Unlock()
-	delete(b.setup, chatID)
+	delete(b.setup, sessionKey{chatID, userID})
 }
 
 func (b *Bot) handleSetupStep(chatID int64, text string, session *setupSession) error {
+	if session.kind == "product_edit" {
+		return b.productEditStep(sessionKey{chatID, session.userID}, text, session)
+	}
+	if session.kind == "material_stock" || session.kind == "material_unit" {
+		return b.materialStockStep(chatID, text, session)
+	}
+	permission := auth.InventoryWrite
+	if session.kind == "product" {
+		permission = auth.ProductsWrite
+	}
+	if err := auth.Require(b.WS.DB(), session.userID, session.workshopID, permission); err != nil {
+		b.clearSetup(chatID, session.userID)
+		return err
+	}
 	value := strings.TrimSpace(text)
 	if value == "" {
 		return b.sendMessage(chatID, "Значение не может быть пустым. Для отмены используйте /setup_stop.")
@@ -355,6 +470,9 @@ func (b *Bot) handleSetupStep(chatID int64, text string, session *setupSession) 
 	if session.kind == "material" {
 		switch session.stage {
 		case 0:
+			if len([]rune(value)) > 200 {
+				return b.sendMessage(chatID, "Название должно содержать не более 200 символов.")
+			}
 			session.name = value
 			session.stage = 1
 			return b.sendMessage(chatID, "Выберите категорию сырья, отправьте номер:\n1. Сырьё\n2. Компонент\n3. Инструмент\n4. Упаковка\n5. Другое")
@@ -377,35 +495,38 @@ func (b *Bot) handleSetupStep(chatID int64, text string, session *setupSession) 
 			session.stage = 3
 			return b.sendMessage(chatID, "Введите текущий остаток числом, например: 1000")
 		case 3:
-			stock, err := strconv.ParseFloat(value, 64)
-			if err != nil || stock < 0 {
+			stock, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", "."), 64)
+			if err != nil || stock < 0 || math.IsNaN(stock) || math.IsInf(inventory.ConvertToBase(session.unit, stock), 0) {
 				return b.sendMessage(chatID, "Остаток должен быть неотрицательным числом.")
 			}
 			session.stock = stock
 			session.stage = 4
 			return b.sendMessage(chatID, "Введите минимальный остаток числом, например: 100")
 		case 4:
-			minimum, err := strconv.ParseFloat(value, 64)
-			if err != nil || minimum < 0 {
+			minimum, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", "."), 64)
+			if err != nil || minimum < 0 || math.IsNaN(minimum) || math.IsInf(inventory.ConvertToBase(session.unit, minimum), 0) {
 				return b.sendMessage(chatID, "Минимальный остаток должен быть неотрицательным числом.")
 			}
 			session.minimum = minimum
 			session.stage = 5
-			return b.sendMessage(chatID, fmt.Sprintf("Проверьте:\nНазвание: %s\nКатегория: %s\nЕдиница: %s\nОстаток: %.2f\nМинимум: %.2f\n\nВведите да для сохранения или нет для отмены.", session.name, session.category, session.unit, session.stock, session.minimum))
+			return b.sendMessage(chatID, fmt.Sprintf("Проверьте:\nНазвание: %s\nКатегория: %s\nЕдиница: %s\nОстаток: %s\nМинимум: %s\n\nВведите да для сохранения или нет для отмены.", session.name, session.category, inventory.UnitLabel(session.unit), inventory.FormatQuantity(inventory.ConvertToBase(session.unit, session.stock), session.unit), inventory.FormatQuantity(inventory.ConvertToBase(session.unit, session.minimum), session.unit)))
 		case 5:
 			if isNo(value) {
-				b.clearSetup(chatID)
+				b.clearSetup(chatID, session.userID)
 				return b.sendMessage(chatID, "Добавление материала отменено. Данные не изменялись.")
 			}
 			if !isYes(value) {
 				return b.sendMessage(chatID, "Введите да для сохранения или нет для отмены.")
 			}
-			id, err := b.Inv.CreateMaterial(session.workshopID, session.name, session.category, session.unit, session.stock, session.minimum, "", 0, "")
+			id, err := b.Inv.ForUser(session.userID).CreateMaterial(session.workshopID, session.name, session.category, session.unit, session.stock, session.minimum, "", 0, "")
 			if err != nil {
 				return err
 			}
-			b.clearSetup(chatID)
-			return b.sendMessage(chatID, fmt.Sprintf("Материал сохранён, id=%d.", id))
+			b.clearSetup(chatID, session.userID)
+			if err := b.sendMessage(chatID, fmt.Sprintf("Материал сохранён, id=%d.", id)); err != nil {
+				return err
+			}
+			return b.materialsMenu(sessionKey{chatID, session.userID}, session.workshopID)
 		}
 	}
 
@@ -416,6 +537,9 @@ func (b *Bot) handleSetupStep(chatID int64, text string, session *setupSession) 
 		return b.sendMessage(chatID, "Введите артикул (SKU) или - если он не нужен.")
 	case 1:
 		session.sku = value
+		if value == "-" {
+			session.sku = ""
+		}
 		session.stage = 2
 		return b.sendMessage(chatID, "Выберите тип продукта:\n1. Готовое изделие\n2. Набор\n3. Полуфабрикат")
 	case 2:
@@ -428,35 +552,38 @@ func (b *Bot) handleSetupStep(chatID int64, text string, session *setupSession) 
 		session.stage = 3
 		return b.sendMessage(chatID, "Введите текущий остаток числом.")
 	case 3:
-		stock, err := strconv.ParseFloat(value, 64)
-		if err != nil || stock < 0 {
+		stock, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", "."), 64)
+		if err != nil || stock < 0 || math.IsNaN(stock) || math.IsInf(stock, 0) || stock > 1e12 {
 			return b.sendMessage(chatID, "Остаток должен быть неотрицательным числом.")
 		}
 		session.stock = stock
 		session.stage = 4
 		return b.sendMessage(chatID, "Введите минимальный остаток числом.")
 	case 4:
-		minimum, err := strconv.ParseFloat(value, 64)
-		if err != nil || minimum < 0 {
+		minimum, err := strconv.ParseFloat(strings.ReplaceAll(value, ",", "."), 64)
+		if err != nil || minimum < 0 || math.IsNaN(minimum) || math.IsInf(minimum, 0) || minimum > 1e12 {
 			return b.sendMessage(chatID, "Минимальный остаток должен быть неотрицательным числом.")
 		}
 		session.minimum = minimum
 		session.stage = 5
-		return b.sendMessage(chatID, fmt.Sprintf("Проверьте:\nНазвание: %s\nSKU: %s\nТип: %s\nОстаток: %.2f\nМинимум: %.2f\n\nВведите да для сохранения или нет для отмены.", session.name, session.sku, session.productType, session.stock, session.minimum))
+		return b.sendMessage(chatID, fmt.Sprintf("Проверьте:\nНазвание: %s\nSKU: %s\nТип: %s\nОстаток: %g шт\nМинимум: %g шт\n\nВведите да для сохранения или нет для отмены.", session.name, session.sku, products.TypeLabel(session.productType), session.stock, session.minimum))
 	case 5:
 		if isNo(value) {
-			b.clearSetup(chatID)
+			b.clearSetup(chatID, session.userID)
 			return b.sendMessage(chatID, "Добавление продукта отменено. Данные не изменялись.")
 		}
 		if !isYes(value) {
 			return b.sendMessage(chatID, "Введите да для сохранения или нет для отмены.")
 		}
-		id, err := b.Prod.CreateProduct(session.workshopID, session.name, session.sku, session.productType, session.stock, session.minimum, "")
+		id, err := b.Prod.ForUser(session.userID).CreateProduct(session.workshopID, session.name, session.sku, session.productType, session.stock, session.minimum, "")
 		if err != nil {
 			return err
 		}
-		b.clearSetup(chatID)
-		return b.sendMessage(chatID, fmt.Sprintf("Продукт сохранён, id=%d.", id))
+		b.clearSetup(chatID, session.userID)
+		if err := b.sendMessage(chatID, fmt.Sprintf("Продукт сохранён, id=%d.", id)); err != nil {
+			return err
+		}
+		return b.productsMenu(sessionKey{chatID, session.userID}, session.workshopID)
 	}
 	return nil
 }
@@ -478,43 +605,28 @@ func isNo(value string) bool {
 }
 
 func (b *Bot) ensureWorkshop(chatID, userID int64, msg *telegramMessage) (int64, error) {
-	if workshopID, err := b.WS.GetWorkshopByChat(chatID); err == nil && workshopID > 0 {
-		return workshopID, nil
+	return b.WS.ActiveWorkshop(userID)
+}
+
+func (b *Bot) handleMessage(msg *telegramMessage) error {
+	err := b.processMessage(msg)
+	if errors.Is(err, auth.ErrChooseWorkshop) && msg != nil {
+		var userID int64
+		if lookupErr := b.WS.DB().QueryRow(`SELECT id FROM users WHERE telegram_user_id=?`, msg.From.ID).Scan(&userID); lookupErr == nil {
+			return b.switcher(sessionKey{msg.Chat.ID, userID})
+		}
 	}
-	workshopID, err := b.WS.CreateWorkshop("Мастерская demo")
-	if err != nil {
-		return 0, err
+	if err != nil && msg != nil {
+		return b.sendMessage(msg.Chat.ID, publicError(err))
 	}
-	if _, err := b.WS.RegisterUser(userID, msg.From.Username, msg.From.FirstName+" "+msg.From.LastName); err != nil {
-		return 0, err
-	}
-	if err := b.WS.EnsureTelegramChat(chatID, workshopID, msg.Chat.Title); err != nil {
-		return 0, err
-	}
-	if err := b.WS.AddMember(workshopID, userID, "owner"); err != nil {
-		return 0, err
-	}
-	return workshopID, nil
+	return err
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) error {
 	if text == "" {
 		return nil
 	}
-	body, err := json.Marshal(map[string]any{"chat_id": chatID, "text": text, "parse_mode": "HTML"})
-	if err != nil {
-		return err
-	}
-	resp, err := b.HTTPClient.Post(fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage", b.Token), "application/json", bytes.NewReader(body))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		payload, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("telegram sendMessage failed: status=%s body=%s", resp.Status, string(payload))
-	}
-	return nil
+	return b.api("sendMessage", map[string]any{"chat_id": chatID, "text": text, "disable_web_page_preview": true}, nil)
 }
 
 func urlQueryEscape(s string) string {
@@ -527,7 +639,7 @@ func formatMaterials(items []map[string]any) string {
 	}
 	lines := []string{"Материалы:"}
 	for _, item := range items {
-		lines = append(lines, fmt.Sprintf("- %v: %.2f %v", item["name"], item["current_stock"], item["base_unit"]))
+		lines = append(lines, fmt.Sprintf("- %v: %s", item["name"], inventory.Quantity(item, "current_stock")))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -549,7 +661,7 @@ func formatPurchaseNeeds(items []map[string]any) string {
 	}
 	lines := []string{"Нужно заказать:"}
 	for _, item := range items {
-		line := fmt.Sprintf("- %v: заказать %.2f %v (сейчас %.2f, минимум %.2f)", item["name"], item["order_quantity"], item["base_unit"], item["current_stock"], item["minimum_stock"])
+		line := fmt.Sprintf("- %v: заказать %s (сейчас %s, минимум %s)", item["name"], inventory.Quantity(item, "order_quantity"), inventory.Quantity(item, "current_stock"), inventory.Quantity(item, "minimum_stock"))
 		if supplier := strings.TrimSpace(fmt.Sprint(item["supplier"])); supplier != "" {
 			line += ", поставщик: " + supplier
 		}
@@ -582,15 +694,18 @@ type telegramResponse struct {
 }
 
 type telegramUpdate struct {
-	UpdateID int64            `json:"update_id"`
-	Message  *telegramMessage `json:"message"`
+	UpdateID      int64             `json:"update_id"`
+	CallbackQuery *telegramCallback `json:"callback_query"`
+	Message       *telegramMessage  `json:"message"`
 }
 
 type telegramMessage struct {
-	MessageID int64        `json:"message_id"`
-	Text      string       `json:"text"`
-	Chat      telegramChat `json:"chat"`
-	From      telegramUser `json:"from"`
+	Date      int64           `json:"date"`
+	Dice      json.RawMessage `json:"dice"`
+	MessageID int64           `json:"message_id"`
+	Text      string          `json:"text"`
+	Chat      telegramChat    `json:"chat"`
+	From      telegramUser    `json:"from"`
 }
 
 type telegramChat struct {
