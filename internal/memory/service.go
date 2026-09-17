@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/personalization"
 )
 
 var ErrScope = errors.New("Контекст памяти недоступен для этого пользователя или мастерской.")
@@ -301,23 +302,7 @@ func (s *Service) SaveLongTermMemory(sc Scope, m LongTerm) error {
 			if m.ScopeType != "user" || !preferenceValues[m.Key][m.Value] {
 				return errors.New("unsupported personal preference")
 			}
-			var raw string
-			err := tx.QueryRow(`SELECT settings_json FROM user_preferences WHERE user_id=?`, sc.UserID).Scan(&raw)
-			if err != nil && !errors.Is(err, sql.ErrNoRows) {
-				return err
-			}
-			settings := map[string]any{}
-			if raw != "" {
-				if err := json.Unmarshal([]byte(raw), &settings); err != nil {
-					return err
-				}
-			}
-			old := settings[m.Key]
-			settings[m.Key] = m.Value
-			if _, err := tx.Exec(`INSERT INTO user_preferences(user_id,settings_json,version,updated_at) VALUES(?,?,1,CURRENT_TIMESTAMP) ON CONFLICT(user_id) DO UPDATE SET settings_json=excluded.settings_json,version=user_preferences.version+1,updated_at=CURRENT_TIMESTAMP`, sc.UserID, compact(settings)); err != nil {
-				return err
-			}
-			return memoryAudit(tx, sc, "MEMORY_PREFERENCE_SAVED", m.Key, old, m.Value, m.Source)
+			return personalization.UpdateTx(tx, sc.UserID, sc.WorkshopID, m.Key, m.Value, m.Source)
 		}
 		var user, workshop, entity any
 		switch m.ScopeType {

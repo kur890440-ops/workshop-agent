@@ -9,16 +9,29 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/memory"
+	"workshop-agent/internal/personalization"
 )
 
 func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, user, chat int64, text string) (answer string, usage *llm.Usage, err error) {
 	if err = auth.Require(a.WS.DB(), user, workshop, auth.WorkshopRead); err != nil {
 		return
+	}
+	if IsDailySummary(text) {
+		answer, err = a.DailySummary(user, workshop, time.Now())
+		return answer, &llm.Usage{}, err
+	}
+	if key, value, ok := personalization.PersistentIntent(text); ok {
+		err = personalization.New(a.WS.DB()).ForUser(user).UpdatePreference(key, value, "explicit_user_message")
+		return "Профиль обновлён. Настройка будет применяться автоматически.", &llm.Usage{}, err
+	}
+	if IsPersonalizedReport(text) {
+		return a.PersonalizedReport(ctx, user, workshop, chat, text)
 	}
 	m := a.Memory.ForUser(user)
 	sc := memory.Scope{UserID: user, WorkshopID: workshop}

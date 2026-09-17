@@ -4,11 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/memory"
+	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/workshops"
 )
@@ -57,7 +59,18 @@ func (a *WorkshopAgent) handleLegacyMessage(ctx context.Context, workshopID, use
 		answer, err := a.formatPurchaseNeeds(workshopID)
 		return answer, noLLM, err
 	}
-	cmd, usage, err := a.LLM.ParseCommand(ctx, text)
+	input := text
+	if _, wrapped := a.LLM.(contextualClient); !wrapped {
+		profile, err := personalization.New(a.WS.DB()).ForUser(userID).ResolveProfile(text, nil)
+		if err != nil {
+			return "", nil, err
+		}
+		if err = personalization.New(a.WS.DB()).ForUser(userID).SaveTrace(workshopID, profile); err != nil {
+			return "", nil, err
+		}
+		input = profile.Context + "\nCURRENT MESSAGE:\n" + text
+	}
+	cmd, usage, err := a.LLM.ParseCommand(ctx, input)
 	if err != nil {
 		return "", usage, err
 	}
@@ -72,6 +85,10 @@ func (a *WorkshopAgent) handleLegacyMessage(ctx context.Context, workshopID, use
 	}
 	if cmd.Action == "clarification" {
 		return "Нужно уточнить данные: укажите конкретный материал, товар или количество.", usage, nil
+	}
+	if cmd.Action == "get_daily_summary" {
+		answer, err := a.DailySummary(userID, workshopID, time.Now())
+		return answer, usage, err
 	}
 	if cmd.Action == "get_material_stock" {
 		materialName := cmd.Material
@@ -136,6 +153,9 @@ func isAllStockQuestion(text string) bool {
 
 // LocalReadCommand preserves existing deterministic read routes for adapters.
 func LocalReadCommand(text string) *llm.StructuredCommand {
+	if IsDailySummary(text) {
+		return &llm.StructuredCommand{Action: "get_daily_summary"}
+	}
 	if isAllStockQuestion(text) {
 		return &llm.StructuredCommand{Action: "get_all_material_stock"}
 	}

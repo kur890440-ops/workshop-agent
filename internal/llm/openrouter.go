@@ -45,7 +45,8 @@ func NewOpenRouterClient(apiKey, baseURL, model string) (*OpenRouterClient, erro
 
 func (c *OpenRouterClient) ParseCommand(ctx context.Context, text string) (*StructuredCommand, *Usage, error) {
 	prompt := fmt.Sprintf(`Classify the user's request. Return ONE compact JSON object on ONE line.
-Allowed actions: get_all_material_stock, get_material_stock, get_purchase_needs, record_production, assemble_product, record_shipment, calculate_requirements, get_product_stock, clarification.
+Allowed actions: get_all_material_stock, get_material_stock, get_purchase_needs, get_daily_summary, record_production, assemble_product, record_shipment, calculate_requirements, get_product_stock, clarification.
+Use get_daily_summary for today's actual production quantities, completed orders or daily summary, with no other fields. Other report dates require clarification. Never classify a production instruction as a summary.
 Use get_all_material_stock for questions about all inventory or "какие у нас остатки". Use get_material_stock only for one named material. Use get_purchase_needs for what to buy, ordering, low stock, or replenishment.
 Use only these keys when needed: action, material, product, quantity, attempted, scrap, channel. Do not include null values, explanations, markdown, or notes.
 User request: %s`, text)
@@ -67,7 +68,7 @@ User request: %s`, text)
 
 // Complete uses the same model and temperature=0 for the controlled Day 11 experiment.
 func (c *OpenRouterClient) Complete(ctx context.Context, prompt string) (string, *Usage, error) {
-	return c.request(ctx, prompt, false)
+	return c.request(ctx, prompt, false, 2048)
 }
 func (c *OpenRouterClient) request(ctx context.Context, prompt string, jsonObject bool, tokenBudget ...int) (string, *Usage, error) {
 	payload := map[string]any{
@@ -122,7 +123,8 @@ func (c *OpenRouterClient) request(ctx context.Context, prompt string, jsonObjec
 	var llmResp struct {
 		Usage   Usage `json:"usage"`
 		Choices []struct {
-			Message struct {
+			FinishReason string `json:"finish_reason"`
+			Message      struct {
 				Content string `json:"content"`
 			} `json:"message"`
 		} `json:"choices"`
@@ -135,6 +137,9 @@ func (c *OpenRouterClient) request(ctx context.Context, prompt string, jsonObjec
 	}
 
 	content := strings.TrimSpace(llmResp.Choices[0].Message.Content)
+	if !jsonObject && llmResp.Choices[0].FinishReason == "length" {
+		return content, &llmResp.Usage, errors.New("LLM response truncated by output budget")
+	}
 	content = strings.TrimPrefix(content, "```json")
 	content = strings.TrimSuffix(content, "```")
 	content = strings.TrimSpace(content)

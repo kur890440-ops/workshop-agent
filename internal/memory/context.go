@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"workshop-agent/internal/personalization"
 )
 
 type AgentContextBuilder struct {
@@ -52,7 +53,29 @@ func (b AgentContextBuilder) Build(sc Scope, message string, domain []Item, opti
 		result.Long = records
 	}
 	// Explicit order; each item retains storage provenance. Domain truth is never inferred from memory.
+	ps := personalization.New(b.Memory.DB).ForUser(sc.UserID)
+	var taskPrefs map[string]string
+	if result.Working != nil {
+		taskPrefs = map[string]string{}
+		for k, v := range result.Working.State.Parameters {
+			if strings.HasPrefix(k, "presentation.") {
+				taskPrefs[strings.TrimPrefix(k, "presentation.")] = v
+			}
+		}
+	}
+	resolved, err := ps.ResolveProfile(message, taskPrefs)
+	if err != nil {
+		return result, err
+	}
+	result.Profile = resolved
+	add("USER_PROFILE", "user_preferences", "resolved", resolved.Context)
+	if err = ps.SaveTrace(sc.WorkshopID, resolved); err != nil {
+		return result, err
+	}
 	for _, m := range result.Long {
+		if m.Type == "USER_PREFERENCE" {
+			continue
+		}
 		add("LONG_TERM", m.Source, m.Key, compact(m))
 	}
 	if result.Working != nil {

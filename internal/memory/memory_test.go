@@ -353,7 +353,7 @@ func TestShortTermClippingAndNoPromotion(t *testing.T) {
 	}
 	var n int
 	ok(t, ws.DB().QueryRow(`SELECT (SELECT COUNT(*) FROM working_memory)+(SELECT COUNT(*) FROM long_term_memory)+(SELECT COUNT(*) FROM user_preferences)`).Scan(&n))
-	if n != 0 {
+	if n != 1 { // The default user profile exists before any short-term message.
 		t.Fatal("short-term automatically promoted")
 	}
 }

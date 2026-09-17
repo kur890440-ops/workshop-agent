@@ -110,6 +110,12 @@ func (b *Bot) semanticMessage(key sessionKey, workshop int64, text string) (bool
 		contextData["task"] = map[string]any{"type": task.Type, "quantity": task.State.Quantity, "product": task.State.ProductName}
 	}
 	raw, _ := json.Marshal(contextData)
+	built, buildErr := (memory.AgentContextBuilder{Memory: m}).Build(sc, text, []memory.Item{{Layer: "DOMAIN", Source: "telegram_catalog", Key: "references", Content: string(raw)}}, memory.All)
+	if buildErr != nil {
+		return true, buildErr
+	}
+	contextData["agent_context"] = built.Prompt
+	raw, _ = json.Marshal(contextData)
 	cmd, usage, err := client.Interpret(context.Background(), string(raw), text)
 	if err != nil {
 		log.Printf("semantic route=llm validation=failed")
@@ -297,6 +303,11 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 	}
 	switch cmd.Action {
+	case "get_daily_summary":
+		answer, err = b.Agent.DailySummary(key.UserID, workshop, time.Now())
+		if err != nil {
+			return err
+		}
 	case "get_material_stock", "get_material_minimum":
 		field := "current_stock"
 		label := ""

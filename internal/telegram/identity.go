@@ -15,6 +15,7 @@ import (
 
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
+	"workshop-agent/internal/llm"
 	"workshop-agent/internal/memory"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/workshops"
@@ -249,8 +250,11 @@ func (b *Bot) home(key sessionKey) error {
 	}
 	choices := []choice{{Text: "👥 Сотрудники", Action: "members", Workshop: active}, {Text: "🔄 Сменить мастерскую", Action: "switch"}, {Text: "Создать мастерскую", Action: "create"}, {Text: "Покинуть мастерскую", Action: "confirm_left", Workshop: active, Target: key.UserID}}
 	if auth.Has(current.Role, auth.MembersInvite) {
+		// Profile remains a user-scoped screen, independent of membership management.
 		choices = append(choices, choice{Text: "➕ Пригласить", Action: "invite_roles", Workshop: active}, choice{Text: "Приглашения", Action: "invites", Workshop: active})
 	}
+	choices = append(choices, choice{Text: "👤 Профиль", Action: "profile_home"})
+	choices = append(choices, choice{Text: "📊 Сводка за сегодня", Action: "daily_summary", Workshop: active})
 	return b.screen(key, "⚙️ Мастерская\n🏭 Текущая мастерская: "+current.Name+"\nВаша роль: "+roleName(current.Role)+"\n\nСклад: /materials, /products, /stock, /to_order\nНастройка: /setup", choices...)
 }
 func (b *Bot) switcher(key sessionKey) error {
@@ -388,6 +392,12 @@ func (b *Bot) handleCallback(c *telegramCallback) error {
 }
 func (b *Bot) executeButton(a buttonAction) error {
 	key := a.Key
+	if a.Action == "daily_summary" {
+		return b.executeSemantic(key, a.Workshop, &llm.StructuredCommand{Action: "get_daily_summary"}, nil, "local", "/summary")
+	}
+	if strings.HasPrefix(a.Action, "profile_") {
+		return b.profileButton(a)
+	}
 	if a.Workshop > 0 {
 		if err := auth.Require(b.WS.DB(), key.UserID, a.Workshop, auth.WorkshopRead); err != nil {
 			return err

@@ -1,6 +1,6 @@
 # День 11 — модель памяти агента
 
-Реализованы три слоя памяти с отдельным хранением, lifecycle и scopes. Текущие User, Workshop, WorkshopMembership, активная мастерская и AuthorizationService переиспользованы. Day 12 не выполнялся.
+Реализованы три слоя памяти с отдельным хранением, lifecycle и scopes. Текущие User, Workshop, WorkshopMembership, активная мастерская и AuthorizationService переиспользованы. Позднее отдельным заданием добавлен [Day 12 — Personalization](day12-personalization.md): USER_PREFERENCE использует прежний user_preferences, а ContextBuilder включает разрешённый профиль отдельным блоком без дублирования в LONG_TERM. Профиль применяется и при отключённом retrieval Long-Term; исторические результаты эксперимента Day 11 сохраняются без изменений.
 
 ## До и после
 

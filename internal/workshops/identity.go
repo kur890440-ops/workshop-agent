@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/personalization"
 )
 
 var ErrInvite = errors.New("Приглашение недействительно, истекло, отозвано или уже использовано.")
@@ -64,6 +65,9 @@ func (s *Service) UpsertUser(telegramID int64, username, first, last string) (in
 	}
 	if status != "active" || active != 1 {
 		return 0, auth.ErrDisabled
+	}
+	if err := personalization.Ensure(s.DB(), id); err != nil {
+		return 0, err
 	}
 	return id, nil
 }

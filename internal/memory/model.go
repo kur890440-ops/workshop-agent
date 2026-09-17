@@ -4,6 +4,7 @@ package memory
 import (
 	"encoding/json"
 	"strings"
+	"workshop-agent/internal/personalization"
 )
 
 type Scope struct {
@@ -86,11 +87,12 @@ type Trace struct {
 	Router   *Candidate     `json:"router,omitempty"`
 }
 type Context struct {
-	Prompt  string     `json:"prompt"`
-	Trace   Trace      `json:"trace"`
-	Short   []Message  `json:"short"`
-	Working *Task      `json:"working,omitempty"`
-	Long    []LongTerm `json:"long"`
+	Profile personalization.Resolution `json:"personalization"`
+	Prompt  string                     `json:"prompt"`
+	Trace   Trace                      `json:"trace"`
+	Short   []Message                  `json:"short"`
+	Working *Task                      `json:"working,omitempty"`
+	Long    []LongTerm                 `json:"long"`
 }
 
 // EstimateTokens is a deterministic byte-based estimate, NOT provider token accounting.

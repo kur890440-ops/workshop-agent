@@ -19,6 +19,7 @@ import (
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/workshops"
@@ -169,6 +170,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	}
 	if isClearCommand(text) {
 		return b.clearPrompt(sessionKey{chatID, userID})
+	}
+	if handled, err := b.profileMessage(sessionKey{chatID, userID}, text); handled {
+		return err
 	}
 	if handled, err := b.handleIdentityMessage(msg, userID, text); handled {
 		return err
@@ -623,10 +627,23 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) error {
+	if i := strings.LastIndex(text, "\nТокены LLM:"); i >= 0 {
+		var user int64
+		if err := b.WS.DB().QueryRow("SELECT id FROM users WHERE telegram_user_id=?", chatID).Scan(&user); err == nil {
+			if p, err := personalization.New(b.WS.DB()).ForUser(user).GetProfile(); err == nil && p.HideLLM {
+				text = strings.TrimSpace(text[:i])
+			}
+		}
+	}
 	if text == "" {
 		return nil
 	}
-	return b.api("sendMessage", map[string]any{"chat_id": chatID, "text": text, "disable_web_page_preview": true}, nil)
+	for _, part := range materialMessageParts(text) {
+		if err := b.api("sendMessage", map[string]any{"chat_id": chatID, "text": part, "disable_web_page_preview": true}, nil); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func urlQueryEscape(s string) string {

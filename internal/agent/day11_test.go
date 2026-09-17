@@ -94,7 +94,7 @@ func TestDay11PreferenceAcrossSessionsAndRestart(t *testing.T) {
 	a, u, w := day11(t)
 	turn(t, a, u, w, "Запомни, что мне удобнее, когда итог идет первым.")
 	var n int
-	a.WS.DB().QueryRow(`SELECT COUNT(*) FROM user_preferences`).Scan(&n)
+	a.WS.DB().QueryRow(`SELECT COUNT(*) FROM user_preferences WHERE settings_json!='{}'`).Scan(&n)
 	if n != 0 {
 		t.Fatal("saved without confirmation")
 	}
@@ -102,7 +102,7 @@ func TestDay11PreferenceAcrossSessionsAndRestart(t *testing.T) {
 	turn(t, a, u, w, "/session new")
 	b := NewWorkshopAgent(a.LLM, a.WS, a.Inv, a.Prod)
 	answer := turn(t, b, u, w, "Подготовь отчет по складу")
-	if !strings.HasPrefix(answer, "Итог:") {
+	if !strings.HasPrefix(answer, "Краткий итог:") {
 		t.Fatal(answer)
 	}
 }
