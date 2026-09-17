@@ -127,6 +127,12 @@ func setActive(tx *sql.Tx, user, workshop int64) error {
 	if old.Valid && old.Int64 == workshop {
 		return nil
 	}
+	if _, err = tx.Exec("UPDATE task_completion_intents SET expires_at=0 WHERE user_id=? AND consumed=0", user); err != nil {
+		return err
+	}
+	if _, err = tx.Exec("UPDATE conversation_sessions SET status='closed',updated_at=CURRENT_TIMESTAMP WHERE user_id=? AND status='active'", user); err != nil {
+		return err
+	}
 	if _, err := tx.Exec(`INSERT INTO user_workshop_context(user_id,active_workshop_id) VALUES(?,?) ON CONFLICT(user_id) DO UPDATE SET active_workshop_id=excluded.active_workshop_id,updated_at=CURRENT_TIMESTAMP`, user, workshop); err != nil {
 		return err
 	}

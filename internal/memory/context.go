@@ -80,6 +80,9 @@ func (b AgentContextBuilder) Build(sc Scope, message string, domain []Item, opti
 	}
 	if result.Working != nil {
 		add("WORKING", "working_memory", result.Working.ID, compact(result.Working))
+		if result.Working.FSMVersion == 1 {
+			add("ACTIVE_TASK", "working_memory", result.Working.ID, result.Working.CompactState())
+		}
 	}
 	for _, d := range domain {
 		add("DOMAIN", d.Source, d.Key, d.Content)

@@ -27,6 +27,7 @@ import (
 
 type Bot struct {
 	materialLists map[sessionKey]materialListContext
+	completions   map[sessionKey]completionContext
 	Token         string
 	WS            *workshops.Service
 	Inv           *inventory.Service
@@ -170,6 +171,21 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	}
 	if isClearCommand(text) {
 		return b.clearPrompt(sessionKey{chatID, userID})
+	}
+	if handled, err := b.completionMessage(sessionKey{chatID, userID}, text); handled {
+		if err != nil {
+			return b.sendMessage(chatID, publicError(err))
+		}
+		return nil
+	}
+	if handled, err := b.ordersEntry(sessionKey{chatID, userID}, text); handled {
+		if err != nil {
+			return b.sendMessage(chatID, publicError(err))
+		}
+		return err
+	}
+	if handled, err := b.taskMessage(sessionKey{chatID, userID}, text); handled {
+		return err
 	}
 	if handled, err := b.profileMessage(sessionKey{chatID, userID}, text); handled {
 		return err

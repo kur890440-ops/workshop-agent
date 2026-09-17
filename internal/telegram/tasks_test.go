@@ -16,7 +16,11 @@ func TestTaskAliases(t *testing.T) {
 	for _, input := range []string{"задачи", "ЗАДАЧА", "  Задачи  ", "/task"} {
 		h.message(t, 900001, input)
 		text := h.sent[len(h.sent)-1]["text"].(string)
-		if !strings.Contains(text, "Нет активной задачи") || strings.Contains(text, "Токены LLM") {
+		want := "Нет активной задачи"
+		if strings.EqualFold(strings.TrimSpace(input), "задачи") {
+			want = "Текущих задач сборки нет"
+		}
+		if !strings.Contains(text, want) || strings.Contains(text, "Токены LLM") {
 			t.Fatal(text)
 		}
 	}
@@ -31,7 +35,7 @@ func TestTaskAliases(t *testing.T) {
 	}
 	h.message(t, 900001, "задачи")
 	text := h.sent[len(h.sent)-1]["text"].(string)
-	if !strings.Contains(text, "25 шт. Набор") {
+	if !strings.Contains(text, "Набор — 25 шт.") {
 		t.Fatal(text)
 	}
 	h.message(t, 900001, "/setup_add_material")

@@ -14,7 +14,7 @@ func TestAssemblyOrdersDoNotRouteToPurchases(t *testing.T) {
 		t.Fatal(err)
 	}
 	h.message(t, 900001, "соберем 5 заказов")
-	if !strings.Contains(lastAnswer(h), "Что будем собирать") || strings.Contains(lastAnswer(h), "Нужно заказать") {
+	if !strings.Contains(lastAnswer(h), "В мастерской пока нет товаров") || strings.Contains(lastAnswer(h), "Нужно заказать") {
 		t.Fatal(lastAnswer(h))
 	}
 	if s.calls != 0 {

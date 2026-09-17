@@ -22,13 +22,17 @@ import (
 
 // Drafts use pending_actions; confirmed plans use the existing working memory.
 type assemblyDraft struct {
-	ID       int64
-	Session  int64
-	Orders   int64
-	PerOrder int64
-	Quantity int64
-	Product  int64
-	Stage    string
+	Assignee   int64
+	Revision   int
+	Candidates []int64
+	Query      string
+	ID         int64
+	Session    int64
+	Orders     int64
+	PerOrder   int64
+	Quantity   int64
+	Product    int64
+	Stage      string
 }
 
 func isProductsCommand(text string) bool {
@@ -73,6 +77,7 @@ func (b *Bot) loadAssembly(key sessionKey, workshop int64) (*assemblyDraft, erro
 }
 
 func (b *Bot) storeAssembly(key sessionKey, workshop int64, d *assemblyDraft) error {
+	d.Revision++
 	raw, err := json.Marshal(d)
 	if err != nil {
 		return err
@@ -168,7 +173,7 @@ func (b *Bot) productsMenu(key sessionKey, workshop int64) error {
 	return nil
 }
 
-var assemblyStart = regexp.MustCompile(`(?i)^(?:собер[её]м|собрать|собираем|собери|план сборки)\s+(.+)$`)
+var assemblyStart = regexp.MustCompile(`(?i)^(?:собер[её]м|собрать|собираем|собери|план сборки|сделаем|нужно собрать)\s+(.+)$`)
 
 func pieceCount(text string) (int64, error) {
 	if !regexp.MustCompile(`^[0-9]+$`).MatchString(text) {
@@ -190,6 +195,7 @@ func productWords(text string) string {
 	text = strings.ReplaceAll(strings.ToLower(text), "ё", "е")
 	words := strings.FieldsFunc(text, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
 	forms := map[string]string{
+		"дефлекторов": "дефлектор", "дефлекторы": "дефлектор", "дефлектора": "дефлектор",
 		"фигурок": "фигурка", "фигурки": "фигурка",
 		"наборов": "набор", "наборы": "набор", "набора": "набор",
 		"сливов": "слив", "сливы": "слив", "слива": "слив", "сливом": "слив", "сливу": "слив",
@@ -251,7 +257,7 @@ func (b *Bot) assemblyMessage(key sessionKey, text string) (bool, error) {
 	if d == nil && match == nil {
 		return false, nil
 	}
-	for _, p := range []auth.Permission{auth.PlanningWrite, auth.ProductsRead} {
+	for _, p := range []auth.Permission{auth.TasksCreate, auth.ProductsRead} {
 		if err = auth.Require(b.WS.DB(), key.UserID, workshop, p); err != nil {
 			return true, err
 		}
@@ -260,7 +266,10 @@ func (b *Bot) assemblyMessage(key sessionKey, text string) (bool, error) {
 		fields := strings.Fields(match[1])
 		n, e := pieceCount(fields[0])
 		if e != nil {
-			return true, b.sendMessage(key.ChatID, e.Error())
+			if regexp.MustCompile(`^[+\-0-9]|(?i)^(nan|inf)`).MatchString(fields[0]) {
+				return true, b.sendMessage(key.ChatID, e.Error())
+			}
+			return true, b.beginAssembly(key, workshop, 0, 0, match[1])
 		}
 		sc, e := b.Agent.Memory.ForUser(key.UserID).EnsureSession(memory.Scope{UserID: key.UserID, WorkshopID: workshop}, key.ChatID)
 		if e != nil {
@@ -276,13 +285,29 @@ func (b *Bot) assemblyMessage(key sessionKey, text string) (bool, error) {
 		if err = b.storeAssembly(key, workshop, d); err != nil {
 			return true, err
 		}
+		lower := strings.ToLower(text)
+		if strings.HasPrefix(lower, "собрать ") || strings.HasPrefix(lower, "сделаем ") || strings.HasPrefix(lower, "нужно собрать ") {
+			return true, b.beginAssembly(key, workshop, d.Quantity, d.Orders, name)
+		}
 		if name == "" {
-			return true, b.sendMessage(key.ChatID, "Что будем собирать? Откройте товары и выберите продукт. Отмена: /setup_stop.")
+			return true, b.assemblyCatalog(key, workshop, d, "", 0)
 		}
 		text = name
 	}
 	if d.Stage == "confirm" {
+		if corrected := regexp.MustCompile(`(?i)^нет,?\s*(?:сделай\s*)?([0-9]+)$`).FindStringSubmatch(strings.TrimRight(text, ".!")); corrected != nil {
+			n, e := pieceCount(corrected[1])
+			if e != nil {
+				return true, b.sendMessage(key.ChatID, e.Error())
+			}
+			d.Quantity = n
+			d.Orders = 0
+			d.PerOrder = 0
+		}
 		return true, b.previewAssembly(key, workshop, d)
+	}
+	if d.Stage == "executor" {
+		return true, b.sendMessage(key.ChatID, "Выберите исполнителя кнопкой. Отмена: /setup_stop.")
 	}
 	if d.Stage == "quantity" {
 		n, e := pieceCount(text)
@@ -319,7 +344,7 @@ func (b *Bot) assemblyMessage(key sessionKey, text string) (bool, error) {
 				}
 			}
 			if len(matches) != 1 {
-				return true, b.sendMessage(key.ChatID, "Название не найдено или неоднозначно. Откройте товары и выберите номер продукта. Отмена: /setup_stop.")
+				return true, b.assemblyCatalog(key, workshop, d, text, 0)
 			}
 			selected = matches[0]
 		}
@@ -340,13 +365,24 @@ func (b *Bot) assemblyMessage(key sessionKey, text string) (bool, error) {
 			if err = b.storeAssembly(key, workshop, d); err != nil {
 				return true, err
 			}
-			return true, b.sendMessage(key.ChatID, fmt.Sprintf("Выбран продукт «%s». Сколько штук входит в один заказ? Отмена: /setup_stop.", name))
+			question := "Сколько единиц нужно собрать?"
+			if d.Orders > 0 {
+				question = "Сколько штук входит в один заказ?"
+			}
+			return true, b.sendMessage(key.ChatID, fmt.Sprintf("Выбран продукт «%s». %s Отмена: /setup_stop.", name, question))
 		}
 	}
 	return true, b.previewAssembly(key, workshop, d)
 }
 
 func (b *Bot) previewAssembly(key sessionKey, workshop int64, d *assemblyDraft) error {
+	if d.Assignee == 0 {
+		return b.chooseDraftExecutor(key, workshop, d)
+	}
+	if err := auth.Require(b.WS.DB(), d.Assignee, workshop, auth.TasksExecute); err != nil {
+		return err
+	}
+
 	items, err := b.Prod.ForUser(key.UserID).ListProducts(workshop)
 	if err != nil {
 		return err
@@ -368,6 +404,11 @@ func (b *Bot) previewAssembly(key sessionKey, workshop int64, d *assemblyDraft) 
 		return err
 	}
 	text := fmt.Sprintf("План сборки: %s — %d шт.", name, d.Quantity)
+	var workshopName string
+	if err = b.WS.DB().QueryRow("SELECT name FROM workshops WHERE id=?", workshop).Scan(&workshopName); err != nil {
+		return err
+	}
+	text += "\nМастерская: " + workshopName
 	if d.Orders > 0 {
 		text += fmt.Sprintf("\n%d заказов × %d шт = %d шт.", d.Orders, d.PerOrder, d.Quantity)
 	}
@@ -404,16 +445,71 @@ func (b *Bot) previewAssembly(key sessionKey, workshop int64, d *assemblyDraft) 
 		}
 		text = string(r[1500:])
 	}
-	return b.screen(key, text+"\nСоздать план? Склад не изменится.", choice{Text: "Создать план", Action: "assembly_save", Workshop: workshop, Target: d.ID}, choice{Text: "Отменить сборку", Action: "assembly_cancel", Workshop: workshop, Target: d.ID})
+	text += b.assignmentText(key, workshop, key.UserID, d.Assignee)
+	value := fmt.Sprint(d.Revision)
+	return b.screen(key, text+"\nСоздать задачу? Склад не изменится.", choice{Text: "Создать задачу", Action: "assembly_save", Workshop: workshop, Target: d.ID, Value: value}, choice{Text: "Изменить товар", Action: "assembly_edit_product", Workshop: workshop, Target: d.ID, Value: value}, choice{Text: "Изменить количество", Action: "assembly_edit_quantity", Workshop: workshop, Target: d.ID, Value: value}, choice{Text: "Изменить исполнителя", Action: "assembly_edit_executor", Workshop: workshop, Target: d.ID, Value: value}, choice{Text: "Отмена", Action: "assembly_cancel", Workshop: workshop, Target: d.ID, Value: value})
 }
 
 func (b *Bot) assemblyButton(a buttonAction) error {
+	if handled, err := b.assemblyExtraButton(a); handled {
+		return err
+	}
 	d, err := b.loadAssembly(a.Key, a.Workshop)
 	if err != nil {
 		return err
 	}
 	if d == nil || d.ID != a.Target {
 		return b.sendMessage(a.Key.ChatID, "Черновик устарел. Начните сборку заново.")
+	}
+	if assemblyRevision(a.Value) != d.Revision {
+		return b.sendMessage(a.Key.ChatID, "Черновик изменился. Используйте последнее меню.")
+	}
+	for _, permission := range []auth.Permission{auth.TasksCreate, auth.ProductsRead} {
+		if err = auth.Require(b.WS.DB(), a.Key.UserID, a.Workshop, permission); err != nil {
+			return err
+		}
+	}
+	switch a.Action {
+	case "assembly_edit_executor":
+		d.Assignee = 0
+		return b.chooseDraftExecutor(a.Key, a.Workshop, d)
+	case "assembly_executor":
+		parts := strings.SplitN(a.Value, ":", 2)
+		if len(parts) != 2 {
+			return auth.ErrDenied
+		}
+		d.Assignee, _ = strconv.ParseInt(parts[1], 10, 64)
+		return b.previewAssembly(a.Key, a.Workshop, d)
+	case "assembly_page":
+		parts := strings.SplitN(a.Value, ":", 2)
+		if len(parts) != 2 {
+			return auth.ErrDenied
+		}
+		page, _ := strconv.Atoi(parts[1])
+		return b.assemblyCatalog(a.Key, a.Workshop, d, d.Query, page)
+	case "assembly_edit_product":
+		d.Product = 0
+		return b.assemblyCatalog(a.Key, a.Workshop, d, "", 0)
+	case "assembly_edit_quantity":
+		d.Stage = "quantity"
+		d.Orders = 0
+		d.PerOrder = 0
+		if err = b.storeAssembly(a.Key, a.Workshop, d); err != nil {
+			return err
+		}
+		return b.sendMessage(a.Key.ChatID, "Сколько единиц нужно собрать? Отмена: /setup_stop.")
+	case "assembly_pick":
+		parts := strings.SplitN(a.Value, ":", 2)
+		if len(parts) != 2 {
+			return auth.ErrDenied
+		}
+		id, _ := strconv.ParseInt(parts[1], 10, 64)
+		for _, candidate := range d.Candidates {
+			if id == candidate {
+				return b.acceptAssemblyProduct(a.Key, a.Workshop, d, id)
+			}
+		}
+		return auth.ErrDenied
 	}
 	if a.Action == "assembly_cancel" {
 		if err = b.dropAssembly(a.Key); err != nil {
@@ -426,9 +522,30 @@ func (b *Bot) assemblyButton(a buttonAction) error {
 	}
 	sc := memory.Scope{UserID: a.Key.UserID, WorkshopID: a.Workshop, SessionID: d.Session}
 	state := memory.TaskState{ProductID: d.Product, Quantity: float64(d.Quantity), Parameters: map[string]string{"orders": strconv.FormatInt(d.Orders, 10), "per_order": strconv.FormatInt(d.PerOrder, 10)}}
-	err = b.Agent.Memory.ForUser(a.Key.UserID).ConfirmAssemblyDraft(sc, a.Key.ChatID, d.ID, state)
+	err = b.Agent.Memory.ForUser(a.Key.UserID).ConfirmAssemblyDraft(sc, a.Key.ChatID, d.ID, state, d.Revision)
+	if errors.Is(err, memory.ErrActivePlan) && d.Assignee == a.Key.UserID {
+		active, e := b.Agent.Memory.ForUser(a.Key.UserID).ActiveWorking(sc)
+		if e != nil {
+			return e
+		}
+		if active != nil {
+			return b.pauseConflict(a.Key, a.Workshop, active, "assembly_catalog", fmt.Sprint(d.ID))
+		}
+	}
+	if errors.Is(err, memory.ErrActivePlan) {
+		return b.screen(a.Key, "У выбранного исполнителя уже есть текущая задача. Откройте список задач или выберите другого исполнителя; существующая задача не изменена.", choice{Text: "Все задачи", Action: "orders_all", Workshop: a.Workshop}, choice{Text: "Изменить исполнителя", Action: "assembly_edit_executor", Workshop: a.Workshop, Target: d.ID, Value: fmt.Sprint(d.Revision)}, choice{Text: "Отмена", Action: "assembly_cancel", Workshop: a.Workshop, Target: d.ID, Value: fmt.Sprint(d.Revision)})
+	}
 	if err != nil {
 		return err
 	}
-	return b.sendMessage(a.Key.ChatID, fmt.Sprintf("План сборки создан: %d шт. Посмотреть: /task. Склад не изменён.", d.Quantity))
+	tasks, err := b.Agent.Memory.ForUser(a.Key.UserID).WorkshopTasks(sc, false)
+	if err != nil {
+		return err
+	}
+	for _, task := range tasks {
+		if task.CreatedByUserID == a.Key.UserID && task.AssignedToUserID == d.Assignee && task.Status == "active" {
+			return b.orderCard(a.Key, a.Workshop, task.ID)
+		}
+	}
+	return b.sendMessage(a.Key.ChatID, "Задача создана.")
 }

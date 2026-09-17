@@ -51,6 +51,21 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	var posting *products.PostingError
+	if errors.As(err, &posting) {
+		return posting.Error()
+	}
+	if errors.Is(err, products.ErrProductionChanged) {
+		return products.ErrProductionChanged.Error()
+	}
+	if errors.Is(err, memory.ErrPostingRequired) {
+		return memory.ErrPostingRequired.Error()
+	}
+	for _, e := range []error{memory.ErrTransition, memory.ErrTaskChanged, memory.ErrForeground} {
+		if errors.Is(err, e) {
+			return e.Error()
+		}
+	}
 	for _, e := range []error{products.ErrBOMQuantity, products.ErrBOMDuplicate, products.ErrIncompleteBOM} {
 		if errors.Is(err, e) {
 			return e.Error()
@@ -254,6 +269,7 @@ func (b *Bot) home(key sessionKey) error {
 		choices = append(choices, choice{Text: "➕ Пригласить", Action: "invite_roles", Workshop: active}, choice{Text: "Приглашения", Action: "invites", Workshop: active})
 	}
 	choices = append(choices, choice{Text: "👤 Профиль", Action: "profile_home"})
+	choices = append(choices, choice{Text: "📋 Текущая задача", Action: "fsm_show", Workshop: active})
 	choices = append(choices, choice{Text: "📊 Сводка за сегодня", Action: "daily_summary", Workshop: active})
 	return b.screen(key, "⚙️ Мастерская\n🏭 Текущая мастерская: "+current.Name+"\nВаша роль: "+roleName(current.Role)+"\n\nСклад: /materials, /products, /stock, /to_order\nНастройка: /setup", choices...)
 }
@@ -373,7 +389,7 @@ func (b *Bot) handleCallback(c *telegramCallback) error {
 	id := strings.TrimPrefix(c.Data, "wa:")
 	b.uiMu.Lock()
 	action, ok := b.buttons[id]
-	if ok && action.Key == key {
+	if ok && action.Key == key && action.Action != "completion_post" {
 		delete(b.buttons, id)
 	}
 	b.uiMu.Unlock()
@@ -413,7 +429,13 @@ func (b *Bot) executeButton(a buttonAction) error {
 			}
 		}
 	}
-	if a.Action == "assembly_save" || a.Action == "assembly_cancel" {
+	if strings.HasPrefix(a.Action, "orders_") {
+		return b.ordersButton(a)
+	}
+	if strings.HasPrefix(a.Action, "completion_") {
+		return b.completionButton(a)
+	}
+	if strings.HasPrefix(a.Action, "assembly_") {
 		return b.assemblyButton(a)
 	}
 	if strings.HasPrefix(a.Action, "product_edit_") {
@@ -426,6 +448,16 @@ func (b *Bot) executeButton(a buttonAction) error {
 		}
 		b.startSetup(key.ChatID, &setupSession{kind: "product", userID: key.UserID, workshopID: a.Workshop})
 		return b.sendMessage(key.ChatID, "Добавление продукта начато. Введите название или /setup_stop для отмены.")
+	}
+	if a.Action == "fsm_apply" {
+		return b.taskButton(a)
+	}
+	if a.Action == "fsm_show" {
+		handled, err := b.taskMessage(key, "/task")
+		if err != nil || handled {
+			return err
+		}
+		return b.sendMessage(key.ChatID, "Новая задача: /task new. Существующий план: /task.")
 	}
 	if strings.HasPrefix(a.Action, "confirm_") {
 		action := strings.TrimPrefix(a.Action, "confirm_")

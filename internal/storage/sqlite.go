@@ -86,6 +86,15 @@ func (s *Store) Migrate() error {
 	if err := migrateChatClear(tx); err != nil {
 		return fmt.Errorf("chat clear migration: %w", err)
 	}
+	if err := migrateTaskState(tx); err != nil {
+		return fmt.Errorf("task state migration: %w", err)
+	}
+	if err := migrateSharedTasks(tx); err != nil {
+		return fmt.Errorf("shared tasks migration: %w", err)
+	}
+	if err := migrateTaskCompletion(tx); err != nil {
+		return fmt.Errorf("task completion migration: %w", err)
+	}
 	return tx.Commit()
 }
 

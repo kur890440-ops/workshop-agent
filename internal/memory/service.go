@@ -222,6 +222,11 @@ func (s *Service) CreateWorkingMemory(sc Scope, kind string, state TaskState) (*
 	}
 	task := &Task{ID: hex.EncodeToString(b), Type: kind, State: state, Status: "active"}
 	err := s.tx(sc, func(tx *sql.Tx) error {
+		if shared(task) {
+			if err := auth.Require(tx, sc.UserID, sc.WorkshopID, auth.TasksCreate); err != nil {
+				return err
+			}
+		}
 		if err := validateState(tx, sc, state); err != nil {
 			return err
 		}
@@ -234,29 +239,30 @@ func (s *Service) ActiveWorking(sc Scope) (*Task, error) {
 	if err := s.authorize(s.DB, sc); err != nil {
 		return nil, err
 	}
-	t := &Task{}
-	var raw string
-	err := s.DB.QueryRow(`SELECT task_id,task_type,state_json,status FROM working_memory WHERE user_id=? AND workshop_id=? AND status IN ('active','waiting_input') AND (?='' OR task_id=?)`, sc.UserID, sc.WorkshopID, sc.TaskID, sc.TaskID).Scan(&t.ID, &t.Type, &raw, &t.Status)
-	if errors.Is(err, sql.ErrNoRows) {
+	t, err := scanTask(s.DB.QueryRow(`SELECT `+taskColumns+` FROM working_memory WHERE COALESCE(assigned_to_user_id,user_id)=? AND workshop_id=? AND status IN ('active','waiting_input') AND (?='' OR task_id=?)`, sc.UserID, sc.WorkshopID, sc.TaskID, sc.TaskID))
+	if errors.Is(err, ErrNoTask) {
 		return nil, nil
 	}
 	if err != nil {
 		return nil, err
 	}
-	if err := json.Unmarshal([]byte(raw), &t.State); err != nil {
-		return nil, err
-	}
-	return t, nil
+	return publicTask(t), nil
 }
 func (s *Service) UpdateWorkingMemory(sc Scope, state TaskState, status string) error {
 	if status != "active" && status != "waiting_input" {
 		return errors.New("invalid active task status")
 	}
 	return s.tx(sc, func(tx *sql.Tx) error {
+		if err := s.legacyTaskPermission(tx, sc); err != nil {
+			return err
+		}
+		if err := preservePrivateTaskState(tx, sc, &state); err != nil {
+			return err
+		}
 		if err := validateState(tx, sc, state); err != nil {
 			return err
 		}
-		res, err := tx.Exec(`UPDATE working_memory SET state_json=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND status IN ('active','waiting_input')`, compact(state), status, sc.TaskID, sc.UserID, sc.WorkshopID)
+		res, err := tx.Exec(`UPDATE working_memory SET state_json=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND COALESCE(assigned_to_user_id,user_id)=user_id AND fsm_version=0 AND status IN ('active','waiting_input')`, compact(state), status, sc.TaskID, sc.UserID, sc.WorkshopID)
 		if err != nil {
 			return err
 		}
@@ -268,12 +274,24 @@ func (s *Service) UpdateWorkingMemory(sc Scope, state TaskState, status string) 
 	})
 }
 func (s *Service) CompleteWorkingMemory(sc Scope, cancel bool) error {
+	if !cancel {
+		t, e := s.Task(sc)
+		if e != nil {
+			return e
+		}
+		if shared(t) {
+			return ErrPostingRequired
+		}
+	}
 	status := "completed"
 	if cancel {
 		status = "cancelled"
 	}
 	return s.tx(sc, func(tx *sql.Tx) error {
-		res, err := tx.Exec(`UPDATE working_memory SET status=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND status IN ('active','waiting_input')`, status, sc.TaskID, sc.UserID, sc.WorkshopID)
+		if err := s.legacyTaskPermission(tx, sc); err != nil {
+			return err
+		}
+		res, err := tx.Exec(`UPDATE working_memory SET status=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND COALESCE(assigned_to_user_id,user_id)=user_id AND fsm_version=0 AND status IN ('active','waiting_input')`, status, sc.TaskID, sc.UserID, sc.WorkshopID)
 		if err != nil {
 			return err
 		}

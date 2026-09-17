@@ -86,13 +86,13 @@ func TestAssemblyOrderFlowSnapshotAndNoStockMutation(t *testing.T) {
 	if taskCount(t, h) != 0 {
 		t.Fatal("task before confirmation")
 	}
-	h.click(t, 900001, "Создать план")
+	h.click(t, 900001, "Создать задачу")
 	sc := memory.Scope{UserID: 1, WorkshopID: w}
 	task, err := h.bot.Agent.Memory.ForUser(1).ActiveWorking(sc)
 	if err != nil || task == nil || task.State.ProductID != id || task.State.Quantity != 15 {
 		t.Fatalf("wrong task %+v %v", task, err)
 	}
-	h.click(t, 900001, "Создать план")
+	h.click(t, 900001, "Создать задачу")
 	if taskCount(t, h) != 1 {
 		t.Fatal("duplicate task")
 	}
@@ -135,7 +135,7 @@ func TestAssemblyQuantityAndTypedLists(t *testing.T) {
 	h.message(t, 900001, "3")
 	requireAnswer(t, h, "15 шт")
 	h.message(t, 900001, "/setup_stop")
-	h.click(t, 900001, "Создать план")
+	h.click(t, 900001, "Создать задачу")
 	if taskCount(t, h) != 0 {
 		t.Fatal("cancelled draft saved")
 	}
@@ -173,9 +173,9 @@ func TestAssemblyInvalidation(t *testing.T) {
 				h.message(t, 900001, "/clear")
 				h.click(t, 900001, "Очистить чат")
 			case "cancel":
-				h.click(t, 900001, "Отменить сборку")
+				h.click(t, 900001, "Отмена")
 			}
-			h.click(t, 900001, "Создать план")
+			h.click(t, 900001, "Создать задачу")
 			if taskCount(t, h) != 0 {
 				t.Fatal("invalidated plan saved")
 			}
@@ -202,13 +202,13 @@ func TestAssemblyPermissionsExistingTaskAndAtomicity(t *testing.T) {
 				}
 			case "foreign":
 				h.message(t, 900002, "/start")
-				h.click(t, 900002, "Создать план")
+				h.click(t, 900002, "Создать задачу")
 				if taskCount(t, h) != 0 {
 					t.Fatal("foreign callback saved")
 				}
 				return
 			}
-			h.click(t, 900001, "Создать план")
+			h.click(t, 900001, "Создать задачу")
 			want := 0
 			if mode == "existing" {
 				want = 1

@@ -303,6 +303,38 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 	}
 	switch cmd.Action {
+	case "list_assembly_tasks":
+		return b.ordersMenu(key, workshop, 0)
+	case "start_assembly":
+		if regexp.MustCompile(`(?i)(?:^|\s)не\s`).MatchString(text) {
+			return b.sendMessage(key.ChatID, "Задача не создана.")
+		}
+		quantity, orders := int64(0), int64(0)
+		numbers := regexp.MustCompile(`[+\-]?[0-9]+(?:[.,][0-9]+)?`).FindAllString(text, -1)
+		if len(numbers) == 1 {
+			n, e := pieceCount(numbers[0])
+			if e != nil {
+				return b.sendMessage(key.ChatID, e.Error())
+			}
+			quantity = n
+			if regexp.MustCompile(`(?i)[0-9]+\s+заказ`).MatchString(text) {
+				orders = n
+				quantity = 0
+			}
+		}
+		return b.beginAssembly(key, workshop, quantity, orders, "")
+	case "task_pause", "task_resume", "task_complete":
+		if cmd.Action == "task_complete" && (regexp.MustCompile(`(?i)(?:^|\s)не\s`).MatchString(text) || strings.Contains(text, "?")) {
+			return b.sendMessage(key.ChatID, "Задача не изменена. Для завершения выберите задачу и явно подтвердите выпуск.")
+		}
+		handled, e := b.taskMessage(key, "/task "+strings.TrimPrefix(cmd.Action, "task_"))
+		if e != nil {
+			return e
+		}
+		if !handled {
+			return b.sendMessage(key.ChatID, "Нет задачи нового формата. Откройте /task.")
+		}
+		return nil
 	case "get_daily_summary":
 		answer, err = b.Agent.DailySummary(key.UserID, workshop, time.Now())
 		if err != nil {

@@ -35,6 +35,7 @@ func TestAssemblyDrainPluralUniqueAndAmbiguous(t *testing.T) {
 		t.Fatal(err)
 	}
 	h.message(t, 900001, "собрать 5 сливов")
+	h.click(t, 900001, "Выбрать")
 	requireAnswer(t, h, "Слив боковой Advantix — 5 шт")
 	d, err := h.bot.loadAssembly(sessionKey{900001, 1}, w)
 	if err != nil || d == nil || d.Product != id || d.Quantity != 5 || d.Stage != "confirm" {

@@ -22,6 +22,9 @@ func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, 
 	if err = auth.Require(a.WS.DB(), user, workshop, auth.WorkshopRead); err != nil {
 		return
 	}
+	if handled, response, e := a.TaskMessage(user, workshop, text); handled {
+		return response, &llm.Usage{}, e
+	}
 	if IsDailySummary(text) {
 		answer, err = a.DailySummary(user, workshop, time.Now())
 		return answer, &llm.Usage{}, err

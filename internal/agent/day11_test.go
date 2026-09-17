@@ -84,7 +84,7 @@ func TestDay11QuantityAndTemporaryOverride(t *testing.T) {
 	if err := a.WS.DB().QueryRow(`SELECT COUNT(*) FROM long_term_memory`).Scan(&n); err != nil || n != 0 {
 		t.Fatal("temporary override persisted", err)
 	}
-	turn(t, a, u, w, "/task complete")
+	turn(t, a, u, w, "/task cancel")
 	answer = turn(t, a, u, w, "Соберем 10 наборов.")
 	if strings.Contains(answer, "25 шт") || strings.Contains(answer, "Box B") {
 		t.Fatal("completed state leaked", answer)

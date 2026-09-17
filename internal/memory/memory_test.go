@@ -103,7 +103,8 @@ func TestWorkingScopeUpdateAndCompletion(t *testing.T) {
 	if absent != nil {
 		t.Fatal("wrong task read")
 	}
-	ok(t, m.CompleteWorkingMemory(sc, false))
+	reject(t, m.CompleteWorkingMemory(sc, false))
+	ok(t, m.CompleteWorkingMemory(sc, true))
 	task, err = m.ActiveWorking(sc)
 	ok(t, err)
 	if task != nil {

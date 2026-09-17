@@ -174,7 +174,7 @@ func TestProductEditorSnapshotAndAssembly(t *testing.T) {
 	h.message(t, 900001, "3")
 	h.message(t, 900001, "3")
 	requireAnswer(t, h, "15 шт")
-	h.click(t, 900001, "Создать план")
+	h.click(t, 900001, "Создать задачу")
 	task, err := h.bot.Agent.Memory.ForUser(1).ActiveWorking(memory.Scope{UserID: 1, WorkshopID: w})
 	if err != nil || task == nil || task.State.ProductID != id {
 		t.Fatal("assembly failed", task, err)
