@@ -10,6 +10,8 @@ import (
 	"math"
 	"time"
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
+	"workshop-agent/internal/products"
 )
 
 var ErrTransition = errors.New("Переход недопустим: выполните текущий шаг задачи.")
@@ -247,6 +249,19 @@ func (f TaskStateMachine) Apply(sc Scope, intent TaskIntent) (*Task, error) {
 			case "start_production":
 				if t.Phase != "execution" || t.CurrentStep != "start_production" {
 					return ErrTransition
+				}
+				rules, e := (invariants.InvariantRegistry{}).Workshop(tx, sc.UserID, sc.WorkshopID)
+				if e != nil {
+					return e
+				}
+				if rules[len(rules)-1].IsActive {
+					plan, e := products.CalculateProductionTx(tx, sc.UserID, sc.WorkshopID, t.State.ProductID, t.State.Quantity)
+					if e != nil {
+						return e
+					}
+					if e = invariants.Check(tx, invariants.ProposedAction{ActionType: "start_production", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{MaterialShortage: plan.Shortage()}); e != nil {
+						return e
+					}
 				}
 				setStep(t, "execution", "record_result", "user_input_produced_quantity", "USER_INPUT")
 			case "record_result":

@@ -95,6 +95,9 @@ func (s *Store) Migrate() error {
 	if err := migrateTaskCompletion(tx); err != nil {
 		return fmt.Errorf("task completion migration: %w", err)
 	}
+	if err := migrateInvariants(tx); err != nil {
+		return err
+	}
 	return tx.Commit()
 }
 

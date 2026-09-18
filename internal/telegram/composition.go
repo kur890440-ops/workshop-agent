@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/products"
 )
@@ -109,6 +110,9 @@ func (b *Bot) compositionButton(a buttonAction, s *setupSession) error {
 		}
 		return b.sendMessage(key.ChatID, "Введите номер компонента из показанного состава. Отмена: /setup_stop.")
 	case "save":
+		if err := invariants.Check(b.WS.DB(), invariants.ProposedAction{ActionType: "change_bom", UserID: key.UserID, WorkshopID: s.workshopID}, invariants.Facts{Confirmed: c.Stage == "confirm"}); err != nil {
+			return err
+		}
 		if c.Stage != "confirm" {
 			return errProductEditExpired
 		}

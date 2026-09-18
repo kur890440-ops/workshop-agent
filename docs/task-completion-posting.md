@@ -95,3 +95,6 @@ production_record, history и Audit Log, повтор/конкуренция/п�
 
 Проверки: `go test ./...`; `go build -o bin/workshop-agent.exe ./cmd/workshop-agent`.
 Для применения изменений: **Ctrl+C → `.\bin\workshop-agent.exe`**.
+# Уточнение Day14
+
+WA-D103 заменяет часть WA-D094: проводить выпуск прямо из execution/record_result больше нельзя. Требуется отдельный переход в validation через запись фактического результата. См. [day14-invariants.md](day14-invariants.md). Остальные гарантии атомарности и защиты от повторного списания сохранены.

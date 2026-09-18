@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/personalization"
 )
 
@@ -41,6 +42,9 @@ func (b AgentContextBuilder) Build(sc Scope, message string, domain []Item, opti
 		taskType = result.Working.Type
 		productID = result.Working.State.ProductID
 		result.Trace.Scope.TaskID = result.Working.ID
+		for _, rule := range (invariants.InvariantRegistry{}).ForTask(result.Working.Phase) {
+			add("ACTIVE_CONSTRAINTS", "code:invariants", rule.Key, rule.Title+" ("+rule.Enforcement+")")
+		}
 	}
 	if taskType == "" && containsAny(strings.ToLower(message), "отчет", "отчёт", "report") {
 		taskType = "report"

@@ -1,0 +1,353 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>День 14 · Инварианты и ограничения состояния</title><style>
+body{font:16px/1.6 system-ui,sans-serif;background:#eef2f7;color:#182638;margin:0}main{max-width:1100px;margin:auto;padding:32px}h1{font-size:36px;line-height:1.2}section{background:white;padding:24px;border-radius:12px;margin:20px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#eff4f8;padding:16px;font-size:13px}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:8px;border-bottom:1px solid #ddd}.pass{color:#076443}.fail{color:#a11}small{color:#596b80}@media(max-width:600px){main{padding:12px}h1{font-size:26px}section{padding:16px}table{font-size:12px}}@media print{body{background:white}section{break-inside:avoid;border:1px solid #ccc}main{padding:0}details{display:block}}
+</style><main><h1>День 14 · Инварианты и ограничения состояния</h1><p>Как Workshop Agent соблюдает архитектурные и бизнес-ограничения</p><small>Запуск 20260917T200159.589354700Z · изолированная SQLite · фактические вызовы сервисов</small>
+<section><h2>1. Что такое инвариант</h2><p>Обязательное правило, не зависящее от текста диалога. HARD блокирует действие, SOFT предупреждает. Severity характеризует важность и не отменяет enforcement.</p></section>
+<section><h2>2. Хранение</h2><p>Защищённые правила — код internal/invariants. Настройки мастерской — invariant_settings, версия и Audit Log. Они не принадлежат short-term session.</p></section>
+<section><h2>3. Категории</h2><table><tr><th>Правило</th><th>Категория</th><th>Scope</th></tr><tr><td>authorized_workshop</td><td>SECURITY_RULE</td><td>SYSTEM</td></tr><tr><td>domain_services_only</td><td>ARCHITECTURE</td><td>SYSTEM</td></tr><tr><td>fsm_only</td><td>TECHNICAL_DECISION</td><td>SYSTEM</td></tr><tr><td>go_sqlite_telegram</td><td>STACK_CONSTRAINT</td><td>SYSTEM</td></tr><tr><td>validation_before_completion</td><td>BUSINESS_RULE</td><td>SYSTEM</td></tr><tr><td>nonnegative_inventory</td><td>DATA_INTEGRITY_RULE</td><td>SYSTEM</td></tr><tr><td>stock_depleted</td><td>BUSINESS_RULE</td><td>SYSTEM</td></tr><tr><td>bom_confirmation</td><td>BUSINESS_RULE</td><td>SYSTEM</td></tr><tr><td>protected_ownership</td><td>SECURITY_RULE</td><td>SYSTEM</td></tr><tr><td>requires_material_check_before_production</td><td>BUSINESS_RULE</td><td>WORKSHOP</td></tr></table></section>
+<section><h2>4. Архитектура</h2><pre>User → Intent → ProposedAction → Authorization → InvariantEngine
+  ALLOW → DomainService → SQLite transaction
+  DENY  → причина + допустимое следующее действие</pre><p>Проверки выполняются вне LLM. Auth, FSM и расчёт BOM остаются источниками бизнес-правил.</p></section>
+<section><h2>5. Разрешённое действие</h2><article><h3>Разрешённое действие</h3><p>validation → подтверждённый выпуск 5</p><p class="pass">PASS · record=1; error=&lt;nil&gt;</p><pre>{
+  &#34;allowed&#34;: true,
+  &#34;decision&#34;: &#34;ALLOW&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;complete_task&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;validation_before_completion&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;validation_before_completion&#34;
+  ],
+  &#34;violations&#34;: null,
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Используйте разрешённое действие в меню мастерской.&#34;
+}</pre></article></section><section><h2>6. Конфликт бизнес-правила</h2><article><h3>Конфликт бизнес-правила</h3><p>Заверши задачу при phase=execution</p><p class="pass">PASS · Действие «complete_task» отклонено.
+Перед завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.
+Сначала укажите фактический выпуск через /task result &lt;количество&gt;, затем проверьте расчёт и подтвердите завершение.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;complete_task&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;validation_before_completion&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;validation_before_completion&#34;,
+      &#34;title&#34;: &#34;Перед завершением требуется validation&#34;,
+      &#34;reason&#34;: &#34;Текущая фаза: execution. Пропуск проверки запрещён.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Сначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.&#34;
+}</pre></article><article><h3>Неотрицательный склад</h3><p>Списать 500 из 400</p><p class="pass">PASS · Ошибка: Действие «change_stock» отклонено.
+Остаток не может быть отрицательным [nonnegative_inventory]: Итоговый остаток недопустим.
+Уменьшите списание или зарегистрируйте фактическое поступление.; остаток: 400</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;change_stock&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;nonnegative_inventory&#34;,
+    &#34;stock_depleted&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;stock_depleted&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;nonnegative_inventory&#34;,
+      &#34;title&#34;: &#34;Остаток не может быть отрицательным&#34;,
+      &#34;reason&#34;: &#34;Итоговый остаток недопустим.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Уменьшите списание или зарегистрируйте фактическое поступление.&#34;
+}</pre></article></section><section><h2>7. Конфликт архитектуры и стека</h2><article><h3>Архитектура и стек</h3><p>direct_sql_write</p><p class="pass">PASS · Действие «direct_sql_write» отклонено.
+Изменения только через доменные сервисы [domain_services_only]: Прямая запись из LLM в SQLite обходит бизнес-проверки.
+Передайте структурированную команду в InventoryService после авторизации.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;direct_sql_write&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;domain_services_only&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;domain_services_only&#34;,
+      &#34;title&#34;: &#34;Изменения только через доменные сервисы&#34;,
+      &#34;reason&#34;: &#34;Прямая запись из LLM в SQLite обходит бизнес-проверки.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Передайте структурированную команду в InventoryService после авторизации.&#34;
+}</pre></article><article><h3>Архитектура и стек</h3><p>replace_stack</p><p class="pass">PASS · Действие «replace_stack» отклонено.
+Текущий стек: Go, SQLite, Telegram [go_sqlite_telegram]: Замена рабочего persistence нарушает активное ограничение стека.
+Можно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;replace_stack&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;go_sqlite_telegram&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;go_sqlite_telegram&#34;,
+      &#34;title&#34;: &#34;Текущий стек: Go, SQLite, Telegram&#34;,
+      &#34;reason&#34;: &#34;Замена рабочего persistence нарушает активное ограничение стека.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Можно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.&#34;
+}</pre></article><article><h3>Архитектура и стек</h3><p>remove_last_owner</p><p class="pass">PASS · Действие «remove_last_owner» отклонено.
+Последний OWNER защищён IdentityService [protected_ownership]: Нельзя удалить последнего владельца.
+Сначала выполните явную передачу ownership.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;remove_last_owner&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;protected_ownership&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;protected_ownership&#34;,
+      &#34;title&#34;: &#34;Последний OWNER защищён IdentityService&#34;,
+      &#34;reason&#34;: &#34;Нельзя удалить последнего владельца.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Сначала выполните явную передачу ownership.&#34;
+}</pre></article></section><section><h2>8. Конфликт профиля</h2><article><h3>Конфликт профиля</h3><p>minimal_confirmation &#43; завершить</p><p class="pass">PASS · Действие «complete_task» отклонено.
+Перед завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.
+Сначала укажите фактический выпуск через /task result &lt;количество&gt;, затем проверьте расчёт и подтвердите завершение.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;complete_task&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;validation_before_completion&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;validation_before_completion&#34;,
+      &#34;title&#34;: &#34;Перед завершением требуется validation&#34;,
+      &#34;reason&#34;: &#34;Текущая фаза: execution. Пропуск проверки запрещён.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Сначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.&#34;
+}</pre></article></section><section><h2>9. Конфликт памяти</h2><article><h3>Конфликт памяти</h3><p>Память: не спрашивать подтверждение</p><p class="pass">PASS · Действие «complete_task» отклонено.
+Перед завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.
+Сначала укажите фактический выпуск через /task result &lt;количество&gt;, затем проверьте расчёт и подтвердите завершение.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;complete_task&#34;,
+    &#34;user_id&#34;: 1,
+    &#34;workshop_id&#34;: 1,
+    &#34;task_id&#34;: &#34;f1f90b3f8cad319898982824a0fa4ee5&#34;,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;,
+    &#34;validation_before_completion&#34;
+  ],
+  &#34;passed&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;validation_before_completion&#34;,
+      &#34;title&#34;: &#34;Перед завершением требуется validation&#34;,
+      &#34;reason&#34;: &#34;Текущая фаза: execution. Пропуск проверки запрещён.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Сначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.&#34;
+}</pre></article><article><h3>Новая сессия</h3><p>Закрыть и открыть сессию</p><p class="pass">PASS · Правило осталось активно</p><pre>{
+  &#34;id&#34;: &#34;1:requires_material_check_before_production&#34;,
+  &#34;key&#34;: &#34;requires_material_check_before_production&#34;,
+  &#34;title&#34;: &#34;Проверять достаточность материалов перед запуском производства&#34;,
+  &#34;description&#34;: &#34;Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.&#34;,
+  &#34;category&#34;: &#34;BUSINESS_RULE&#34;,
+  &#34;scope_type&#34;: &#34;WORKSHOP&#34;,
+  &#34;scope_id&#34;: 1,
+  &#34;severity&#34;: &#34;WARNING&#34;,
+  &#34;enforcement&#34;: &#34;HARD&#34;,
+  &#34;is_active&#34;: true,
+  &#34;version&#34;: 1,
+  &#34;created_at&#34;: &#34;2026-09-17 20:01:59&#34;,
+  &#34;updated_at&#34;: &#34;2026-09-17 20:01:59&#34;,
+  &#34;modifiable&#34;: true,
+  &#34;actions&#34;: [
+    &#34;start_production&#34;
+  ]
+}</pre></article></section><section><h2>10. Безопасность и tenant scope</h2><article><h3>Безопасность и tenant scope</h3><p>Чужой пользователь изменяет BOM</p><p class="pass">PASS · Действие «change_bom» отклонено.
+Доступ только через Membership и Permissions [authorized_workshop]: Нет действующего доступа к этой мастерской или разрешения на действие.
+Обратитесь к OWNER или ADMIN за доступом.</p><pre>{
+  &#34;allowed&#34;: false,
+  &#34;decision&#34;: &#34;DENY&#34;,
+  &#34;action&#34;: {
+    &#34;action_type&#34;: &#34;change_bom&#34;,
+    &#34;user_id&#34;: 2,
+    &#34;workshop_id&#34;: 1,
+    &#34;scope&#34;: {
+      &#34;WorkshopID&#34;: 0,
+      &#34;ModuleID&#34;: 0,
+      &#34;ProcessID&#34;: 0,
+      &#34;ProductID&#34;: 0,
+      &#34;RoleID&#34;: 0
+    }
+  },
+  &#34;applicable&#34;: [
+    &#34;authorized_workshop&#34;
+  ],
+  &#34;passed&#34;: null,
+  &#34;violations&#34;: [
+    {
+      &#34;invariant_key&#34;: &#34;authorized_workshop&#34;,
+      &#34;title&#34;: &#34;Доступ только через Membership и Permissions&#34;,
+      &#34;reason&#34;: &#34;Нет действующего доступа к этой мастерской или разрешения на действие.&#34;,
+      &#34;severity&#34;: &#34;CRITICAL&#34;
+    }
+  ],
+  &#34;warnings&#34;: null,
+  &#34;suggested_alternative&#34;: &#34;Обратитесь к OWNER или ADMIN за доступом.&#34;
+}</pre></article></section><section><h2>11. Изменение настраиваемого правила</h2><article><h3>Изменение настраиваемого правила</h3><p>OWNER подтверждает preflight=true</p><p class="pass">PASS · error=&lt;nil&gt;; version=1</p><pre>{
+  &#34;id&#34;: &#34;1:requires_material_check_before_production&#34;,
+  &#34;key&#34;: &#34;requires_material_check_before_production&#34;,
+  &#34;title&#34;: &#34;Проверять достаточность материалов перед запуском производства&#34;,
+  &#34;description&#34;: &#34;Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.&#34;,
+  &#34;category&#34;: &#34;BUSINESS_RULE&#34;,
+  &#34;scope_type&#34;: &#34;WORKSHOP&#34;,
+  &#34;scope_id&#34;: 1,
+  &#34;severity&#34;: &#34;WARNING&#34;,
+  &#34;enforcement&#34;: &#34;HARD&#34;,
+  &#34;is_active&#34;: true,
+  &#34;version&#34;: 1,
+  &#34;created_at&#34;: &#34;2026-09-17 20:01:59&#34;,
+  &#34;updated_at&#34;: &#34;2026-09-17 20:01:59&#34;,
+  &#34;modifiable&#34;: true,
+  &#34;actions&#34;: [
+    &#34;start_production&#34;
+  ]
+}</pre></article></section>
+<section><h2>12. Invariant trace</h2><p>Выше показаны фактические action, applicable, passed, violations, ALLOW/DENY и suggested_alternative. Это журнал проверок, а не скрытые рассуждения. В Telegram доступны /invariants и /invariant_trace (последняя сохранённая проверка текущего пользователя и мастерской).</p></section>
+<section><h2>13. Вывод</h2><p>Отказ не изменяет задачу и склад; авторизованный выпуск после validation создаёт производственную запись. Профиль и память не обходят правило. Настраиваемый preflight по умолчанию выключен; финальная проверка остатков всегда обязательна.</p><p>Ограничения: распознавание архитектурных запросов локальное и ограниченное; бот не является универсальным консультантом по архитектуре. Реальный перезапуск процесса, отмена UI и защита от повторного списания проверяются отдельными Go-тестами. В отчёте нет реальных сетевых вызовов Telegram/LLM.</p></section></main></html>

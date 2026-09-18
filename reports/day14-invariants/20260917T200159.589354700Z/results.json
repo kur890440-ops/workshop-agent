@@ -1,0 +1,386 @@
+{
+  "Run": "20260917T200159.589354700Z",
+  "Rules": [
+    {
+      "id": "authorized_workshop",
+      "key": "authorized_workshop",
+      "title": "Доступ только через Membership и Permissions",
+      "description": "Доступ только через Membership и Permissions",
+      "category": "SECURITY_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": null
+    },
+    {
+      "id": "domain_services_only",
+      "key": "domain_services_only",
+      "title": "Изменения только через доменные сервисы",
+      "description": "Изменения только через доменные сервисы",
+      "category": "ARCHITECTURE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "direct_sql_write"
+      ]
+    },
+    {
+      "id": "fsm_only",
+      "key": "fsm_only",
+      "title": "Состояние задачи изменяется только через FSM",
+      "description": "Состояние задачи изменяется только через FSM",
+      "category": "TECHNICAL_DECISION",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "direct_task_state"
+      ]
+    },
+    {
+      "id": "go_sqlite_telegram",
+      "key": "go_sqlite_telegram",
+      "title": "Текущий стек: Go, SQLite, Telegram",
+      "description": "Текущий стек: Go, SQLite, Telegram",
+      "category": "STACK_CONSTRAINT",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "replace_stack"
+      ]
+    },
+    {
+      "id": "validation_before_completion",
+      "key": "validation_before_completion",
+      "title": "Перед завершением требуется validation",
+      "description": "Перед завершением требуется validation",
+      "category": "BUSINESS_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "complete_task"
+      ]
+    },
+    {
+      "id": "nonnegative_inventory",
+      "key": "nonnegative_inventory",
+      "title": "Остаток не может быть отрицательным",
+      "description": "Остаток не может быть отрицательным",
+      "category": "DATA_INTEGRITY_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "change_stock"
+      ]
+    },
+    {
+      "id": "stock_depleted",
+      "key": "stock_depleted",
+      "title": "Нулевой остаток: проверьте потребность в закупке",
+      "description": "Нулевой остаток: проверьте потребность в закупке",
+      "category": "BUSINESS_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "WARNING",
+      "enforcement": "SOFT",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "change_stock"
+      ]
+    },
+    {
+      "id": "bom_confirmation",
+      "key": "bom_confirmation",
+      "title": "Изменение состава требует подтверждения",
+      "description": "Изменение состава требует подтверждения",
+      "category": "BUSINESS_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "change_bom"
+      ]
+    },
+    {
+      "id": "protected_ownership",
+      "key": "protected_ownership",
+      "title": "Последний OWNER защищён IdentityService",
+      "description": "Последний OWNER защищён IdentityService",
+      "category": "SECURITY_RULE",
+      "scope_type": "SYSTEM",
+      "scope_id": null,
+      "severity": "CRITICAL",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17",
+      "updated_at": "2026-09-17",
+      "modifiable": false,
+      "actions": [
+        "remove_last_owner"
+      ]
+    },
+    {
+      "id": "1:requires_material_check_before_production",
+      "key": "requires_material_check_before_production",
+      "title": "Проверять достаточность материалов перед запуском производства",
+      "description": "Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.",
+      "category": "BUSINESS_RULE",
+      "scope_type": "WORKSHOP",
+      "scope_id": 1,
+      "severity": "WARNING",
+      "enforcement": "HARD",
+      "is_active": true,
+      "version": 1,
+      "created_at": "2026-09-17 20:01:59",
+      "updated_at": "2026-09-17 20:01:59",
+      "modifiable": true,
+      "actions": [
+        "start_production"
+      ]
+    }
+  ],
+  "Rows": [
+    {
+      "Title": "Конфликт бизнес-правила",
+      "Input": "Заверши задачу при phase=execution",
+      "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Архитектура и стек",
+      "Input": "direct_sql_write",
+      "Outcome": "Действие «direct_sql_write» отклонено.\nИзменения только через доменные сервисы [domain_services_only]: Прямая запись из LLM в SQLite обходит бизнес-проверки.\nПередайте структурированную команду в InventoryService после авторизации.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"direct_sql_write\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"domain_services_only\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"domain_services_only\",\n      \"title\": \"Изменения только через доменные сервисы\",\n      \"reason\": \"Прямая запись из LLM в SQLite обходит бизнес-проверки.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Передайте структурированную команду в InventoryService после авторизации.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Архитектура и стек",
+      "Input": "replace_stack",
+      "Outcome": "Действие «replace_stack» отклонено.\nТекущий стек: Go, SQLite, Telegram [go_sqlite_telegram]: Замена рабочего persistence нарушает активное ограничение стека.\nМожно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"replace_stack\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"go_sqlite_telegram\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"go_sqlite_telegram\",\n      \"title\": \"Текущий стек: Go, SQLite, Telegram\",\n      \"reason\": \"Замена рабочего persistence нарушает активное ограничение стека.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Можно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Архитектура и стек",
+      "Input": "remove_last_owner",
+      "Outcome": "Действие «remove_last_owner» отклонено.\nПоследний OWNER защищён IdentityService [protected_ownership]: Нельзя удалить последнего владельца.\nСначала выполните явную передачу ownership.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"remove_last_owner\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"protected_ownership\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"protected_ownership\",\n      \"title\": \"Последний OWNER защищён IdentityService\",\n      \"reason\": \"Нельзя удалить последнего владельца.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала выполните явную передачу ownership.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Конфликт профиля",
+      "Input": "minimal_confirmation + завершить",
+      "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Конфликт памяти",
+      "Input": "Память: не спрашивать подтверждение",
+      "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Неотрицательный склад",
+      "Input": "Списать 500 из 400",
+      "Outcome": "Ошибка: Действие «change_stock» отклонено.\nОстаток не может быть отрицательным [nonnegative_inventory]: Итоговый остаток недопустим.\nУменьшите списание или зарегистрируйте фактическое поступление.; остаток: 400",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"change_stock\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"nonnegative_inventory\",\n    \"stock_depleted\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\",\n    \"stock_depleted\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"nonnegative_inventory\",\n      \"title\": \"Остаток не может быть отрицательным\",\n      \"reason\": \"Итоговый остаток недопустим.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Уменьшите списание или зарегистрируйте фактическое поступление.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Безопасность и tenant scope",
+      "Input": "Чужой пользователь изменяет BOM",
+      "Outcome": "Действие «change_bom» отклонено.\nДоступ только через Membership и Permissions [authorized_workshop]: Нет действующего доступа к этой мастерской или разрешения на действие.\nОбратитесь к OWNER или ADMIN за доступом.",
+      "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"change_bom\",\n    \"user_id\": 2,\n    \"workshop_id\": 1,\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\"\n  ],\n  \"passed\": null,\n  \"violations\": [\n    {\n      \"invariant_key\": \"authorized_workshop\",\n      \"title\": \"Доступ только через Membership и Permissions\",\n      \"reason\": \"Нет действующего доступа к этой мастерской или разрешения на действие.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Обратитесь к OWNER или ADMIN за доступом.\"\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Изменение настраиваемого правила",
+      "Input": "OWNER подтверждает preflight=true",
+      "Outcome": "error=\u003cnil\u003e; version=1",
+      "Trace": "{\n  \"id\": \"1:requires_material_check_before_production\",\n  \"key\": \"requires_material_check_before_production\",\n  \"title\": \"Проверять достаточность материалов перед запуском производства\",\n  \"description\": \"Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.\",\n  \"category\": \"BUSINESS_RULE\",\n  \"scope_type\": \"WORKSHOP\",\n  \"scope_id\": 1,\n  \"severity\": \"WARNING\",\n  \"enforcement\": \"HARD\",\n  \"is_active\": true,\n  \"version\": 1,\n  \"created_at\": \"2026-09-17 20:01:59\",\n  \"updated_at\": \"2026-09-17 20:01:59\",\n  \"modifiable\": true,\n  \"actions\": [\n    \"start_production\"\n  ]\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Новая сессия",
+      "Input": "Закрыть и открыть сессию",
+      "Outcome": "Правило осталось активно",
+      "Trace": "{\n  \"id\": \"1:requires_material_check_before_production\",\n  \"key\": \"requires_material_check_before_production\",\n  \"title\": \"Проверять достаточность материалов перед запуском производства\",\n  \"description\": \"Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.\",\n  \"category\": \"BUSINESS_RULE\",\n  \"scope_type\": \"WORKSHOP\",\n  \"scope_id\": 1,\n  \"severity\": \"WARNING\",\n  \"enforcement\": \"HARD\",\n  \"is_active\": true,\n  \"version\": 1,\n  \"created_at\": \"2026-09-17 20:01:59\",\n  \"updated_at\": \"2026-09-17 20:01:59\",\n  \"modifiable\": true,\n  \"actions\": [\n    \"start_production\"\n  ]\n}",
+      "Passed": true
+    },
+    {
+      "Title": "Разрешённое действие",
+      "Input": "validation → подтверждённый выпуск 5",
+      "Outcome": "record=1; error=\u003cnil\u003e",
+      "Trace": "{\n  \"allowed\": true,\n  \"decision\": \"ALLOW\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"violations\": null,\n  \"warnings\": null,\n  \"suggested_alternative\": \"Используйте разрешённое действие в меню мастерской.\"\n}",
+      "Passed": true
+    }
+  ],
+  "Sections": [
+    {
+      "Title": "5. Разрешённое действие",
+      "Rows": [
+        {
+          "Title": "Разрешённое действие",
+          "Input": "validation → подтверждённый выпуск 5",
+          "Outcome": "record=1; error=\u003cnil\u003e",
+          "Trace": "{\n  \"allowed\": true,\n  \"decision\": \"ALLOW\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"violations\": null,\n  \"warnings\": null,\n  \"suggested_alternative\": \"Используйте разрешённое действие в меню мастерской.\"\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "6. Конфликт бизнес-правила",
+      "Rows": [
+        {
+          "Title": "Конфликт бизнес-правила",
+          "Input": "Заверши задачу при phase=execution",
+          "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+          "Passed": true
+        },
+        {
+          "Title": "Неотрицательный склад",
+          "Input": "Списать 500 из 400",
+          "Outcome": "Ошибка: Действие «change_stock» отклонено.\nОстаток не может быть отрицательным [nonnegative_inventory]: Итоговый остаток недопустим.\nУменьшите списание или зарегистрируйте фактическое поступление.; остаток: 400",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"change_stock\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"nonnegative_inventory\",\n    \"stock_depleted\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\",\n    \"stock_depleted\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"nonnegative_inventory\",\n      \"title\": \"Остаток не может быть отрицательным\",\n      \"reason\": \"Итоговый остаток недопустим.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Уменьшите списание или зарегистрируйте фактическое поступление.\"\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "7. Конфликт архитектуры и стека",
+      "Rows": [
+        {
+          "Title": "Архитектура и стек",
+          "Input": "direct_sql_write",
+          "Outcome": "Действие «direct_sql_write» отклонено.\nИзменения только через доменные сервисы [domain_services_only]: Прямая запись из LLM в SQLite обходит бизнес-проверки.\nПередайте структурированную команду в InventoryService после авторизации.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"direct_sql_write\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"domain_services_only\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"domain_services_only\",\n      \"title\": \"Изменения только через доменные сервисы\",\n      \"reason\": \"Прямая запись из LLM в SQLite обходит бизнес-проверки.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Передайте структурированную команду в InventoryService после авторизации.\"\n}",
+          "Passed": true
+        },
+        {
+          "Title": "Архитектура и стек",
+          "Input": "replace_stack",
+          "Outcome": "Действие «replace_stack» отклонено.\nТекущий стек: Go, SQLite, Telegram [go_sqlite_telegram]: Замена рабочего persistence нарушает активное ограничение стека.\nМожно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"replace_stack\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"go_sqlite_telegram\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"go_sqlite_telegram\",\n      \"title\": \"Текущий стек: Go, SQLite, Telegram\",\n      \"reason\": \"Замена рабочего persistence нарушает активное ограничение стека.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Можно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite.\"\n}",
+          "Passed": true
+        },
+        {
+          "Title": "Архитектура и стек",
+          "Input": "remove_last_owner",
+          "Outcome": "Действие «remove_last_owner» отклонено.\nПоследний OWNER защищён IdentityService [protected_ownership]: Нельзя удалить последнего владельца.\nСначала выполните явную передачу ownership.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"remove_last_owner\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"protected_ownership\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"protected_ownership\",\n      \"title\": \"Последний OWNER защищён IdentityService\",\n      \"reason\": \"Нельзя удалить последнего владельца.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала выполните явную передачу ownership.\"\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "8. Конфликт профиля",
+      "Rows": [
+        {
+          "Title": "Конфликт профиля",
+          "Input": "minimal_confirmation + завершить",
+          "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "9. Конфликт памяти",
+      "Rows": [
+        {
+          "Title": "Конфликт памяти",
+          "Input": "Память: не спрашивать подтверждение",
+          "Outcome": "Действие «complete_task» отклонено.\nПеред завершением требуется validation [validation_before_completion]: Текущая фаза: execution. Пропуск проверки запрещён.\nСначала укажите фактический выпуск через /task result \u003cколичество\u003e, затем проверьте расчёт и подтвердите завершение.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"complete_task\",\n    \"user_id\": 1,\n    \"workshop_id\": 1,\n    \"task_id\": \"f1f90b3f8cad319898982824a0fa4ee5\",\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\",\n    \"validation_before_completion\"\n  ],\n  \"passed\": [\n    \"authorized_workshop\"\n  ],\n  \"violations\": [\n    {\n      \"invariant_key\": \"validation_before_completion\",\n      \"title\": \"Перед завершением требуется validation\",\n      \"reason\": \"Текущая фаза: execution. Пропуск проверки запрещён.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Сначала укажите фактический выпуск через /task result \\u003cколичество\\u003e, затем проверьте расчёт и подтвердите завершение.\"\n}",
+          "Passed": true
+        },
+        {
+          "Title": "Новая сессия",
+          "Input": "Закрыть и открыть сессию",
+          "Outcome": "Правило осталось активно",
+          "Trace": "{\n  \"id\": \"1:requires_material_check_before_production\",\n  \"key\": \"requires_material_check_before_production\",\n  \"title\": \"Проверять достаточность материалов перед запуском производства\",\n  \"description\": \"Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.\",\n  \"category\": \"BUSINESS_RULE\",\n  \"scope_type\": \"WORKSHOP\",\n  \"scope_id\": 1,\n  \"severity\": \"WARNING\",\n  \"enforcement\": \"HARD\",\n  \"is_active\": true,\n  \"version\": 1,\n  \"created_at\": \"2026-09-17 20:01:59\",\n  \"updated_at\": \"2026-09-17 20:01:59\",\n  \"modifiable\": true,\n  \"actions\": [\n    \"start_production\"\n  ]\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "10. Безопасность и tenant scope",
+      "Rows": [
+        {
+          "Title": "Безопасность и tenant scope",
+          "Input": "Чужой пользователь изменяет BOM",
+          "Outcome": "Действие «change_bom» отклонено.\nДоступ только через Membership и Permissions [authorized_workshop]: Нет действующего доступа к этой мастерской или разрешения на действие.\nОбратитесь к OWNER или ADMIN за доступом.",
+          "Trace": "{\n  \"allowed\": false,\n  \"decision\": \"DENY\",\n  \"action\": {\n    \"action_type\": \"change_bom\",\n    \"user_id\": 2,\n    \"workshop_id\": 1,\n    \"scope\": {\n      \"WorkshopID\": 0,\n      \"ModuleID\": 0,\n      \"ProcessID\": 0,\n      \"ProductID\": 0,\n      \"RoleID\": 0\n    }\n  },\n  \"applicable\": [\n    \"authorized_workshop\"\n  ],\n  \"passed\": null,\n  \"violations\": [\n    {\n      \"invariant_key\": \"authorized_workshop\",\n      \"title\": \"Доступ только через Membership и Permissions\",\n      \"reason\": \"Нет действующего доступа к этой мастерской или разрешения на действие.\",\n      \"severity\": \"CRITICAL\"\n    }\n  ],\n  \"warnings\": null,\n  \"suggested_alternative\": \"Обратитесь к OWNER или ADMIN за доступом.\"\n}",
+          "Passed": true
+        }
+      ]
+    },
+    {
+      "Title": "11. Изменение настраиваемого правила",
+      "Rows": [
+        {
+          "Title": "Изменение настраиваемого правила",
+          "Input": "OWNER подтверждает preflight=true",
+          "Outcome": "error=\u003cnil\u003e; version=1",
+          "Trace": "{\n  \"id\": \"1:requires_material_check_before_production\",\n  \"key\": \"requires_material_check_before_production\",\n  \"title\": \"Проверять достаточность материалов перед запуском производства\",\n  \"description\": \"Предварительная проверка; отключение не разрешает отрицательные остатки при выпуске.\",\n  \"category\": \"BUSINESS_RULE\",\n  \"scope_type\": \"WORKSHOP\",\n  \"scope_id\": 1,\n  \"severity\": \"WARNING\",\n  \"enforcement\": \"HARD\",\n  \"is_active\": true,\n  \"version\": 1,\n  \"created_at\": \"2026-09-17 20:01:59\",\n  \"updated_at\": \"2026-09-17 20:01:59\",\n  \"modifiable\": true,\n  \"actions\": [\n    \"start_production\"\n  ]\n}",
+          "Passed": true
+        }
+      ]
+    }
+  ]
+}

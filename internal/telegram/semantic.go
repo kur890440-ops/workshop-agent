@@ -18,6 +18,9 @@ import (
 	"workshop-agent/internal/memory"
 )
 
+var missingWriteoffAmount = regexp.MustCompile(`(?i)^(?:([\p{L}\s-]+)\s+(?:списывай|спиши|убери)|(?:списывай|спиши|убери)\s+([\p{L}\s-]+))$`)
+var repeatWriteoff = regexp.MustCompile(`(?i)^(?:и\s+)?(?:спиши|убери|списать)\s+ещ[её]\s+([0-9]+(?:[.,][0-9]+)?)(?:\s+(?:шт\.?|штук(?:а|и)?|pcs|кг|г|мл|л))?[.!]?$`)
+
 func (b *Bot) currentList(key sessionKey, workshop int64) materialListContext {
 	var sessionID int64
 	if b.Agent != nil {
@@ -58,6 +61,28 @@ func (b *Bot) semanticMessage(key sessionKey, workshop int64, text string) (bool
 	}
 	if err := auth.Require(b.WS.DB(), key.UserID, workshop, auth.WorkshopRead); err != nil {
 		return true, err
+	}
+	if match := repeatWriteoff.FindStringSubmatch(strings.TrimSpace(text)); match != nil {
+		amount, e := strconv.ParseFloat(strings.ReplaceAll(match[1], ",", "."), 64)
+		if e != nil || amount <= 0 || math.IsInf(amount, 0) {
+			return true, b.sendMessage(key.ChatID, "Укажите положительное конечное количество для списания.")
+		}
+		return true, b.executeSemantic(key, workshop, &llm.StructuredCommand{Action: "change_material_stock", Reference: &llm.EntityReference{Kind: "last", EntityType: "material"}, Amount: &amount, QuantityMode: "decrease"}, nil, "local", text)
+	}
+	if match := missingWriteoffAmount.FindStringSubmatch(strings.TrimSpace(text)); match != nil && !regexp.MustCompile(`[0-9]`).MatchString(text) {
+		name := strings.TrimSpace(match[1] + match[2])
+		if name != "" {
+			item, hint, e := b.resolveSemantic(key, workshop, &llm.EntityReference{Kind: "name", EntityType: "material", Name: name})
+			if e != nil {
+				return true, e
+			}
+			if hint != "" {
+				return true, b.sendMessage(key.ChatID, hint)
+			}
+			if item != nil {
+				return true, b.sendMessage(key.ChatID, fmt.Sprintf("Сколько списать материала «%s»? Единица: %s.\nНапример: «спиши 10 %s». Остаток не изменён.", item["name"], inventory.UnitLabel(inventory.DisplayUnit(item)), item["name"]))
+			}
+		}
 	}
 	m := b.Agent.Memory.ForUser(key.UserID)
 	sc, err := m.EnsureSession(memory.Scope{UserID: key.UserID, WorkshopID: workshop}, key.ChatID)
@@ -287,7 +312,7 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 	answer := ""
 	var item map[string]any
 	if cmd.Reference != nil {
-		if cmd.Reference.Kind == "last" && !regexp.MustCompile(`(?i)(?:^|\s)(?:его|е[её]|этого|этой|него|не[её])(?:\s|[?!.]|$)`).MatchString(text) {
+		if cmd.Reference.Kind == "last" && !regexp.MustCompile(`(?i)(?:^|\s)(?:его|е[её]|этого|этой|него|не[её])(?:\s|[?!.]|$)`).MatchString(text) && !repeatWriteoff.MatchString(strings.TrimSpace(text)) {
 			return b.sendMessage(key.ChatID, "Уточните название или номер материала: ссылка на предыдущий объект неоднозначна.")
 		}
 		if cmd.Reference.Kind == "name" && !strings.Contains(strings.ToLower(text), strings.ToLower(cmd.Reference.Name)) {
@@ -303,6 +328,8 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 	}
 	switch cmd.Action {
+	case "get_all_product_stock":
+		return b.productsMenu(key, workshop)
 	case "list_assembly_tasks":
 		return b.ordersMenu(key, workshop, 0)
 	case "start_assembly":
@@ -378,11 +405,20 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		if !foundQuantity {
 			return b.sendMessage(key.ChatID, "Укажите количество цифрами; изменение не выполнено.")
 		}
-		if unit != "" {
-			explicit, e := inventory.InputUnit(text, item["base_unit"].(string), "")
-			if e != nil || explicit != unit {
+		explicit, e := inventory.InputUnit(text, item["base_unit"].(string), "")
+		if e != nil {
+			return b.sendMessage(key.ChatID, "Единица несовместима с материалом. Уточните количество и единицу.")
+		}
+		if explicit != "" {
+			if unit != "" && explicit != unit {
 				return b.sendMessage(key.ChatID, "Уточните единицу количества; изменение не выполнено.")
 			}
+			unit = explicit
+		} else {
+			if unit != "" && unit != inventory.DisplayUnit(item) {
+				return b.sendMessage(key.ChatID, "Уточните единицу количества; изменение не выполнено.")
+			}
+			unit = inventory.DisplayUnit(item)
 		}
 		if unit == "" {
 			unit = inventory.DisplayUnit(item)
@@ -401,6 +437,9 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 		b.selectMaterial(key, workshop, item["id"].(int64))
 		proposal := semanticChange{Amount: *cmd.Amount, Mode: cmd.QuantityMode, Unit: unit, DisplayUnit: inventory.DisplayUnit(item), SessionID: b.currentList(key, workshop).SessionID}
+		if cmd.QuantityMode == "decrease" && inventory.ConvertToBase(unit, *cmd.Amount) > item["current_stock"].(float64) {
+			return b.sendMessage(key.ChatID, fmt.Sprintf("Нельзя списать %s: доступно %s. Остаток не изменён.", inventory.FormatQuantity(inventory.ConvertToBase(unit, *cmd.Amount), unit), inventory.Quantity(item, "current_stock")))
+		}
 		raw, _ := json.Marshal(proposal)
 		verb := map[string]string{"absolute": "установить остаток", "increase": "добавить", "decrease": "списать"}[cmd.QuantityMode]
 		answer = fmt.Sprintf("Материал: %s.\nДействие: %s %s.\nПодтвердить?", item["name"], verb, inventory.FormatQuantity(inventory.ConvertToBase(unit, *cmd.Amount), unit))
@@ -408,7 +447,7 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		return b.screen(key, answer+"\n"+formatTokenUsage(usage), choice{Text: "Подтвердить", Action: "semantic_stock_confirm", Workshop: workshop, Target: item["id"].(int64), Value: string(raw)}, choice{Text: "Отмена", Action: "semantic_cancel", Workshop: workshop})
 	default:
 		outcome = "clarification"
-		answer = "Уточните материал и действие: узнать остаток, установить новое значение, добавить или списать. Можно открыть /materials."
+		answer = "Не удалось однозначно понять запрос. Уточните действие или откройте меню: задачи — /task, материалы — /materials, товары — /products. Данные не изменены."
 	}
 	if b.Agent != nil {
 		m := b.Agent.Memory.ForUser(key.UserID)

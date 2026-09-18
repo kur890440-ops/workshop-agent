@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/memory"
@@ -27,12 +28,14 @@ type uiState struct {
 	Expires time.Time
 }
 type buttonAction struct {
-	Key      sessionKey
-	Action   string
-	Workshop int64
-	Target   int64
-	Value    string
-	Expires  time.Time
+	Form        *setupSession
+	FormVersion int
+	Key         sessionKey
+	Action      string
+	Workshop    int64
+	Target      int64
+	Value       string
+	Expires     time.Time
 }
 type telegramCallback struct {
 	ID      string           `json:"id"`
@@ -51,6 +54,18 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	if errors.Is(err, errFormExpired) {
+		return errFormExpired.Error()
+	}
+	var denied *invariants.Denied
+	if errors.As(err, &denied) {
+		return denied.Error()
+	}
+	for _, e := range []error{invariants.ErrProtected, invariants.ErrConfirmation, invariants.ErrVersion} {
+		if errors.Is(err, e) {
+			return e.Error()
+		}
+	}
 	var posting *products.PostingError
 	if errors.As(err, &posting) {
 		return posting.Error()
@@ -151,6 +166,12 @@ func (b *Bot) api(method string, payload any, out any) error {
 	return nil
 }
 func (b *Bot) screen(key sessionKey, text string, choices ...choice) error {
+	s := b.getSetup(key.ChatID, key.UserID)
+	if s != nil {
+		choices = b.formChoices(key, s, text, choices)
+	} else {
+		choices = b.dialogChoices(key, choices)
+	}
 	rows := [][]inlineButton{}
 	b.uiMu.Lock()
 	if b.buttons == nil {
@@ -176,11 +197,20 @@ func (b *Bot) screen(key sessionKey, text string, choices ...choice) error {
 			return err
 		}
 		id := base64.RawURLEncoding.EncodeToString(token)
-		b.buttons[id] = buttonAction{key, c.Action, c.Workshop, c.Target, c.Value, time.Now().Add(15 * time.Minute)}
+		a := buttonAction{Key: key, Action: c.Action, Workshop: c.Workshop, Target: c.Target, Value: c.Value, Expires: time.Now().Add(15 * time.Minute), Form: s}
+		if s != nil {
+			a.FormVersion = s.navigation.Version
+		}
+		b.buttons[id] = a
 		rows = append(rows, []inlineButton{{Text: c.Text, Data: "wa:" + id}})
 	}
 	b.uiMu.Unlock()
-	return b.api("sendMessage", map[string]any{"chat_id": key.ChatID, "text": text, "reply_markup": map[string]any{"inline_keyboard": rows}, "disable_web_page_preview": true}, nil)
+	var msg telegramMessage
+	err := b.api("sendMessage", map[string]any{"chat_id": key.ChatID, "text": text, "reply_markup": map[string]any{"inline_keyboard": rows}, "disable_web_page_preview": true}, &msg)
+	if s != nil && s.navigation != nil && err == nil {
+		s.navigation.MessageID = msg.MessageID
+	}
+	return err
 }
 func (b *Bot) handleIdentityMessage(msg *telegramMessage, user int64, text string) (bool, error) {
 	key := sessionKey{msg.Chat.ID, user}
@@ -236,7 +266,7 @@ func (b *Bot) handleIdentityMessage(msg *telegramMessage, user int64, text strin
 			return true, b.sendMessage(key.ChatID, "Название должно быть не длиннее 120 символов.")
 		}
 		b.uiMu.Lock()
-		delete(b.ui, key)
+		b.ui[key] = &uiState{"create_confirm", time.Now().Add(15 * time.Minute)}
 		b.uiMu.Unlock()
 		return true, b.screen(key, "Создать мастерскую «"+text+"»?", choice{Text: "Создать", Action: "create_confirm", Value: text}, choice{Text: "Отмена", Action: "home"})
 	}
@@ -408,6 +438,18 @@ func (b *Bot) handleCallback(c *telegramCallback) error {
 }
 func (b *Bot) executeButton(a buttonAction) error {
 	key := a.Key
+	if a.Form != nil {
+		s := b.getSetup(key.ChatID, key.UserID)
+		if s != a.Form || s.navigation == nil || s.navigation.Version != a.FormVersion {
+			return errFormExpired
+		}
+	}
+	if strings.HasPrefix(a.Action, "form_") {
+		return b.formButton(a)
+	}
+	if strings.HasPrefix(a.Action, "dialog_") {
+		return b.dialogButton(a)
+	}
 	if a.Action == "daily_summary" {
 		return b.executeSemantic(key, a.Workshop, &llm.StructuredCommand{Action: "get_daily_summary"}, nil, "local", "/summary")
 	}
@@ -431,6 +473,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 	}
 	if strings.HasPrefix(a.Action, "orders_") {
 		return b.ordersButton(a)
+	}
+	if a.Action == "invariant_update" {
+		return b.invariantButton(a)
 	}
 	if strings.HasPrefix(a.Action, "completion_") {
 		return b.completionButton(a)
@@ -512,6 +557,7 @@ func (b *Bot) executeButton(a buttonAction) error {
 		if err != nil {
 			return err
 		}
+		b.selectMaterial(key, a.Workshop, a.Target)
 		return b.sendMessage(key.ChatID, fmt.Sprintf("%s — %s. Изменение сохранено.", item["name"], inventory.FormatQuantity(stock, p.DisplayUnit)))
 	case "clear_execute":
 		return b.clearChat(key)
@@ -526,6 +572,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 	case "material_unit_confirm":
 		if err := auth.Require(b.WS.DB(), key.UserID, a.Workshop, auth.InventoryWrite); err != nil {
 			return err
+		}
+		if s := b.getSetup(key.ChatID, key.UserID); s != nil && s.kind == "material_unit" {
+			s.stage = 2
 		}
 		return b.screen(key, "Установить рабочую единицу «"+materialUnit(a.Value)+"»? Количество на складе не изменится.", choice{Text: "Подтвердить", Action: "material_unit_save", Workshop: a.Workshop, Target: a.Target, Value: a.Value}, choice{Text: "Отмена", Action: "materials", Workshop: a.Workshop})
 	case "material_unit_save":
@@ -581,8 +630,14 @@ func (b *Bot) executeButton(a buttonAction) error {
 		}
 		return b.sendMessage(key.ChatID, "Изменения сохранены.")
 	case "home":
+		if s := b.getSetup(key.ChatID, key.UserID); s != nil {
+			return b.formExit(key, s, "home")
+		}
 		return b.home(key)
 	case "switch":
+		if s := b.getSetup(key.ChatID, key.UserID); s != nil {
+			return b.formExit(key, s, "switch")
+		}
 		return b.switcher(key)
 	case "switch_to":
 		if err := b.dropAssembly(key); err != nil {
@@ -604,6 +659,13 @@ func (b *Bot) executeButton(a buttonAction) error {
 		b.uiMu.Unlock()
 		return b.sendMessage(key.ChatID, "Введите название мастерской или /cancel.")
 	case "create_confirm":
+		b.uiMu.Lock()
+		state := b.ui[key]
+		delete(b.ui, key)
+		b.uiMu.Unlock()
+		if state == nil || state.Kind != "create_confirm" || time.Now().After(state.Expires) {
+			return errFormExpired
+		}
 		if err := b.dropAssembly(key); err != nil {
 			return err
 		}

@@ -51,6 +51,100 @@ func semanticFixture(t *testing.T) (*harness, *semanticStub, int64) {
 	return h, stub, w
 }
 func lastAnswer(h *harness) string { return h.sent[len(h.sent)-1]["text"].(string) }
+
+func TestLLMTypoMenuRouting(t *testing.T) {
+	h, s, _ := semanticFixture(t)
+	for _, tc := range []struct{ text, action, want string }{{"задачт", "list_assembly_tasks", "Текущих задач сборки нет"}, {"задчи", "list_assembly_tasks", "Текущих задач сборки нет"}, {"материлы", "get_all_material_stock", "Материалы:"}, {"товраы", "get_all_product_stock", "Продуктов пока нет"}} {
+		before := s.calls
+		s.raw = `{"action":"` + tc.action + `"}`
+		h.message(t, 900001, tc.text)
+		requireAnswer(t, h, tc.want)
+		if s.calls != before+1 {
+			t.Fatal("typo did not reach LLM", tc.text)
+		}
+	}
+	var n int
+	for _, table := range []string{"working_memory", "inventory_movements", "production_records"} {
+		if e := h.bot.WS.DB().QueryRow("SELECT COUNT(*) FROM " + table).Scan(&n); e != nil || n != 0 {
+			t.Fatal(table, n, e)
+		}
+	}
+	s.raw = `{"action":"clarification"}`
+	h.message(t, 900001, "зад")
+	requireAnswer(t, h, "Не удалось однозначно понять")
+}
+
+func TestRepeatedWriteoffUsesScopedLastMaterial(t *testing.T) {
+	h, s, w := semanticFixture(t)
+	s.raw = `{"action":"change_material_stock","reference":{"kind":"name","entity_type":"material","name":"кисточек"},"amount":10,"quantity_mode":"decrease","unit":"pcs"}`
+	h.message(t, 900001, "спиши 10 кисточек")
+	h.click(t, 900001, "Подтвердить")
+	calls := s.calls
+	h.message(t, 900001, "и спиши еще 500")
+	requireAnswer(t, h, "Нельзя списать 500 шт: доступно 390 шт")
+	h.message(t, 900001, "спиши ещё 5")
+	requireAnswer(t, h, "списать 5 шт")
+	stock, e := h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 390 {
+		t.Fatal(stock, e)
+	}
+	h.click(t, 900001, "Подтвердить")
+	stock, e = h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 385 {
+		t.Fatal(stock, e)
+	}
+	if s.calls != calls {
+		t.Fatal("repeat called LLM")
+	}
+	h.message(t, 900001, "/session new")
+	h.message(t, 900001, "и спиши еще 5")
+	requireAnswer(t, h, "Уточните, о каком материале")
+}
+
+func TestWriteoffMissingQuantityAndDefaultUnit(t *testing.T) {
+	h, s, w := semanticFixture(t)
+	h.message(t, 900001, "кисточки списывай")
+	requireAnswer(t, h, "Сколько списать")
+	if s.calls != 0 {
+		t.Fatal("missing amount called LLM")
+	}
+	s.raw = `{"action":"change_material_stock","reference":{"kind":"name","entity_type":"material","name":"кисточек"},"amount":500,"quantity_mode":"decrease","unit":"pcs"}`
+	h.message(t, 900001, "спиши 500 кисточек")
+	requireAnswer(t, h, "Нельзя списать 500 шт: доступно 400 шт")
+	s.raw = `{"action":"change_material_stock","reference":{"kind":"name","entity_type":"material","name":"кисточек"},"amount":10,"quantity_mode":"decrease","unit":"pcs"}`
+	h.message(t, 900001, "спиши 10 кисточек")
+	requireAnswer(t, h, "Подтвердить?")
+	stock, e := h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 400 {
+		t.Fatal(stock, e)
+	}
+	h.click(t, 900001, "Подтвердить")
+	stock, e = h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 390 {
+		t.Fatal(stock, e)
+	}
+}
+
+func TestSemanticRemoveBrushesSpelledUnit(t *testing.T) {
+	h, s, w := semanticFixture(t)
+	s.raw = `{"action":"change_material_stock","reference":{"kind":"name","entity_type":"material","name":"кисточки"},"amount":10,"quantity_mode":"decrease","unit":"pcs"}`
+	h.message(t, 900001, "кисточки убери 10 штук")
+	requireAnswer(t, h, "списать 10 шт")
+	stock, e := h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 400 {
+		t.Fatal(stock, e)
+	}
+	h.click(t, 900001, "Подтвердить")
+	stock, e = h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 390 {
+		t.Fatal(stock, e)
+	}
+	h.click(t, 900001, "Подтвердить")
+	stock, e = h.bot.Inv.ForUser(1).GetMaterialStock(w, "Кисточки")
+	if e != nil || stock != 390 {
+		t.Fatal("repeated write", stock, e)
+	}
+}
 func TestSemanticParaphrasesAndFreshDomain(t *testing.T) {
 	h, s, w := semanticFixture(t)
 	for _, text := range []string{"какой остаток 2", "остаток второго материала", "покажи остаток позиции 2", "сколько по второму пункту?", "а второго?"} {

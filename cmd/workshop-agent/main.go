@@ -78,6 +78,14 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) == 2 && os.Args[1] == "day14-invariants-report" {
+		path, err := experiment.RunDay14()
+		fmt.Println(path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "semantic-report" {
 		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
 		if err != nil {

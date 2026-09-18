@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
 )
 
 // AdjustStockByID changes the balance and records its movement atomically.
@@ -55,8 +56,8 @@ func (s *Service) changeStockByID(workshopID, materialID int64, delta float64, a
 	if absolute && stock == previous {
 		return stock, previous, nil
 	}
-	if stock < 0 || math.IsInf(stock, 0) || math.IsNaN(stock) {
-		return 0, 0, fmt.Errorf("invalid resulting stock")
+	if err = invariants.Check(tx, invariants.ProposedAction{ActionType: "change_stock", UserID: s.userID, WorkshopID: workshopID}, invariants.Facts{ResultingStock: stock}); err != nil {
+		return 0, 0, err
 	}
 	if _, err = tx.Exec(`UPDATE materials SET current_stock=?, updated_at=CURRENT_TIMESTAMP WHERE id=? AND workshop_id=?`, stock, materialID, workshopID); err != nil {
 		return 0, 0, err

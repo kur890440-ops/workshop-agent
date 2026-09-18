@@ -59,6 +59,7 @@ func TestCompositionMenuSpecificPackagingAndDuplicates(t *testing.T) {
 		t.Fatal("duplicate confirmation", snap)
 	}
 	h.message(t, 900001, "/setup_stop")
+	openComposition(t, h)
 	h.click(t, 900001, "Добавить компонент")
 	session := h.bot.getSetup(900001, 1)
 	n := 0
@@ -80,6 +81,7 @@ func TestCompositionMenuSpecificPackagingAndDuplicates(t *testing.T) {
 	h.click(t, 900001, "Убрать компонент")
 	h.message(t, 900001, "2")
 	h.click(t, 900001, "Отмена")
+	openComposition(t, h)
 	snap, _ = h.bot.Prod.ForUser(1).Composition(w, p)
 	if len(snap.Rows) != 3 {
 		t.Fatal("cancel delete")
@@ -201,6 +203,7 @@ func TestCompositionReadonlyEmptyAndAssemblyPreserved(t *testing.T) {
 	if err != nil || d == nil || d.Orders != 5 {
 		t.Fatal("draft lost", d, err)
 	}
+	openComposition(t, h)
 	h.click(t, 900001, "Убрать компонент")
 	h.message(t, 900001, "1")
 	h.click(t, 900001, "Сохранить")
@@ -299,6 +302,7 @@ func TestCompositionTypingUnitChangeAndLongList(t *testing.T) {
 	}
 	before := len(h.sent)
 	h.message(t, 900001, "/setup_stop")
+	openComposition(t, h)
 	if len(h.sent)-before < 2 {
 		t.Fatal("composition not split")
 	}

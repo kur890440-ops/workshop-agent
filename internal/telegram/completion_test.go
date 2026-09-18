@@ -39,7 +39,7 @@ func TestCompletionTelegramCancelPostingAndReplay(t *testing.T) {
 	if e != nil || current.Phase != "planning" {
 		t.Fatal(current, e)
 	}
-	for _, a := range []string{"set_quantity", "confirm_plan", "start_production"} {
+	for _, a := range []string{"set_quantity", "confirm_plan", "start_production", "record_result"} {
 		task, e = f.Apply(sc, memory.TaskIntent{Action: a, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)
@@ -113,7 +113,7 @@ func TestCompletionSemanticEntry(t *testing.T) {
 	}
 	sc.TaskID = task.ID
 	q := 1.
-	for _, a := range []string{"set_quantity", "confirm_plan", "start_production"} {
+	for _, a := range []string{"set_quantity", "confirm_plan", "start_production", "record_result"} {
 		task, e = f.Apply(sc, memory.TaskIntent{Action: a, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)

@@ -59,7 +59,7 @@ func newCompletionFixture(t *testing.T) completionFixture {
 	}
 	sc.TaskID = task.ID
 	q := 5.
-	for _, action := range []string{"set_quantity", "confirm_plan", "start_production"} {
+	for _, action := range []string{"set_quantity", "confirm_plan", "start_production", "record_result"} {
 		task, e = f.Apply(sc, TaskIntent{Action: action, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)

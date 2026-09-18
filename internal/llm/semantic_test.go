@@ -33,6 +33,7 @@ func TestSemanticRepairBoundAndUsage(t *testing.T) {
 
 func TestSemanticSchema(t *testing.T) {
 	for _, raw := range []string{
+		`{"action":"get_all_product_stock"}`,
 		`{"action":"get_material_stock","reference":{"kind":"list_position","entity_type":"material","position":2}}`,
 		`{"action":"change_material_stock","reference":{"kind":"name","entity_type":"material","name":"гипса"},"amount":0,"quantity_mode":"absolute"}`,
 	} {
@@ -51,5 +52,26 @@ func TestSemanticSchema(t *testing.T) {
 		if _, err := DecodeSemantic(raw); err == nil {
 			t.Fatal("accepted invalid command", raw)
 		}
+	}
+}
+
+func TestTypoInstructionsReachModel(t *testing.T) {
+	c, _ := NewOpenRouterClient("test", "https://example.invalid", "test")
+	c.HTTPClient = &http.Client{Transport: semanticTransport(func(r *http.Request) (*http.Response, error) {
+		body, e := io.ReadAll(r.Body)
+		if e != nil {
+			t.Fatal(e)
+		}
+		for _, want := range []string{"TYPO HANDLING", "задачт", "list_assembly_tasks", "Preserve negation"} {
+			if !strings.Contains(string(body), want) {
+				t.Fatal("missing instruction", want)
+			}
+		}
+		raw, _ := json.Marshal(map[string]any{"choices": []any{map[string]any{"message": map[string]string{"content": `{"action":"list_assembly_tasks"}`}}}})
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(string(raw))), Header: http.Header{}}, nil
+	})}
+	cmd, _, e := c.Interpret(context.Background(), `{"last_list_type":"material"}`, "задачт")
+	if e != nil || cmd.Action != "list_assembly_tasks" {
+		t.Fatal(cmd, e)
 	}
 }

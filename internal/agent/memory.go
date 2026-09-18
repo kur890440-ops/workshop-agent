@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/memory"
@@ -21,6 +22,13 @@ import (
 func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, user, chat int64, text string) (answer string, usage *llm.Usage, err error) {
 	if err = auth.Require(a.WS.DB(), user, workshop, auth.WorkshopRead); err != nil {
 		return
+	}
+	if action := invariants.AdviceAction(text); action != "" {
+		r := (invariants.InvariantEngine{}).Evaluate(a.WS.DB(), invariants.ProposedAction{ActionType: action, UserID: user, WorkshopID: workshop}, invariants.Facts{})
+		if err = invariants.SaveTrace(a.WS.DB(), r); err != nil {
+			return
+		}
+		return (&invariants.Denied{Result: r}).Error(), &llm.Usage{}, nil
 	}
 	if handled, response, e := a.TaskMessage(user, workshop, text); handled {
 		return response, &llm.Usage{}, e

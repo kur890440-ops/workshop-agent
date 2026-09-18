@@ -34,7 +34,7 @@ func (b *Bot) rememberCompletion(key sessionKey, w int64, id string) error {
 	return nil
 }
 
-var completionPhrase = regexp.MustCompile(`(?i)^(?:завершить задачу|закончить задачу|задача выполнена|сборка завершена|завершить|закончить|закончил|готово)(?:\s+([^\s]+)(?:\s+(?:штуки|штук|шт\.?))?)?$`)
+var completionPhrase = regexp.MustCompile(`(?i)^(?:заверши задачу|закончи задачу|завершить задачу|закончить задачу|задача выполнена|сборка завершена|заверши|закончи|завершить|закончить|закончил|готово)(?:\s+([^\s]+)(?:\s+(?:штуки|штук|шт\.?))?)?$`)
 
 func completionCommand(text string) (bool, string, string) {
 	text = strings.TrimSpace(text)
@@ -148,7 +148,10 @@ func (b *Bot) completionStart(key sessionKey, w int64, id, number string) error 
 		}
 		return b.productionReceipt(key, p)
 	}
-	if t.Status != "active" || !(t.Phase == "execution" && t.CurrentStep == "record_result" || t.Phase == "validation") {
+	if t.Phase == "execution" {
+		return b.denyExecutionCompletion(key, w, t.ID, t.Phase)
+	}
+	if t.Status != "active" || t.Phase != "validation" {
 		if e = b.sendMessage(key.ChatID, "Сначала выполните текущий шаг задачи. Начало и возобновление требуют отдельного подтверждения."); e != nil {
 			return e
 		}

@@ -10,6 +10,23 @@ import (
 	"workshop-agent/internal/workshops"
 )
 
+func TestExplicitPieceUnitForms(t *testing.T) {
+	for _, word := range []string{"штука", "штуки", "штук", "шт", "шт.", "PCS", "ШТУК"} {
+		unit, e := InputUnit("кисточки убери 10 "+word, "pcs", "")
+		if e != nil || unit != "pcs" {
+			t.Fatal(word, unit, e)
+		}
+		if _, e = InputUnit("спиши 10 "+word, "g", ""); e == nil {
+			t.Fatal("incompatible unit accepted", word)
+		}
+	}
+	for _, text := range []string{"10 штуклишних", "10 pcsExtra", "10 gгипса"} {
+		if u, e := InputUnit(text, "pcs", ""); e != nil || u != "" {
+			t.Fatal("partial unit accepted", text, u, e)
+		}
+	}
+}
+
 func TestWorkingUnitsConversionAndAuthorization(t *testing.T) {
 	p := filepath.Join(t.TempDir(), "units.db")
 	u, w := testkit.Owner(t, p)

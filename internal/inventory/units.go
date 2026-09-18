@@ -68,7 +68,7 @@ func FormatQuantity(value float64, unit string) string {
 	return strconv.FormatFloat(converted, 'g', 12, 64) + " " + UnitLabel(unit)
 }
 
-var explicitQuantityUnit = regexp.MustCompile(`(?i)[0-9]+(?:[.,][0-9]+)?\s*(килограмм(?:а|ов)?|грамм(?:а|ов)?|миллилитр(?:а|ов)?|литр(?:а|ов)?|kg|ml|pcs|кг|мл|шт|g|l|г|л)(?:\b|\s|[.,!?]|$)`)
+var explicitQuantityUnit = regexp.MustCompile(`(?i)[0-9]+(?:[.,][0-9]+)?\s*(килограмм(?:а|ов)?|грамм(?:а|ов)?|миллилитр(?:а|ов)?|литр(?:а|ов)?|штук(?:а|и)?|kg|ml|pcs|кг|мл|шт|g|l|г|л)(?:[^\p{L}\p{N}_]|$)`)
 
 // Explicit units in natural-language input override the material's default.
 func InputUnit(text, base, display string) (string, error) {
@@ -78,6 +78,8 @@ func InputUnit(text, base, display string) (string, error) {
 	}
 	raw := strings.ToLower(match[1])
 	switch raw {
+	case "штука", "штуки", "штук", "шт":
+		raw = "pcs"
 	case "кг", "килограмма":
 		raw = "kg"
 	case "г", "грамма":

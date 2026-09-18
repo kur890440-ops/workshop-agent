@@ -103,7 +103,7 @@ func (b *Bot) materialStockStep(chatID int64, text string, s *setupSession) erro
 		s.name = fmt.Sprint(item["name"])
 		s.unit = inventory.DisplayUnit(item)
 		if s.kind == "material_unit" {
-			b.clearSetup(chatID, s.userID)
+			s.stage = 1
 			choices := []choice{}
 			for _, u := range inventory.CompatibleUnits(item["base_unit"].(string)) {
 				choices = append(choices, choice{Text: inventory.UnitLabel(u), Action: "material_unit_confirm", Workshop: s.workshopID, Target: s.materialID, Value: u})
@@ -113,6 +113,9 @@ func (b *Bot) materialStockStep(chatID int64, text string, s *setupSession) erro
 		s.stage = 1
 		s.name = materialLabel(s.name)
 		return b.sendMessage(chatID, fmt.Sprintf("%s: %s.\nВведите новый остаток или изменение:\n10 — установить остаток 10;\n+2 — добавить 2;\n-0,5 — списать 0,5.\nЕдиница: %s.\nОтмена: /setup_stop", s.name, inventory.Quantity(item, "current_stock"), inventory.UnitLabel(s.unit)))
+	}
+	if s.kind == "material_unit" {
+		return b.screen(sessionKey{chatID, s.userID}, "Выберите единицу или подтвердите её кнопкой ниже.", s.navigation.Current.Choices...)
 	}
 	input := strings.TrimSpace(text)
 	relative := strings.HasPrefix(input, "+") || strings.HasPrefix(input, "-")
@@ -128,6 +131,11 @@ func (b *Bot) materialStockStep(chatID int64, text string, s *setupSession) erro
 		return b.sendMessage(chatID, "Рабочая единица изменилась. Повторно введите номер материала, затем количество в новой единице. /setup_stop — отмена.")
 	}
 	if err != nil {
+		if relative && value < 0 {
+			if item, e := inv.Material(s.workshopID, s.materialID); e == nil && inventory.ConvertToBase(s.unit, -value) > item["current_stock"].(float64) {
+				return b.sendMessage(chatID, fmt.Sprintf("Нельзя списать %g %s: доступно %s.\nВведите другое значение.", -value, inventory.UnitLabel(s.unit), inventory.Quantity(item, "current_stock")))
+			}
+		}
 		return b.sendMessage(chatID, "Не удалось изменить остаток. Проверьте доступ и количество: остаток не может стать отрицательным. Повторите ввод или /setup_stop.")
 	}
 	b.clearSetup(chatID, s.userID)

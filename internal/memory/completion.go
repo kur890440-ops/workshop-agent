@@ -8,6 +8,7 @@ import (
 	"errors"
 	"time"
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/products"
 )
 
@@ -38,7 +39,7 @@ func completionTask(tx *sql.Tx, sc Scope) (*Task, error) {
 	return t, nil
 }
 func canPost(t *Task) bool {
-	return t.FSMVersion == 1 && t.Status == "active" && ((t.Phase == "execution" && t.CurrentStep == "record_result") || (t.Phase == "validation" && (t.CurrentStep == "verify_result" || t.CurrentStep == "confirm_completion")))
+	return t.FSMVersion == 1 && t.Status == "active" && t.Phase == "validation" && (t.CurrentStep == "verify_result" || t.CurrentStep == "confirm_completion")
 }
 func receipt(tx *sql.Tx, sc Scope) (products.ProductionPlan, error) {
 	var p products.ProductionPlan
@@ -77,6 +78,9 @@ func (s *Service) PrepareCompletion(sc Scope, chat int64, qty float64) (Completi
 		out.Task = publicTask(t)
 		if t.Status == "completed" {
 			out.Plan, e = receipt(tx, sc)
+			return e
+		}
+		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase}); e != nil {
 			return e
 		}
 		if !canPost(t) {
@@ -128,6 +132,9 @@ func (s *Service) PostCompletion(sc Scope, chat int64, token string) (products.P
 			return ErrTaskChanged
 		}
 		if e = session(tx, sc); e != nil {
+			return e
+		}
+		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase}); e != nil {
 			return e
 		}
 		if !canPost(t) || t.Version != version {

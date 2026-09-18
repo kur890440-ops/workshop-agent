@@ -45,6 +45,7 @@ type Bot struct {
 }
 
 type setupSession struct {
+	navigation  *formNavigation
 	composition *compositionInput
 	productID   int64
 	productIDs  []int64
@@ -169,8 +170,17 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	if text == "" {
 		return nil
 	}
+	if handled, e := b.formMessage(sessionKey{chatID, userID}, text); handled {
+		return e
+	}
 	if isClearCommand(text) {
 		return b.clearPrompt(sessionKey{chatID, userID})
+	}
+	if handled, e := b.invariantMessage(sessionKey{chatID, userID}, text); handled {
+		if e != nil {
+			return b.sendMessage(chatID, publicError(e))
+		}
+		return nil
 	}
 	if handled, err := b.completionMessage(sessionKey{chatID, userID}, text); handled {
 		if err != nil {
@@ -448,6 +458,14 @@ func (b *Bot) setupDatabase() error {
 }
 
 func (b *Bot) startSetup(chatID int64, session *setupSession) {
+	b.invalidateForm(sessionKey{chatID, session.userID})
+	b.uiMu.Lock()
+	for id, a := range b.buttons {
+		if a.Key == (sessionKey{chatID, session.userID}) && (strings.HasPrefix(a.Action, "materials_") || strings.HasPrefix(a.Action, "material_unit_")) {
+			delete(b.buttons, id)
+		}
+	}
+	b.uiMu.Unlock()
 	b.invalidateProductButtons(sessionKey{chatID, session.userID})
 	b.setupMu.Lock()
 	defer b.setupMu.Unlock()
@@ -461,6 +479,7 @@ func (b *Bot) getSetup(chatID, userID int64) *setupSession {
 }
 
 func (b *Bot) clearSetup(chatID, userID int64) {
+	b.invalidateForm(sessionKey{chatID, userID})
 	b.invalidateProductButtons(sessionKey{chatID, userID})
 	b.setupMu.Lock()
 	defer b.setupMu.Unlock()
@@ -643,6 +662,15 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) error {
+	var formUser int64
+	if b.WS.DB().QueryRow("SELECT id FROM users WHERE telegram_user_id=?", chatID).Scan(&formUser) == nil && b.getSetup(chatID, formUser) != nil {
+		return b.screen(sessionKey{chatID, formUser}, text)
+	}
+	if formUser > 0 {
+		if kind, _, _ := b.dialogState(sessionKey{chatID, formUser}); kind != "" {
+			return b.screen(sessionKey{chatID, formUser}, text)
+		}
+	}
 	if i := strings.LastIndex(text, "\nТокены LLM:"); i >= 0 {
 		var user int64
 		if err := b.WS.DB().QueryRow("SELECT id FROM users WHERE telegram_user_id=?", chatID).Scan(&user); err == nil {
