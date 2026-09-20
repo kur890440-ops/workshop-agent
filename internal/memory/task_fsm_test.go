@@ -35,14 +35,14 @@ func TestTaskFSMFlowPauseRestartScope(t *testing.T) {
 	sc.TaskID = task.ID
 	apply := func(action string, q *float64) {
 		t.Helper()
-		task, err = f.Apply(sc, TaskIntent{Action: action, Quantity: q, Version: task.Version})
+		task, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: action, Quantity: q, Version: task.Version})
 		if err != nil {
 			t.Fatal(action, err)
 		}
 	}
 	rejected := func(action string) {
 		t.Helper()
-		if _, e := f.Apply(sc, TaskIntent{Action: action, Version: task.Version}); !errors.Is(e, ErrTransition) {
+		if _, e := f.Apply(sc, TaskIntent{Confirmed: true, Action: action, Version: task.Version}); !errors.Is(e, ErrTransition) {
 			t.Fatal(action, e)
 		}
 	}
@@ -63,8 +63,8 @@ func TestTaskFSMFlowPauseRestartScope(t *testing.T) {
 	q := 25.
 	apply("set_quantity", &q)
 	old := task.Version
-	apply("confirm_plan", nil)
-	if _, e := f.Apply(sc, TaskIntent{Action: "start_production", Version: old}); !errors.Is(e, ErrTaskChanged) {
+	apply("confirm_task", nil)
+	if _, e := f.Apply(sc, TaskIntent{Confirmed: true, Action: "start_production", Version: old}); !errors.Is(e, ErrTaskChanged) {
 		t.Fatal(e)
 	}
 	pauseResume()
@@ -84,7 +84,7 @@ func TestTaskFSMFlowPauseRestartScope(t *testing.T) {
 	apply("record_result", &q)
 	pauseResume()
 	apply("verify_result", nil)
-	if _, err = f.Apply(sc, TaskIntent{Action: "complete", Version: task.Version}); !errors.Is(err, ErrPostingRequired) {
+	if _, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "complete", Version: task.Version}); !errors.Is(err, ErrPostingRequired) {
 		t.Fatal(err)
 	}
 	if _, err = store.DB.Exec("INSERT INTO materials(id,workshop_id,name,category,base_unit,current_stock) VALUES(4242,?,'Test material','raw','g',1000)", w); err != nil {
@@ -110,6 +110,15 @@ func TestTaskFSMFlowPauseRestartScope(t *testing.T) {
 	}
 	if task.Phase != "done" || task.Status != "completed" || task.CompletedAt == nil {
 		t.Fatal(task)
+	}
+	if task.ID != sc.TaskID {
+		t.Fatal("lifecycle changed task ID")
+	}
+	for _, event := range []string{"TASK_CREATED", "TASK_UPDATED", "TASK_CONFIRMED", "TASK_STARTED", "TASK_PAUSED", "TASK_RESUMED", "TASK_VALIDATION_STARTED", "TASK_COMPLETED"} {
+		var n int
+		if e := store.DB.QueryRow("SELECT COUNT(*) FROM audit_logs WHERE event_type=?", event).Scan(&n); e != nil || n == 0 {
+			t.Fatal(event, n, e)
+		}
 	}
 	rejected("resume")
 	if e := s.CompleteWorkingMemory(sc, false); e == nil {
@@ -164,7 +173,7 @@ func TestTaskFSMRestartHelper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err = (TaskStateMachine{s}).Apply(sc, TaskIntent{Action: "resume", Version: task.Version}); err != nil {
+	if _, err = (TaskStateMachine{s}).Apply(sc, TaskIntent{Confirmed: true, Action: "resume", Version: task.Version}); err != nil {
 		t.Fatal(err)
 	}
 	context, err := (AgentContextBuilder{Memory: s}).Build(session, "что от меня нужно?", nil, All)
@@ -194,7 +203,7 @@ func TestTaskFSMAtomicHistoryAndForeground(t *testing.T) {
 	if _, err = st.DB.Exec(`CREATE TRIGGER fail_task_history BEFORE INSERT ON task_transitions BEGIN SELECT RAISE(ABORT,'test failure'); END`); err != nil {
 		t.Fatal(err)
 	}
-	if _, e := f.Apply(sc, TaskIntent{Action: "pause", Version: a.Version}); e == nil {
+	if _, e := f.Apply(sc, TaskIntent{Confirmed: true, Action: "pause", Version: a.Version}); e == nil {
 		t.Fatal("history failure ignored")
 	}
 	current, err := s.Task(sc)
@@ -204,7 +213,7 @@ func TestTaskFSMAtomicHistoryAndForeground(t *testing.T) {
 	if _, err = st.DB.Exec("DROP TRIGGER fail_task_history"); err != nil {
 		t.Fatal(err)
 	}
-	a, err = f.Apply(sc, TaskIntent{Action: "pause", Version: a.Version})
+	a, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "pause", Version: a.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,15 +221,15 @@ func TestTaskFSMAtomicHistoryAndForeground(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, e := f.Apply(sc, TaskIntent{Action: "resume", Version: a.Version}); !errors.Is(e, ErrForeground) {
+	if _, e := f.Apply(sc, TaskIntent{Confirmed: true, Action: "resume", Version: a.Version}); !errors.Is(e, ErrForeground) {
 		t.Fatal(e)
 	}
 	sc.TaskID = b.ID
-	b, err = f.Apply(sc, TaskIntent{Action: "cancel", Version: b.Version})
+	b, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "cancel", Version: b.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, e := f.Apply(sc, TaskIntent{Action: "resume", Version: b.Version}); !errors.Is(e, ErrTransition) {
+	if _, e := f.Apply(sc, TaskIntent{Confirmed: true, Action: "resume", Version: b.Version}); !errors.Is(e, ErrTransition) {
 		t.Fatal(e)
 	}
 	var n int
@@ -256,24 +265,24 @@ func TestTaskFSMOwnershipPermissionsAndFailure(t *testing.T) {
 	}
 	foreign := Scope{UserID: other, WorkshopID: w, TaskID: task.ID}
 	for _, action := range []string{"pause", "resume", "cancel", "complete"} {
-		if _, err = (TaskStateMachine{s.ForUser(other)}).Apply(foreign, TaskIntent{Action: action, Version: task.Version}); err == nil {
+		if _, err = (TaskStateMachine{s.ForUser(other)}).Apply(foreign, TaskIntent{Confirmed: true, Action: action, Version: task.Version}); err == nil {
 			t.Fatal("foreign action", action)
 		}
 	}
 	if _, err = ws.DB().Exec("UPDATE workshop_members SET role='VIEWER' WHERE user_id=? AND workshop_id=?", u, w); err != nil {
 		t.Fatal(err)
 	}
-	if _, err = f.Apply(sc, TaskIntent{Action: "pause", Version: task.Version}); !errors.Is(err, auth.ErrDenied) {
+	if _, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "pause", Version: task.Version}); !errors.Is(err, auth.ErrDenied) {
 		t.Fatal(err)
 	}
 	if _, err = ws.DB().Exec("UPDATE workshop_members SET role='OWNER' WHERE user_id=? AND workshop_id=?", u, w); err != nil {
 		t.Fatal(err)
 	}
-	task, err = f.Apply(sc, TaskIntent{Action: "fail", Version: task.Version})
+	task, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "fail", Version: task.Version})
 	if err != nil || task.Status != "failed" {
 		t.Fatal(task, err)
 	}
-	if _, err = f.Apply(sc, TaskIntent{Action: "resume", Version: task.Version}); !errors.Is(err, ErrTransition) {
+	if _, err = f.Apply(sc, TaskIntent{Confirmed: true, Action: "resume", Version: task.Version}); !errors.Is(err, ErrTransition) {
 		t.Fatal(err)
 	}
 }

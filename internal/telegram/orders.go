@@ -16,7 +16,7 @@ func ordersAlias(text string) bool {
 		return true
 	}
 	switch strings.ToLower(strings.Trim(strings.TrimSpace(text), ".!?")) {
-	case "задачи", "список задач", "/orders", "заказ", "заказы", "текущие заказы", "покажи заказы", "список заказов", "собрать заказ", "нужно собрать заказ":
+	case "/tasks", "что сейчас в работе", "задачи", "список задач", "/orders", "заказ", "заказы", "текущие заказы", "покажи заказы", "список заказов", "собрать заказ", "нужно собрать заказ":
 		return true
 	}
 	return false
@@ -56,7 +56,7 @@ func (b *Bot) ordersMenu(key sessionKey, w int64, page int, filter ...bool) erro
 	}
 	list := []*memory.Task{}
 	for _, t := range tasks {
-		if t.Type == "assembly" || t.Type == "production_plan" {
+		if t.Type == "assembly" || t.Type == "production" {
 			list = append(list, t)
 		}
 	}
@@ -76,9 +76,9 @@ func (b *Bot) ordersMenu(key sessionKey, w int64, page int, filter ...bool) erro
 	choices := []choice{}
 	for i := start; i < end; i++ {
 		t := list[i]
-		status := map[string]string{"planning": "Планирование", "execution": "Выполнение", "validation": "Проверка"}[t.Phase]
+		status := map[string]string{"planning": "Подготовка задачи", "execution": "Выполнение", "validation": "Проверка"}[t.Phase]
 		if status == "" {
-			status = "Планирование"
+			status = "Подготовка задачи"
 		}
 		if t.Status == "paused" {
 			status = "На паузе"
@@ -121,7 +121,7 @@ func (b *Bot) orderCard(key sessionKey, w int64, id string) error {
 		return err
 	}
 	if t.FSMVersion == 0 {
-		text = fmt.Sprintf("Задача сборки #%s\n%s — %g шт.\nЭтап: планирование\nСтатус: %s\nСуществующий план; склад не изменён.", t.ID, t.State.ProductName, t.State.Quantity, t.Status)
+		text = fmt.Sprintf("Задача сборки #%s\n%s — %g шт.\nЭтап: подготовка задачи\nСтатус: %s\nСуществующая задача; склад не изменён.", t.ID, t.State.ProductName, t.State.Quantity, t.Status)
 	}
 	text += b.assignmentText(key, w, t.CreatedByUserID, t.AssignedToUserID)
 	if t.ExpectedActionType == "USER_INPUT" {
@@ -140,16 +140,21 @@ func (b *Bot) orderCard(key sessionKey, w int64, id string) error {
 		choices = append(choices, choice{Text: "Сменить исполнителя", Action: "orders_assign", Workshop: w, Value: string(raw)})
 	}
 	add := func(label, action string) {
+		if !b.taskActionAllowed(key, w, t, action) {
+			return
+		}
 		raw, _ := json.Marshal(taskButtonData{ID: id, Version: t.Version, Action: action})
 		choices = append(choices, choice{Text: label, Action: "orders_confirm", Workshop: w, Value: string(raw)})
 	}
 	if memory.TaskPermission(b.WS.DB(), key.UserID, w, t) == nil {
-		choices = append(choices, choice{Text: "Завершить задачу", Action: "completion_open", Workshop: w, Value: id})
+		if b.taskActionAllowed(key, w, t, "complete") {
+			choices = append(choices, choice{Text: "Завершить задачу", Action: "completion_open", Workshop: w, Value: id})
+		}
 		if t.Status == "paused" {
 			add("Продолжить сборку", "resume")
 		} else if t.Status == "active" || t.Status == "waiting_input" {
 			if t.FSMVersion == 0 {
-				add("Подготовить план к сборке", "adopt_plan")
+				add("Подготовить задачу к сборке", "adopt_task")
 			} else if t.ExpectedActionType == "USER_CONFIRMATION" {
 				action := t.ExpectedAction
 				if action == "confirm_completion" {
@@ -210,7 +215,8 @@ func (b *Bot) ordersButton(a buttonAction) error {
 		if d.Action == "complete" {
 			return b.completionStart(a.Key, a.Workshop, d.ID, "")
 		}
-		_, err := (memory.TaskStateMachine{Memory: b.Agent.Memory.ForUser(a.Key.UserID)}).Apply(memory.Scope{UserID: a.Key.UserID, WorkshopID: a.Workshop, TaskID: d.ID}, memory.TaskIntent{Action: d.Action, Version: d.Version})
+		sc := memory.Scope{UserID: a.Key.UserID, WorkshopID: a.Workshop, TaskID: d.ID}
+		_, err := (memory.TaskStateMachine{Memory: b.Agent.Memory.ForUser(a.Key.UserID)}).Request(sc, memory.TransitionRequest{TaskID: d.ID, ActorUserID: a.Key.UserID, Transition: d.Action, Source: "telegram_confirmation", Payload: memory.TaskIntent{Version: d.Version, Confirmed: true}})
 		if err != nil {
 			return err
 		}

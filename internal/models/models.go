@@ -117,17 +117,6 @@ type Shipment struct {
 	Notes           string
 }
 
-type ProductionPlan struct {
-	ID              int64
-	WorkshopID      int64
-	ProductID       int64
-	PlannedQuantity float64
-	StartDate       string
-	DueDate         string
-	Status          string
-	Notes           string
-}
-
 type ConversationSession struct {
 	ID             int64
 	WorkshopID     int64

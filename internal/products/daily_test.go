@@ -40,7 +40,7 @@ func TestDailyProductionFactsDatesIsolation(t *testing.T) {
 	insert(w, q, "2026-09-17", 4, 0)             // business date, local day
 	insert(w, q, "2026-09-17T23:59:59+03:00", 1, 1)
 	insert(w+100, p, "2026-09-17", 999, 999)
-	// Stock movements and plans are not facts of completed production.
+	// Stock movements and unfinished tasks are not facts of completed production.
 	_, err = s.DB().Exec(`INSERT INTO product_movements(workshop_id,product_id,quantity,movement_type,date,reference_type,reference_id) VALUES(?,?,100,'adjustment','2026-09-17','production',1)`, w, p)
 	if err != nil {
 		t.Fatal(err)

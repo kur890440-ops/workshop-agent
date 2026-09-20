@@ -1,0 +1,589 @@
+{
+  "Run": "20260918T125116.721198500Z",
+  "Rows": [
+    {
+      "Input": "Сделаем 20 дефлекторов.",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 20 шт. дефлекторов\nЭтап: Подготовка задачи\nШаг: Подтверждение количества\nОжидается: Укажите количество по задаче: /task quantity 25 53bb425a8567db556d0e3c603d413055 или «Нет, 25». Даже предложенное количество нужно подтвердить.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18 12:51:17",
+        "StartedAt": null,
+        "PausedAt": null,
+        "CompletedAt": null,
+        "Version": 1,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 20
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task pause",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 20 шт. дефлекторов\nЭтап: Подготовка задачи\nШаг: Подтверждение количества\nОжидается: Укажите количество по задаче: /task quantity 25 53bb425a8567db556d0e3c603d413055 или «Нет, 25». Даже предложенное количество нужно подтвердить.\nСтатус: paused\nАвтор: #1\nИсполнитель: #1\nНа паузе. Для продолжения: /task resume 53bb425a8567db556d0e3c603d413055\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.1093789Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T12:51:17.1093789Z",
+        "CompletedAt": null,
+        "Version": 2,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 20
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Input": "/task resume",
+      "Response": "Продолжаем с сохранённого шага.\nЗадача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 20 шт. дефлекторов\nЭтап: Подготовка задачи\nШаг: Подтверждение количества\nОжидается: Укажите количество по задаче: /task quantity 25 53bb425a8567db556d0e3c603d413055 или «Нет, 25». Даже предложенное количество нужно подтвердить.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.132103Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T12:51:17.1093789Z",
+        "CompletedAt": null,
+        "Version": 3,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 20
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "Нет, 25.",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Подготовка задачи\nШаг: Подтверждение параметров задачи\nОжидается: Подтвердите параметры задачи кнопкой или /task confirm_task 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "confirm_task",
+        "ExpectedAction": "confirm_task",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.1599145Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T12:51:17.1093789Z",
+        "CompletedAt": null,
+        "Version": 4,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "Запускай.",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Выполнение\nШаг: Начало выполнения\nОжидается: Подтвердите начало шага: /task start_production 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.1956321Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.1093789Z",
+        "CompletedAt": null,
+        "Version": 5,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "Поставь пока на паузу.",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Выполнение\nШаг: Начало выполнения\nОжидается: Подтвердите начало шага: /task start_production 53bb425a8567db556d0e3c603d413055.\nСтатус: paused\nАвтор: #1\nИсполнитель: #1\nНа паузе. Для продолжения: /task resume 53bb425a8567db556d0e3c603d413055\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.2176403Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 6,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Input": "/session new",
+      "Response": "Начат новый диалог. Рабочая задача и постоянные предпочтения сохранены.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.2176403Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 6,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Input": "Продолжим.",
+      "Response": "Продолжаем с сохранённого шага.\nЗадача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Выполнение\nШаг: Начало выполнения\nОжидается: Подтвердите начало шага: /task start_production 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4010373Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 7,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "что сейчас нужно от меня?",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Выполнение\nШаг: Начало выполнения\nОжидается: Подтвердите начало шага: /task start_production 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4010373Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 7,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task start_production",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Выполнение\nШаг: Ввод результата\nОжидается: Укажите количество фактически произведённых изделий: /task result 25 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4276827Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 8,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task result 25",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Проверка\nШаг: Проверка результата\nОжидается: Проверьте введённый результат: /task verify_result 53bb425a8567db556d0e3c603d413055 или /task correct_result 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nЗаявленный результат: 25 шт.\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4484747Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.2176403Z",
+        "CompletedAt": null,
+        "Version": 9,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task pause",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Проверка\nШаг: Проверка результата\nОжидается: Проверьте введённый результат: /task verify_result 53bb425a8567db556d0e3c603d413055 или /task correct_result 53bb425a8567db556d0e3c603d413055.\nСтатус: paused\nАвтор: #1\nИсполнитель: #1\nЗаявленный результат: 25 шт.\nНа паузе. Для продолжения: /task resume 53bb425a8567db556d0e3c603d413055\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4648443Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.4648443Z",
+        "CompletedAt": null,
+        "Version": 10,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Input": "/task resume",
+      "Response": "Продолжаем с сохранённого шага.\nЗадача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Проверка\nШаг: Проверка результата\nОжидается: Проверьте введённый результат: /task verify_result 53bb425a8567db556d0e3c603d413055 или /task correct_result 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nЗаявленный результат: 25 шт.\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4810284Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.4648443Z",
+        "CompletedAt": null,
+        "Version": 11,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task complete",
+      "Response": "",
+      "Error": "Переход недопустим: выполните текущий шаг задачи.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4810284Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.4648443Z",
+        "CompletedAt": null,
+        "Version": 11,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task verify_result",
+      "Response": "Задача #53bb425a8567db556d0e3c603d413055\nПроизводственная задача: 25 шт. дефлекторов\nЭтап: Проверка\nШаг: Подтверждение завершения\nОжидается: Завершите проверку: /task complete 53bb425a8567db556d0e3c603d413055.\nСтатус: active\nАвтор: #1\nИсполнитель: #1\nЗаявленный результат: 25 шт.\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.",
+      "Error": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "confirm_completion",
+        "ExpectedAction": "confirm_completion",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.4977761Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.4648443Z",
+        "CompletedAt": null,
+        "Version": 12,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Input": "/task resume 53bb425a8567db556d0e3c603d413055",
+      "Response": "",
+      "Error": "Переход недопустим: выполните текущий шаг задачи.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "done",
+        "CurrentStep": "completed",
+        "ExpectedAction": "none",
+        "ExpectedActionType": "NONE",
+        "CreatedAt": "2026-09-18 12:51:17",
+        "UpdatedAt": "2026-09-18T12:51:17.531937Z",
+        "StartedAt": "2026-09-18T12:51:17.1956321Z",
+        "PausedAt": "2026-09-18T12:51:17.4648443Z",
+        "CompletedAt": "2026-09-18T12:51:17.531937Z",
+        "Version": 13,
+        "FSMVersion": 1,
+        "task_id": "53bb425a8567db556d0e3c603d413055",
+        "task_type": "production",
+        "state": {
+          "produced_quantity": 25,
+          "product_id": 1,
+          "product_name": "дефлекторов",
+          "quantity": 25
+        },
+        "status": "completed"
+      }
+    }
+  ],
+  "History": [
+    {
+      "action": "created",
+      "at": "2026-09-18 12:51:17",
+      "from": ":",
+      "status": " → active",
+      "to": "planning:set_quantity"
+    },
+    {
+      "action": "pause",
+      "at": "2026-09-18 12:51:17",
+      "from": "planning:set_quantity",
+      "status": "active → paused",
+      "to": "planning:set_quantity"
+    },
+    {
+      "action": "resume",
+      "at": "2026-09-18 12:51:17",
+      "from": "planning:set_quantity",
+      "status": "paused → active",
+      "to": "planning:set_quantity"
+    },
+    {
+      "action": "set_quantity",
+      "at": "2026-09-18 12:51:17",
+      "from": "planning:set_quantity",
+      "status": "active → active",
+      "to": "planning:confirm_task"
+    },
+    {
+      "action": "confirm_task",
+      "at": "2026-09-18 12:51:17",
+      "from": "planning:confirm_task",
+      "status": "active → active",
+      "to": "execution:start_production"
+    },
+    {
+      "action": "pause",
+      "at": "2026-09-18 12:51:17",
+      "from": "execution:start_production",
+      "status": "active → paused",
+      "to": "execution:start_production"
+    },
+    {
+      "action": "resume",
+      "at": "2026-09-18 12:51:17",
+      "from": "execution:start_production",
+      "status": "paused → active",
+      "to": "execution:start_production"
+    },
+    {
+      "action": "start_production",
+      "at": "2026-09-18 12:51:17",
+      "from": "execution:start_production",
+      "status": "active → active",
+      "to": "execution:record_result"
+    },
+    {
+      "action": "record_result",
+      "at": "2026-09-18 12:51:17",
+      "from": "execution:record_result",
+      "status": "active → active",
+      "to": "validation:verify_result"
+    },
+    {
+      "action": "pause",
+      "at": "2026-09-18 12:51:17",
+      "from": "validation:verify_result",
+      "status": "active → paused",
+      "to": "validation:verify_result"
+    },
+    {
+      "action": "resume",
+      "at": "2026-09-18 12:51:17",
+      "from": "validation:verify_result",
+      "status": "paused → active",
+      "to": "validation:verify_result"
+    },
+    {
+      "action": "verify_result",
+      "at": "2026-09-18 12:51:17",
+      "from": "validation:verify_result",
+      "status": "active → active",
+      "to": "validation:confirm_completion"
+    },
+    {
+      "action": "production_posted",
+      "at": "2026-09-18 12:51:17",
+      "from": "validation:confirm_completion",
+      "status": "active → completed",
+      "to": "done:completed"
+    }
+  ],
+  "Checks": {
+    "done_terminal": true,
+    "production_posted_once": true,
+    "quantity_preserved_after_reopen": true
+  }
+}

@@ -56,7 +56,7 @@ type scenario struct {
 
 var scenarios = []scenario{
 	{Name: "01 · Ссылка на цвет", Question: "А черного?", Expected: "4.2", Short: []string{"Какой остаток белого PETG?", "PETG White: 8.4 кг."}},
-	{Name: "02 · Сохранение количества", Question: "Сколько кистей нужно на нашу текущую партию наборов?", Expected: "50", Quantity: 25, Short: []string{"Уточним план партии.", "Продолжаем расчёт."}},
+	{Name: "02 · Сохранение количества", Question: "Сколько кистей нужно на нашу текущую партию наборов?", Expected: "50", Quantity: 25, Short: []string{"Уточним параметры партии.", "Продолжаем расчёт."}},
 	{Name: "03 · Временная упаковка", Question: "Какую коробку берём для этой партии?", Expected: "Box B", Quantity: 25, Packaging: "Box B", Short: []string{"Обсуждаем текущую партию.", "Продолжаем."}},
 	{Name: "04 · Предпочтение после новой сессии", Question: "Подготовь отчет по текущим остаткам PETG.", Expected: "Итог", Preference: true},
 	{Name: "05 · Domain DB против старого упоминания", Question: "Сколько белого PETG сейчас на складе?", Expected: "8.4", Stale: true},
@@ -170,7 +170,7 @@ func seedScenario(ws *workshops.Service, inv *inventory.Service, prod *products.
 		if s.Packaging != "" {
 			state.Parameters["packaging"] = s.Packaging
 		}
-		if _, err := mem.CreateWorkingMemory(sc, "production_plan", state); err != nil {
+		if _, err := mem.CreateWorkingMemory(sc, "production", state); err != nil {
 			return sc, nil, nil, err
 		}
 	}

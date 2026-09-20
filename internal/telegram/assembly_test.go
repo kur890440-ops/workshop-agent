@@ -109,7 +109,7 @@ func TestAssemblyOrderFlowSnapshotAndNoStockMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	if stock != 20 || moves != 0 {
-		t.Fatal("plan changed stock", stock, moves)
+		t.Fatal("calculation changed stock", stock, moves)
 	}
 	if s.calls != 0 {
 		t.Fatal("assembly used LLM", s.calls)
@@ -177,7 +177,7 @@ func TestAssemblyInvalidation(t *testing.T) {
 			}
 			h.click(t, 900001, "Создать задачу")
 			if taskCount(t, h) != 0 {
-				t.Fatal("invalidated plan saved")
+				t.Fatal("invalidated calculation saved")
 			}
 		})
 	}
@@ -197,7 +197,7 @@ func TestAssemblyPermissionsExistingTaskAndAtomicity(t *testing.T) {
 					t.Fatal(err)
 				}
 			case "rollback":
-				if _, err := h.bot.WS.DB().Exec("CREATE TRIGGER fail_plan_audit BEFORE INSERT ON audit_logs WHEN NEW.event_type='ASSEMBLY_PLAN_CREATED' BEGIN SELECT RAISE(ABORT,'test'); END"); err != nil {
+				if _, err := h.bot.WS.DB().Exec("CREATE TRIGGER fail_task_audit BEFORE INSERT ON audit_logs WHEN NEW.event_type='TASK_CREATED' BEGIN SELECT RAISE(ABORT,'test'); END"); err != nil {
 					t.Fatal(err)
 				}
 			case "foreign":
@@ -258,7 +258,7 @@ func TestProductsEmptyAndMissingAmbiguousBOM(t *testing.T) {
 	}
 	h.message(t, 900001, "соберем 5 заказов")
 	if taskCount(t, h) != 0 {
-		t.Fatal("viewer created plan")
+		t.Fatal("viewer created calculation")
 	}
 }
 

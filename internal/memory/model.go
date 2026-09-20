@@ -20,12 +20,15 @@ type Message struct {
 	Tokens  int    `json:"tokens_estimate"`
 }
 type TaskState struct {
-	ProducedQuantity *float64          `json:"produced_quantity,omitempty"`
-	ProductID        int64             `json:"product_id,omitempty"`
-	ProductName      string            `json:"product_name,omitempty"`
-	Quantity         float64           `json:"quantity"`
-	Parameters       map[string]string `json:"parameters,omitempty"`
-	OpenQuestions    []string          `json:"open_questions,omitempty"`
+	ParametersApproved bool              `json:"parameters_approved,omitempty"`
+	ValidationResult   string            `json:"validation_result,omitempty"`
+	ValidationReason   string            `json:"validation_reason,omitempty"`
+	ProducedQuantity   *float64          `json:"produced_quantity,omitempty"`
+	ProductID          int64             `json:"product_id,omitempty"`
+	ProductName        string            `json:"product_name,omitempty"`
+	Quantity           float64           `json:"quantity"`
+	Parameters         map[string]string `json:"parameters,omitempty"`
+	OpenQuestions      []string          `json:"open_questions,omitempty"`
 }
 type Task struct {
 	CreatedByUserID, AssignedToUserID                      int64

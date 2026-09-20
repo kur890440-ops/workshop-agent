@@ -14,7 +14,7 @@ func TestDay14CompletionCannotSkipValidation(t *testing.T) {
 		t.Fatal(e)
 	}
 	machine := TaskStateMachine{f.m}
-	task, e = machine.Apply(f.sc, TaskIntent{Action: "correct_result", Version: task.Version})
+	task, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: "correct_result", Reason: "Исправление результата", Version: task.Version})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -40,7 +40,11 @@ func TestDay14CompletionCannotSkipValidation(t *testing.T) {
 		t.Fatal(n, e)
 	}
 	q := 3.
-	task, e = machine.Apply(f.sc, TaskIntent{Action: "record_result", Quantity: &q, Version: task.Version})
+	task, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: "record_result", Quantity: &q, Version: task.Version})
+	if e != nil {
+		t.Fatal(e)
+	}
+	task, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: "verify_result", Version: task.Version})
 	if e != nil {
 		t.Fatal(e)
 	}
@@ -64,7 +68,7 @@ func TestDay14ConfiguredPreflight(t *testing.T) {
 	}
 	// Cancel the completed planning flow and create a new independent task.
 	machine := TaskStateMachine{f.m}
-	if _, e = machine.Apply(f.sc, TaskIntent{Action: "cancel", Version: task.Version}); e != nil {
+	if _, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: "cancel", Version: task.Version}); e != nil {
 		t.Fatal(e)
 	}
 	task, e = machine.Create(f.sc, TaskState{ProductID: f.product, Quantity: 100})
@@ -73,13 +77,13 @@ func TestDay14ConfiguredPreflight(t *testing.T) {
 	}
 	f.sc.TaskID = task.ID
 	q := 100.
-	for _, action := range []string{"set_quantity", "confirm_plan"} {
-		task, e = machine.Apply(f.sc, TaskIntent{Action: action, Quantity: &q, Version: task.Version})
+	for _, action := range []string{"set_quantity", "confirm_task"} {
+		task, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: action, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)
 		}
 	}
-	_, e = machine.Apply(f.sc, TaskIntent{Action: "start_production", Version: task.Version})
+	_, e = machine.Apply(f.sc, TaskIntent{Confirmed: true, Action: "start_production", Version: task.Version})
 	var denied *invariants.Denied
 	if !errors.As(e, &denied) {
 		t.Fatal(e)

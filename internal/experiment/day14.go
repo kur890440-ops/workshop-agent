@@ -76,8 +76,8 @@ func RunDay14() (string, error) {
 	}
 	sc.TaskID = task.ID
 	q := 5.
-	for _, action := range []string{"set_quantity", "confirm_plan", "start_production"} {
-		task, e = fsm.Apply(sc, memory.TaskIntent{Action: action, Quantity: &q, Version: task.Version})
+	for _, action := range []string{"set_quantity", "confirm_task", "start_production"} {
+		task, e = fsm.Apply(sc, memory.TaskIntent{Confirmed: true, Action: action, Quantity: &q, Version: task.Version})
 		if e != nil {
 			return dir, e
 		}
@@ -133,7 +133,11 @@ func RunDay14() (string, error) {
 		return dir, e
 	}
 	add("Новая сессия", "Закрыть и открыть сессию", "Правило осталось активно", rules[len(rules)-1].IsActive, rules[len(rules)-1])
-	task, e = fsm.Apply(sc, memory.TaskIntent{Action: "record_result", Quantity: &q, Version: task.Version})
+	task, e = fsm.Apply(sc, memory.TaskIntent{Confirmed: true, Action: "record_result", Quantity: &q, Version: task.Version})
+	if e != nil {
+		return dir, e
+	}
+	task, e = fsm.Apply(sc, memory.TaskIntent{Confirmed: true, Action: "verify_result", Version: task.Version})
 	if e != nil {
 		return dir, e
 	}
@@ -142,7 +146,7 @@ func RunDay14() (string, error) {
 		return dir, e
 	}
 	receipt, e := m.PostCompletion(sc, 991401, c.Token)
-	add("Разрешённое действие", "validation → подтверждённый выпуск 5", fmt.Sprintf("record=%d; error=%v", receipt.RecordID, e), e == nil && receipt.RecordID > 0, check("complete_task", invariants.Facts{Phase: "validation"}))
+	add("Разрешённое действие", "validation → подтверждённый выпуск 5", fmt.Sprintf("record=%d; error=%v", receipt.RecordID, e), e == nil && receipt.RecordID > 0, check("complete_task", invariants.Facts{Phase: "validation", ValidationPassed: true}))
 	report.Rules = rules
 	for _, group := range []struct {
 		title string

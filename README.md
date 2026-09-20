@@ -31,7 +31,7 @@ DOMAIN SERVICES
 ├── Production
 ├── Scrap / Defects
 ├── Shipments
-└── Planning
+└── Tasks → TaskStateMachine
 ↓
 DETERMINISTIC BUSINESS LOGIC
 ↓
@@ -220,7 +220,7 @@ Day 11 Memory Layers.
 
 «Товары» и `/products` открывают пронумерованный список без LLM.
 Сценарий «соберём 5 заказов → товары → 2 → 3» сохраняет черновик и предлагает
-план на 15 изделий; склад не меняется. [Продукты и контекст сборки, L0–L3](docs/products-assembly.md).
+задачу на 15 изделий; склад не меняется. [Продукты и контекст сборки, L0–L3](docs/products-assembly.md).
 
 Контекстная семантика: после списка материалов можно спросить «какой остаток 2», «а кисточек сколько?» или «а его минимум?». Свободные изменения требуют подтверждения. [Архитектура L0–L3, проверки и результаты реальной модели](docs/semantic-processing.md).
 
@@ -242,16 +242,23 @@ Day 11 Memory Layers реализован. [Архитектура, команд
 
 Этот репозиторий является базой MVP для запрошенной архитектуры. В него входят Go-модуль, слой данных на SQLite, модель workshops/users, логика материалов и продуктов, рекурсивный расчёт BOM и поток WorkshopAgent на базе MockLLM.
 
-Этап Identity & Access реализован: независимые пользователи и мастерские, Memberships, приглашения, роли/permissions, активная мастерская, авторизация внутри сервисов и Telegram UI управления сотрудниками. Следующими отдельными заданиями реализованы Day 11 Memory Layers, [Day 12 Personalization](docs/day12-personalization.md) и [Day 13 Task State Machine](docs/day13-task-state.md). Day 14 не выполнялся.
+Этап Identity & Access реализован: независимые пользователи и мастерские, Memberships, приглашения, роли/permissions, активная мастерская, авторизация внутри сервисов и Telegram UI управления сотрудниками. Реализованы Day 11 Memory Layers, [Day 12 Personalization](docs/day12-personalization.md), [Day 13 Task State Machine](docs/day13-task-state.md), [Day 14 Invariants](docs/day14-invariants.md) и [Day 15 Controlled Transitions](docs/day15-controlled-transitions.md).
 
 ### Day 13 — состояние задачи
 
-`/task new` создаёт производственный план с этапами planning → execution → validation → done.
+Day 15 расширяет тот же FSM [контролируемыми переходами](docs/day15-controlled-transitions.md):
+«Запускай» требует явного подтверждения; перед завершением нужна успешная проверка.
+`/task actions` — доступные действия, `/task trace` — история и причины отказов.
+
+Единая модель работы — **Task**: `/tasks` показывает список, `/task` — текущую
+задачу. [Рефакторинг модели, миграция 108 и проверки L0–L3](docs/task-only-refactor.md).
+
+`/task new` создаёт производственную задачу с этапами planning → execution → validation → done.
 `/task pause` сохраняет текущий шаг, `/task resume` продолжает его после новой сессии
 или перезапуска, `/task trace` показывает диагностику. В `/workshop` есть кнопка
-«📋 Текущая задача». Старые планы сохраняют прежний сценарий.
-Завершение учебной задачи не проводит выпуск или списание на складе.
-[Команды и переходы](docs/day13-task-state.md) · [HTML-отчёт](reports/day13-task-state/20260917T145218.996792000Z/report.html).
+«📋 Текущая задача». Старые задачи сохраняют ID и параметры; явное управление переводит их в текущий FSM.
+Завершение задачи требует проверки фактического количества и отдельного подтверждения атомарного выпуска со списанием компонентов.
+[Команды и переходы](docs/day13-task-state.md) · [HTML-отчёт](reports/day13-task-state/20260918T125116.721198500Z/report.html).
 
 ### Сводка за сегодня
 

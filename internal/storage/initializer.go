@@ -18,7 +18,6 @@ var requiredTables = []string{
 	"product_movements",
 	"production_records",
 	"shipments",
-	"production_plans",
 	"conversation_sessions",
 	"pending_actions",
 	"audit_logs",

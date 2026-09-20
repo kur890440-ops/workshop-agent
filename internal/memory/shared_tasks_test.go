@@ -72,10 +72,10 @@ func TestSharedTasksAssignmentPermissionsAndPrivacy(t *testing.T) {
 		t.Fatal(e)
 	}
 	vsc := Scope{UserID: viewer, WorkshopID: w, TaskID: task.ID}
-	if _, e := (TaskStateMachine{m.ForUser(viewer)}).Apply(vsc, TaskIntent{Action: "pause", Version: task.Version}); !errors.Is(e, auth.ErrDenied) {
+	if _, e := (TaskStateMachine{m.ForUser(viewer)}).Apply(vsc, TaskIntent{Confirmed: true, Action: "pause", Version: task.Version}); !errors.Is(e, auth.ErrDenied) {
 		t.Fatal(e)
 	}
-	task, err = (TaskStateMachine{em}).Apply(esc, TaskIntent{Action: "pause", Version: task.Version})
+	task, err = (TaskStateMachine{em}).Apply(esc, TaskIntent{Confirmed: true, Action: "pause", Version: task.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,7 +84,7 @@ func TestSharedTasksAssignmentPermissionsAndPrivacy(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, e := (TaskStateMachine{em}).Apply(esc, TaskIntent{Action: "resume", Version: oldVersion}); e == nil {
+	if _, e := (TaskStateMachine{em}).Apply(esc, TaskIntent{Confirmed: true, Action: "resume", Version: oldVersion}); e == nil {
 		t.Fatal("former executor changed task")
 	}
 	if _, e := m.AssignTask(sc, employee, oldVersion); !errors.Is(e, ErrTaskChanged) {
@@ -96,7 +96,7 @@ func TestSharedTasksAssignmentPermissionsAndPrivacy(t *testing.T) {
 	}
 	// Admin performs FSM transition; audit records the actor, not the creator.
 	asc := Scope{UserID: admin, WorkshopID: w, TaskID: task.ID}
-	task, err = (TaskStateMachine{m.ForUser(admin)}).Apply(asc, TaskIntent{Action: "resume", Version: task.Version})
+	task, err = (TaskStateMachine{m.ForUser(admin)}).Apply(asc, TaskIntent{Confirmed: true, Action: "resume", Version: task.Version})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,7 +143,7 @@ func TestSharedTaskConcurrentAssignmentAndConflict(t *testing.T) {
 		t.Fatal(e)
 	}
 	sc.TaskID = a.ID
-	a, e = f.Apply(sc, TaskIntent{Action: "pause", Version: a.Version})
+	a, e = f.Apply(sc, TaskIntent{Confirmed: true, Action: "pause", Version: a.Version})
 	if e != nil {
 		t.Fatal(e)
 	}

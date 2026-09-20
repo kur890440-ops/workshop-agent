@@ -20,7 +20,7 @@ import (
 	"workshop-agent/internal/products"
 )
 
-// Drafts use pending_actions; confirmed plans use the existing working memory.
+// Drafts use pending_actions; confirmed tasks use the existing working memory.
 type assemblyDraft struct {
 	Assignee   int64
 	Revision   int
@@ -173,7 +173,7 @@ func (b *Bot) productsMenu(key sessionKey, workshop int64) error {
 	return nil
 }
 
-var assemblyStart = regexp.MustCompile(`(?i)^(?:собер[её]м|собрать|собираем|собери|план сборки|сделаем|нужно собрать)\s+(.+)$`)
+var assemblyStart = regexp.MustCompile(`(?i)^(?:собер[её]м|собрать|собираем|собери|задача сборки|сделаем|нужно собрать)\s+(.+)$`)
 
 func pieceCount(text string) (int64, error) {
 	if !regexp.MustCompile(`^[0-9]+$`).MatchString(text) {
@@ -403,7 +403,7 @@ func (b *Bot) previewAssembly(key sessionKey, workshop int64, d *assemblyDraft) 
 	if err != nil && !errors.Is(err, products.ErrIncompleteBOM) {
 		return err
 	}
-	text := fmt.Sprintf("План сборки: %s — %d шт.", name, d.Quantity)
+	text := fmt.Sprintf("Задача сборки: %s — %d шт.", name, d.Quantity)
 	var workshopName string
 	if err = b.WS.DB().QueryRow("SELECT name FROM workshops WHERE id=?", workshop).Scan(&workshopName); err != nil {
 		return err
@@ -518,12 +518,12 @@ func (b *Bot) assemblyButton(a buttonAction) error {
 		return b.sendMessage(a.Key.ChatID, "Черновик сборки отменён.")
 	}
 	if d.Stage != "confirm" {
-		return errors.New("Сначала уточните план")
+		return errors.New("Сначала уточните параметры задачи")
 	}
 	sc := memory.Scope{UserID: a.Key.UserID, WorkshopID: a.Workshop, SessionID: d.Session}
 	state := memory.TaskState{ProductID: d.Product, Quantity: float64(d.Quantity), Parameters: map[string]string{"orders": strconv.FormatInt(d.Orders, 10), "per_order": strconv.FormatInt(d.PerOrder, 10)}}
 	err = b.Agent.Memory.ForUser(a.Key.UserID).ConfirmAssemblyDraft(sc, a.Key.ChatID, d.ID, state, d.Revision)
-	if errors.Is(err, memory.ErrActivePlan) && d.Assignee == a.Key.UserID {
+	if errors.Is(err, memory.ErrActiveTask) && d.Assignee == a.Key.UserID {
 		active, e := b.Agent.Memory.ForUser(a.Key.UserID).ActiveWorking(sc)
 		if e != nil {
 			return e
@@ -532,7 +532,7 @@ func (b *Bot) assemblyButton(a buttonAction) error {
 			return b.pauseConflict(a.Key, a.Workshop, active, "assembly_catalog", fmt.Sprint(d.ID))
 		}
 	}
-	if errors.Is(err, memory.ErrActivePlan) {
+	if errors.Is(err, memory.ErrActiveTask) {
 		return b.screen(a.Key, "У выбранного исполнителя уже есть текущая задача. Откройте список задач или выберите другого исполнителя; существующая задача не изменена.", choice{Text: "Все задачи", Action: "orders_all", Workshop: a.Workshop}, choice{Text: "Изменить исполнителя", Action: "assembly_edit_executor", Workshop: a.Workshop, Target: d.ID, Value: fmt.Sprint(d.Revision)}, choice{Text: "Отмена", Action: "assembly_cancel", Workshop: a.Workshop, Target: d.ID, Value: fmt.Sprint(d.Revision)})
 	}
 	if err != nil {

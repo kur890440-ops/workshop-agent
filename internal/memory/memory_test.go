@@ -157,7 +157,7 @@ func TestSharedWorkshopKnowledgeAndPermissions(t *testing.T) {
 	ok(t, err)
 	om := memory.New(ws.DB()).ForUser(other)
 	osc := memory.Scope{UserID: other, WorkshopID: sc.WorkshopID}
-	records, err := om.RelevantLongTerm(osc, "входной контроль", "production_plan", 0)
+	records, err := om.RelevantLongTerm(osc, "входной контроль", "production", 0)
 	ok(t, err)
 	if len(records) != 1 {
 		t.Fatal(records)
@@ -165,7 +165,7 @@ func TestSharedWorkshopKnowledgeAndPermissions(t *testing.T) {
 	reject(t, om.SaveLongTermMemory(osc, rule()))
 	reject(t, om.DeactivateLongTermMemory(osc, records[0].ID))
 	ok(t, ws.ChangeMemberStatus(sc.UserID, sc.WorkshopID, other, "disabled"))
-	_, err = om.RelevantLongTerm(osc, "контроль", "production_plan", 0)
+	_, err = om.RelevantLongTerm(osc, "контроль", "production", 0)
 	reject(t, err)
 }
 func TestMultiWorkshopIsolationAndActiveValidation(t *testing.T) {
@@ -173,12 +173,12 @@ func TestMultiWorkshopIsolationAndActiveValidation(t *testing.T) {
 	ok(t, m.SaveLongTermMemory(sc, rule()))
 	second, err := ws.CreateOwnedWorkshop(sc.UserID, "B")
 	ok(t, err)
-	_, err = m.RelevantLongTerm(sc, "контроль", "production_plan", 0)
+	_, err = m.RelevantLongTerm(sc, "контроль", "production", 0)
 	if !errors.Is(err, memory.ErrScope) {
 		t.Fatal("stale workshop accepted", err)
 	}
 	bsc := memory.Scope{UserID: sc.UserID, WorkshopID: second}
-	records, err := m.RelevantLongTerm(bsc, "контроль", "production_plan", 0)
+	records, err := m.RelevantLongTerm(bsc, "контроль", "production", 0)
 	ok(t, err)
 	if len(records) != 0 {
 		t.Fatal("workshop A rule leaked into B")
@@ -215,7 +215,7 @@ func TestRelevantRetrievalAndProvenance(t *testing.T) {
 	}
 	ok(t, m.SaveLongTermMemory(sc, rule()))
 	ok(t, m.AppendShortTerm(sc, "user", "Контроль PETG"))
-	_, err := m.CreateWorkingMemory(sc, "production_plan", memory.TaskState{Quantity: 25})
+	_, err := m.CreateWorkingMemory(sc, "production", memory.TaskState{Quantity: 25})
 	ok(t, err)
 	built, err := (memory.AgentContextBuilder{Memory: m}).Build(sc, "Входной контроль", []memory.Item{{Source: "materials", Key: "1", Content: `{"stock":8.4}`}}, memory.All)
 	ok(t, err)
@@ -240,13 +240,13 @@ func TestPersistentVersionAuditAndDeactivation(t *testing.T) {
 	ok(t, m.SaveLongTermMemory(sc, r))
 	r.Value = "Контроль веса и этикетки каждой катушки."
 	ok(t, m.UpdateLongTermMemory(sc, r))
-	records, err := m.RelevantLongTerm(sc, "контроль", "production_plan", 0)
+	records, err := m.RelevantLongTerm(sc, "контроль", "production", 0)
 	ok(t, err)
 	if records[0].Version != 2 {
 		t.Fatal("version did not advance")
 	}
 	ok(t, m.DeactivateLongTermMemory(sc, records[0].ID))
-	records, err = m.RelevantLongTerm(sc, "контроль", "production_plan", 0)
+	records, err = m.RelevantLongTerm(sc, "контроль", "production", 0)
 	ok(t, err)
 	if len(records) != 0 {
 		t.Fatal("inactive memory retrieved")

@@ -76,7 +76,7 @@ func TestDay11QuantityAndTemporaryOverride(t *testing.T) {
 		t.Fatal(answer)
 	}
 	turn(t, a, u, w, "Для этой партии используй Box B.")
-	answer = turn(t, a, u, w, "Что в плане партии?")
+	answer = turn(t, a, u, w, "Что в задаче партии?")
 	if !strings.Contains(answer, "Box B") {
 		t.Fatal(answer)
 	}

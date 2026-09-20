@@ -54,6 +54,10 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	var transitionDenied *memory.TransitionDenied
+	if errors.As(err, &transitionDenied) {
+		return transitionDenied.Error()
+	}
 	if errors.Is(err, errFormExpired) {
 		return errFormExpired.Error()
 	}
@@ -92,8 +96,8 @@ func publicError(err error) string {
 	if errors.Is(err, products.ErrInvalidEdit) {
 		return products.ErrInvalidEdit.Error()
 	}
-	if errors.Is(err, memory.ErrActivePlan) {
-		return memory.ErrActivePlan.Error()
+	if errors.Is(err, memory.ErrActiveTask) {
+		return memory.ErrActiveTask.Error()
 	}
 	for _, known := range []error{auth.ErrDenied, auth.ErrDisabled, auth.ErrChooseWorkshop, workshops.ErrInvite, workshops.ErrMemberExists, workshops.ErrOwner, memory.ErrScope, memory.ErrDomain, memory.ErrNoTask} {
 		if errors.Is(err, known) {
@@ -300,6 +304,7 @@ func (b *Bot) home(key sessionKey) error {
 	}
 	choices = append(choices, choice{Text: "👤 Профиль", Action: "profile_home"})
 	choices = append(choices, choice{Text: "📋 Текущая задача", Action: "fsm_show", Workshop: active})
+	choices = append(choices, choice{Text: "Задачи", Action: "orders_all", Workshop: active})
 	choices = append(choices, choice{Text: "📊 Сводка за сегодня", Action: "daily_summary", Workshop: active})
 	return b.screen(key, "⚙️ Мастерская\n🏭 Текущая мастерская: "+current.Name+"\nВаша роль: "+roleName(current.Role)+"\n\nСклад: /materials, /products, /stock, /to_order\nНастройка: /setup", choices...)
 }
@@ -502,7 +507,7 @@ func (b *Bot) executeButton(a buttonAction) error {
 		if err != nil || handled {
 			return err
 		}
-		return b.sendMessage(key.ChatID, "Новая задача: /task new. Существующий план: /task.")
+		return b.sendMessage(key.ChatID, "Новая задача: /task new. Существующая задача: /task.")
 	}
 	if strings.HasPrefix(a.Action, "confirm_") {
 		action := strings.TrimPrefix(a.Action, "confirm_")

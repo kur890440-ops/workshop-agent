@@ -20,7 +20,7 @@ func (s *Service) legacyTaskPermission(tx *sql.Tx, sc Scope) error {
 	return nil
 }
 
-func shared(t *Task) bool { return t.Type == "assembly" || t.Type == "production_plan" }
+func shared(t *Task) bool { return t.Type == "assembly" || t.Type == "production" }
 func businessParameter(key string) bool {
 	return key == "packaging" || key == "material" || key == "orders" || key == "per_order"
 }
@@ -88,7 +88,7 @@ func (s *Service) WorkshopTasks(sc Scope, mine bool) ([]*Task, error) {
 	if err := auth.Require(s.DB, sc.UserID, sc.WorkshopID, auth.TasksRead); err != nil {
 		return nil, err
 	}
-	rows, err := s.DB.Query("SELECT "+taskColumns+" FROM working_memory WHERE workshop_id=? AND task_type IN ('assembly','production_plan') AND status IN ('active','waiting_input','paused') AND (?=0 OR assigned_to_user_id=?) ORDER BY id DESC", sc.WorkshopID, mine, sc.UserID)
+	rows, err := s.DB.Query("SELECT "+taskColumns+" FROM working_memory WHERE workshop_id=? AND task_type IN ('assembly','production') AND status IN ('active','waiting_input','paused') AND (?=0 OR assigned_to_user_id=?) ORDER BY id DESC", sc.WorkshopID, mine, sc.UserID)
 	if err != nil {
 		return nil, err
 	}

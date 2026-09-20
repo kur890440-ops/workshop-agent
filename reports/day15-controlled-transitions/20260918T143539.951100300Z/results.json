@@ -1,0 +1,1518 @@
+{
+  "Checks": {
+    "A planning cannot complete": true,
+    "B confirmation required": true,
+    "C approval": true,
+    "D execution cannot complete": true,
+    "E execution completed": true,
+    "F missing validation result": true,
+    "G done after validated posting": true,
+    "H done terminal": true,
+    "I planning pause": true,
+    "I planning resume": true,
+    "I planning state preserved": true,
+    "J execution pause": true,
+    "J execution resume": true,
+    "J execution state preserved": true,
+    "K validation pause": true,
+    "K validation resume": true,
+    "K validation state preserved": true,
+    "L stale confirmation": true,
+    "M duplicate confirmation": true,
+    "M posting once": true,
+    "N owner insists again": true,
+    "N user insists": true,
+    "O authorization": true,
+    "P pause before restart": true,
+    "P resume after restart": true,
+    "P state persisted": true,
+    "edit quantity": true,
+    "missing execution result": true,
+    "quantity": true,
+    "repeat execution": true,
+    "return reason preserved": true,
+    "start execution": true,
+    "validation failed": true,
+    "validation passed": true
+  },
+  "Rows": [
+    {
+      "Scenario": "A planning cannot complete",
+      "Action": "complete",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Подготовка задачи; шаг: set_quantity.\nСначала выполните задачу и проверьте результат. Прямое завершение запрещено.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18 14:35:40",
+        "StartedAt": null,
+        "PausedAt": null,
+        "CompletedAt": null,
+        "Version": 1,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "I planning pause",
+      "Action": "pause",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.3863242Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 2,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Scenario": "I planning resume",
+      "Action": "resume",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "set_quantity",
+        "ExpectedAction": "confirm_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.4077919Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 3,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "quantity",
+      "Action": "set_quantity",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "confirm_task",
+        "ExpectedAction": "confirm_task",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.4423193Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 4,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "edit quantity",
+      "Action": "set_quantity",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "confirm_task",
+        "ExpectedAction": "confirm_task",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.4795786Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 5,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "B confirmation required",
+      "Action": "confirm_task",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Подготовка задачи; шаг: confirm_task.\nПроверьте параметры выбранной задачи и нажмите кнопку подтверждения. Фраза о запуске сама по себе не является подтверждением.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "planning",
+        "CurrentStep": "confirm_task",
+        "ExpectedAction": "confirm_task",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.4795786Z",
+        "StartedAt": null,
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 5,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "C approval",
+      "Action": "confirm_task",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.5968049Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 6,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "D execution cannot complete",
+      "Action": "complete",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Выполнение; шаг: start_production.\nСначала выполните задачу и проверьте результат. Прямое завершение запрещено.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "start_production",
+        "ExpectedAction": "start_production",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.5968049Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 6,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "start execution",
+      "Action": "start_production",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.7218821Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.3863242Z",
+        "CompletedAt": null,
+        "Version": 7,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "J execution pause",
+      "Action": "pause",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.7591489Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.7591489Z",
+        "CompletedAt": null,
+        "Version": 8,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Scenario": "J execution resume",
+      "Action": "resume",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.7967268Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.7591489Z",
+        "CompletedAt": null,
+        "Version": 9,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "P pause before restart",
+      "Action": "pause",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:40.8332585Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.8332585Z",
+        "CompletedAt": null,
+        "Version": 10,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Scenario": "P resume after restart",
+      "Action": "resume",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.006108Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.8332585Z",
+        "CompletedAt": null,
+        "Version": 11,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "missing execution result",
+      "Action": "record_result",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Выполнение; шаг: record_result.\nНе выполнены условия текущего шага: проверьте товар, количество и результат.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.006108Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.8332585Z",
+        "CompletedAt": null,
+        "Version": 11,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "E execution completed",
+      "Action": "record_result",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.0885377Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.8332585Z",
+        "CompletedAt": null,
+        "Version": 12,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "F missing validation result",
+      "Action": "production_posted",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Проверка; шаг: verify_result.\nПерехода нет в таблице для текущего этапа и шага. Нельзя пропускать подготовку, выполнение или проверку.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.0885377Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:40.8332585Z",
+        "CompletedAt": null,
+        "Version": 12,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "K validation pause",
+      "Action": "pause",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.166449Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 13,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "paused"
+      }
+    },
+    {
+      "Scenario": "K validation resume",
+      "Action": "resume",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2045074Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 14,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "N user insists",
+      "Action": "complete",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Проверка; шаг: verify_result.\nСначала выполните задачу и проверьте результат. Прямое завершение запрещено.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2045074Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 14,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "N owner insists again",
+      "Action": "complete",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Проверка; шаг: verify_result.\nСначала выполните задачу и проверьте результат. Прямое завершение запрещено.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2045074Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 14,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "validation failed",
+      "Action": "correct_result",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "execution",
+        "CurrentStep": "record_result",
+        "ExpectedAction": "user_input_produced_quantity",
+        "ExpectedActionType": "USER_INPUT",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2527852Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 15,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "validation_result": "failed",
+          "validation_reason": "Необходима доработка",
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "repeat execution",
+      "Action": "record_result",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "verify_result",
+        "ExpectedAction": "verify_result",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2691406Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 16,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "validation_reason": "Необходима доработка",
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "validation passed",
+      "Action": "verify_result",
+      "Decision": "ALLOW",
+      "Reason": "",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "validation",
+        "CurrentStep": "confirm_completion",
+        "ExpectedAction": "confirm_completion",
+        "ExpectedActionType": "USER_CONFIRMATION",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.2840431Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": null,
+        "Version": 17,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "validation_result": "passed",
+          "validation_reason": "Необходима доработка",
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "active"
+      }
+    },
+    {
+      "Scenario": "H done terminal",
+      "Action": "resume",
+      "Decision": "DENY",
+      "Reason": "Переход отклонён. Этап: Завершено; шаг: completed.\nЗадача завершена или отменена. Обычное продолжение запрещено.\nСначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.",
+      "State": {
+        "CreatedByUserID": 1,
+        "AssignedToUserID": 1,
+        "UserID": 1,
+        "WorkshopID": 1,
+        "Phase": "done",
+        "CurrentStep": "completed",
+        "ExpectedAction": "none",
+        "ExpectedActionType": "NONE",
+        "CreatedAt": "2026-09-18 14:35:40",
+        "UpdatedAt": "2026-09-18T14:35:41.3484576Z",
+        "StartedAt": "2026-09-18T14:35:40.5968049Z",
+        "PausedAt": "2026-09-18T14:35:41.166449Z",
+        "CompletedAt": "2026-09-18T14:35:41.3484576Z",
+        "Version": 18,
+        "FSMVersion": 1,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "task_type": "production",
+        "state": {
+          "parameters_approved": true,
+          "validation_result": "passed",
+          "validation_reason": "Необходима доработка",
+          "produced_quantity": 2,
+          "product_id": 1,
+          "product_name": "Дефлектор",
+          "quantity": 2
+        },
+        "status": "completed"
+      }
+    }
+  ],
+  "Definitions": [
+    {
+      "to_status": "*",
+      "key": "select_product",
+      "label": "Выбрать товар",
+      "from_phase": "planning",
+      "from_step": "select_product",
+      "from_status": "active",
+      "to_phase": "planning",
+      "to_step": "set_quantity",
+      "requires_confirmation": false,
+      "preconditions": [
+        "product_in_workshop"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute",
+        "products.read"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "set_quantity",
+      "label": "Указать количество",
+      "from_phase": "planning",
+      "from_step": "set_quantity,confirm_task",
+      "from_status": "active",
+      "to_phase": "planning",
+      "to_step": "confirm_task",
+      "requires_confirmation": false,
+      "preconditions": [
+        "positive_integer_quantity"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "edit_parameters",
+      "label": "Изменить параметры",
+      "from_phase": "planning",
+      "from_step": "confirm_task",
+      "from_status": "active",
+      "to_phase": "planning",
+      "to_step": "select_product",
+      "requires_confirmation": false,
+      "preconditions": null,
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "confirm_task",
+      "label": "Утвердить параметры задачи",
+      "from_phase": "planning",
+      "from_step": "confirm_task",
+      "from_status": "active",
+      "to_phase": "execution",
+      "to_step": "start_production",
+      "requires_confirmation": true,
+      "preconditions": [
+        "product_selected",
+        "quantity_set"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "start_production",
+      "label": "Начать выполнение",
+      "from_phase": "execution",
+      "from_step": "start_production",
+      "from_status": "active",
+      "to_phase": "execution",
+      "to_step": "record_result",
+      "requires_confirmation": true,
+      "preconditions": [
+        "parameters_approved"
+      ],
+      "invariants": [
+        "authorized_workshop",
+        "requires_material_check_before_production"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "record_result",
+      "label": "Указать результат выполнения",
+      "from_phase": "execution",
+      "from_step": "record_result",
+      "from_status": "active",
+      "to_phase": "validation",
+      "to_step": "verify_result",
+      "requires_confirmation": false,
+      "preconditions": [
+        "execution_result"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "verify_result",
+      "label": "Подтвердить проверку результата",
+      "from_phase": "validation",
+      "from_step": "verify_result",
+      "from_status": "active",
+      "to_phase": "validation",
+      "to_step": "confirm_completion",
+      "requires_confirmation": true,
+      "preconditions": [
+        "execution_result"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "correct_result",
+      "label": "Вернуть на доработку",
+      "from_phase": "validation",
+      "from_step": "*",
+      "from_status": "active",
+      "to_phase": "execution",
+      "to_step": "record_result",
+      "requires_confirmation": false,
+      "preconditions": [
+        "return_reason"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "completed",
+      "key": "production_posted",
+      "label": "Завершить и списать",
+      "from_phase": "validation",
+      "from_step": "confirm_completion",
+      "from_status": "active",
+      "to_phase": "done",
+      "to_step": "completed",
+      "requires_confirmation": true,
+      "preconditions": [
+        "validation_passed",
+        "confirmed_posting"
+      ],
+      "invariants": [
+        "authorized_workshop",
+        "validation_before_completion"
+      ],
+      "required_permissions": [
+        "tasks.execute",
+        "production.create",
+        "inventory.write"
+      ]
+    },
+    {
+      "to_status": "paused",
+      "key": "pause",
+      "label": "Поставить на паузу",
+      "from_phase": "planning,execution,validation",
+      "from_step": "*",
+      "from_status": "active",
+      "to_phase": "*",
+      "to_step": "*",
+      "requires_confirmation": false,
+      "preconditions": null,
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "active",
+      "key": "resume",
+      "label": "Продолжить",
+      "from_phase": "planning,execution,validation",
+      "from_step": "*",
+      "from_status": "paused",
+      "to_phase": "*",
+      "to_step": "*",
+      "requires_confirmation": false,
+      "preconditions": [
+        "no_other_active_task"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "cancelled",
+      "key": "cancel",
+      "label": "Отменить задачу",
+      "from_phase": "planning,execution,validation",
+      "from_step": "*",
+      "from_status": "active,paused,waiting_input",
+      "to_phase": "*",
+      "to_step": "*",
+      "requires_confirmation": false,
+      "preconditions": null,
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "failed",
+      "key": "fail",
+      "label": "Зафиксировать невозможность выполнения",
+      "from_phase": "planning,execution,validation",
+      "from_step": "*",
+      "from_status": "active,paused",
+      "to_phase": "*",
+      "to_step": "*",
+      "requires_confirmation": false,
+      "preconditions": null,
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "*",
+      "key": "adopt_task",
+      "label": "Подготовить старую задачу",
+      "from_phase": "planning",
+      "from_step": "*",
+      "from_status": "active,paused",
+      "to_phase": "planning",
+      "to_step": "select_product,set_quantity,confirm_task",
+      "requires_confirmation": true,
+      "preconditions": [
+        "legacy_task"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": [
+        "tasks.execute"
+      ]
+    },
+    {
+      "to_status": "active,waiting_input",
+      "key": "legacy_update",
+      "label": "Изменить параметры старого формата",
+      "from_phase": "planning",
+      "from_step": "legacy",
+      "from_status": "active,waiting_input",
+      "to_phase": "planning",
+      "to_step": "legacy",
+      "requires_confirmation": false,
+      "preconditions": [
+        "fsm_version_zero"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": null
+    },
+    {
+      "to_status": "completed",
+      "key": "legacy_complete",
+      "label": "Завершить личную заметку старого формата",
+      "from_phase": "planning",
+      "from_step": "legacy",
+      "from_status": "active,waiting_input",
+      "to_phase": "done",
+      "to_step": "completed",
+      "requires_confirmation": false,
+      "preconditions": [
+        "fsm_version_zero",
+        "personal_task_only"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": null
+    },
+    {
+      "to_status": "cancelled",
+      "key": "legacy_cancel",
+      "label": "Отменить личную заметку старого формата",
+      "from_phase": "planning",
+      "from_step": "legacy",
+      "from_status": "active,waiting_input",
+      "to_phase": "planning",
+      "to_step": "legacy",
+      "requires_confirmation": false,
+      "preconditions": [
+        "fsm_version_zero",
+        "personal_task_only"
+      ],
+      "invariants": [
+        "authorized_workshop"
+      ],
+      "required_permissions": null
+    }
+  ],
+  "History": [
+    {
+      "action": "created",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": ":",
+      "from_phase": "",
+      "from_status": "",
+      "reason": "",
+      "result": "APPLIED",
+      "source": "domain_service",
+      "status": " → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "planning:set_quantity",
+      "to_phase": "planning",
+      "to_status": "active",
+      "transition_key": "created"
+    },
+    {
+      "action": "pause",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "planning:set_quantity",
+      "from_phase": "planning",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → paused",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "planning:set_quantity",
+      "to_phase": "planning",
+      "to_status": "paused",
+      "transition_key": "pause"
+    },
+    {
+      "action": "resume",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "planning:set_quantity",
+      "from_phase": "planning",
+      "from_status": "paused",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "paused → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "planning:set_quantity",
+      "to_phase": "planning",
+      "to_status": "active",
+      "transition_key": "resume"
+    },
+    {
+      "action": "set_quantity",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "planning:set_quantity",
+      "from_phase": "planning",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "planning:confirm_task",
+      "to_phase": "planning",
+      "to_status": "active",
+      "transition_key": "set_quantity"
+    },
+    {
+      "action": "set_quantity",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "planning:confirm_task",
+      "from_phase": "planning",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "planning:confirm_task",
+      "to_phase": "planning",
+      "to_status": "active",
+      "transition_key": "set_quantity"
+    },
+    {
+      "action": "confirm_task",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "planning:confirm_task",
+      "from_phase": "planning",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:start_production",
+      "to_phase": "execution",
+      "to_status": "active",
+      "transition_key": "confirm_task"
+    },
+    {
+      "action": "start_production",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "execution:start_production",
+      "from_phase": "execution",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "active",
+      "transition_key": "start_production"
+    },
+    {
+      "action": "pause",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → paused",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "paused",
+      "transition_key": "pause"
+    },
+    {
+      "action": "resume",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "paused",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "paused → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "active",
+      "transition_key": "resume"
+    },
+    {
+      "action": "pause",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:40",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → paused",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "paused",
+      "transition_key": "pause"
+    },
+    {
+      "action": "resume",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "paused",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "paused → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "active",
+      "transition_key": "resume"
+    },
+    {
+      "action": "record_result",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "validation:verify_result",
+      "to_phase": "validation",
+      "to_status": "active",
+      "transition_key": "record_result"
+    },
+    {
+      "action": "pause",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "validation:verify_result",
+      "from_phase": "validation",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → paused",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "validation:verify_result",
+      "to_phase": "validation",
+      "to_status": "paused",
+      "transition_key": "pause"
+    },
+    {
+      "action": "resume",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "validation:verify_result",
+      "from_phase": "validation",
+      "from_status": "paused",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "paused → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "validation:verify_result",
+      "to_phase": "validation",
+      "to_status": "active",
+      "transition_key": "resume"
+    },
+    {
+      "action": "correct_result",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "validation:verify_result",
+      "from_phase": "validation",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "execution:record_result",
+      "to_phase": "execution",
+      "to_status": "active",
+      "transition_key": "correct_result"
+    },
+    {
+      "action": "record_result",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "execution:record_result",
+      "from_phase": "execution",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "validation:verify_result",
+      "to_phase": "validation",
+      "to_status": "active",
+      "transition_key": "record_result"
+    },
+    {
+      "action": "verify_result",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "validation:verify_result",
+      "from_phase": "validation",
+      "from_status": "active",
+      "reason": "Необходима доработка",
+      "result": "APPLIED",
+      "source": "day15_report",
+      "status": "active → active",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "validation:confirm_completion",
+      "to_phase": "validation",
+      "to_status": "active",
+      "transition_key": "verify_result"
+    },
+    {
+      "action": "production_posted",
+      "actor_user_id": 1,
+      "at": "2026-09-18 14:35:41",
+      "from": "validation:confirm_completion",
+      "from_phase": "validation",
+      "from_status": "active",
+      "reason": "",
+      "result": "APPLIED",
+      "source": "confirmed_posting",
+      "status": "active → completed",
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "to": "done:completed",
+      "to_phase": "done",
+      "to_status": "completed",
+      "transition_key": "production_posted"
+    }
+  ],
+  "Trace": {
+    "allowed_transitions": null,
+    "current": {
+      "CreatedByUserID": 1,
+      "AssignedToUserID": 1,
+      "UserID": 1,
+      "WorkshopID": 1,
+      "Phase": "done",
+      "CurrentStep": "completed",
+      "ExpectedAction": "none",
+      "ExpectedActionType": "NONE",
+      "CreatedAt": "2026-09-18 14:35:40",
+      "UpdatedAt": "2026-09-18T14:35:41.3484576Z",
+      "StartedAt": "2026-09-18T14:35:40.5968049Z",
+      "PausedAt": "2026-09-18T14:35:41.166449Z",
+      "CompletedAt": "2026-09-18T14:35:41.3484576Z",
+      "Version": 18,
+      "FSMVersion": 1,
+      "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "task_type": "production",
+      "state": {
+        "parameters_approved": true,
+        "validation_result": "passed",
+        "validation_reason": "Необходима доработка",
+        "produced_quantity": 2,
+        "product_id": 1,
+        "product_name": "Дефлектор",
+        "quantity": 2
+      },
+      "status": "completed"
+    },
+    "last_rejected_attempt": {
+      "after": {
+        "allowed": false,
+        "allowed_transitions": [],
+        "current_phase": "done",
+        "current_status": "completed",
+        "current_step": "completed",
+        "reason": "Задача завершена или отменена. Обычное продолжение запрещено.",
+        "reason_code": "TERMINAL_STATE",
+        "requested_transition": "resume",
+        "state_changed": false,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33"
+      },
+      "before": null,
+      "key": "d39fb9963cf187e14b8f4faaf66cdd33",
+      "scope": {
+        "session_id": 2,
+        "task_id": "d39fb9963cf187e14b8f4faaf66cdd33",
+        "user_id": 1,
+        "workshop_id": 1
+      },
+      "source": "day15_report"
+    }
+  }
+}

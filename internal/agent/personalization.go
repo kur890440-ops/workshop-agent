@@ -44,7 +44,7 @@ func (a *WorkshopAgent) BuildReportContext(user, workshop, chat int64, text stri
 		if err = a.WS.DB().QueryRow("SELECT COUNT(*),COALESCE(SUM(good_quantity),0),COALESCE(SUM(scrap_quantity),0) FROM production_records WHERE workshop_id=?", workshop).Scan(&count, &good, &scrap); err != nil {
 			return memory.Context{}, err
 		}
-		domain = append(domain, memory.Item{Layer: "DOMAIN", Source: "production_records SQLite", Key: "production", Content: fmt.Sprintf("За всё время: записей=%d; годных=%g шт; брак=%g шт. Это факты производства, не план.", count, good, scrap)})
+		domain = append(domain, memory.Item{Layer: "DOMAIN", Source: "production_records SQLite", Key: "production", Content: fmt.Sprintf("За всё время: записей=%d; годных=%g шт; брак=%g шт. Это факты завершённого производства.", count, good, scrap)})
 	}
 	built, err := (memory.AgentContextBuilder{Memory: m}).Build(sc, text, domain, memory.All)
 	if err == nil {

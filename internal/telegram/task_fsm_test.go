@@ -1,9 +1,30 @@
 package telegram
 
 import (
+	"strings"
 	"testing"
 	"workshop-agent/internal/memory"
 )
+
+func TestTaskOnlyCreatePhrase(t *testing.T) {
+	h, _, w := semanticFixture(t)
+	h.message(t, 900001, "Создай задачу производства 25 дефлекторов.")
+	tasks, e := h.bot.Agent.Memory.ForUser(1).Tasks(memory.Scope{UserID: 1, WorkshopID: w})
+	if e != nil || len(tasks) != 1 {
+		t.Fatal(tasks, e)
+	}
+	task := tasks[0]
+	if task.Type != "production" || task.State.Quantity != 25 || task.Phase != "planning" {
+		t.Fatal(task)
+	}
+	if text, ok := h.sent[len(h.sent)-1]["text"].(string); ok && strings.Contains(strings.ToLower(text), "план") {
+		t.Fatal("legacy terminology in task screen")
+	}
+	h.message(t, 900001, "Что сейчас в работе?")
+	if taskCount(t, h) != 1 {
+		t.Fatal("read created duplicate task")
+	}
+}
 
 func TestTaskUIFlowResumeAndStale(t *testing.T) {
 	h, _, w := semanticFixture(t)
@@ -22,8 +43,9 @@ func TestTaskUIFlowResumeAndStale(t *testing.T) {
 	h.click(t, 900001, "Выбрать")
 	h.message(t, 900001, "Нет, 25.")
 	h.click(t, 900001, "Создать задачу")
-	requireAnswer(t, h, "Подтверждение плана")
+	requireAnswer(t, h, "Подтверждение параметров задачи")
 	h.message(t, 900001, "Запускай")
+	h.click(t, 900001, "✅ Подтвердить текущий шаг")
 	h.click(t, 900001, "⏸ Пауза")
 	h.message(t, 900001, "/session new")
 	h.message(t, 900001, "Продолжим")
@@ -33,6 +55,7 @@ func TestTaskUIFlowResumeAndStale(t *testing.T) {
 	h.message(t, 900001, "что сейчас нужно от меня?")
 	requireAnswer(t, h, "фактически произведённых")
 	h.message(t, 900001, "/task result 25")
+	h.click(t, 900001, "✅ Подтвердить текущий шаг")
 	h.message(t, 900001, "/task complete")
 	requireAnswer(t, h, "Сколько фактически изготовлено")
 	h.message(t, 900001, "25")
@@ -64,7 +87,7 @@ func TestLegacyAssemblyPauseResumeInPlace(t *testing.T) {
 	h.message(t, 900001, "сделай паузу")
 	requireAnswer(t, h, "paused")
 	task, err := m.Task(sc)
-	if err != nil || task.ID != original.ID || task.FSMVersion != 1 || task.Type != "assembly" || task.State.Quantity != 5 || task.State.Parameters["packaging"] != "box" || task.CurrentStep != "confirm_plan" {
+	if err != nil || task.ID != original.ID || task.FSMVersion != 1 || task.Type != "assembly" || task.State.Quantity != 5 || task.State.Parameters["packaging"] != "box" || task.CurrentStep != "confirm_task" {
 		t.Fatal(task, err)
 	}
 	h.message(t, 900001, "/session new")

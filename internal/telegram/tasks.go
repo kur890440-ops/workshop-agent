@@ -2,9 +2,12 @@ package telegram
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"sort"
 	"strings"
 	"workshop-agent/internal/agent"
+	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/memory"
 )
 
@@ -28,7 +31,7 @@ func (b *Bot) taskMessage(key sessionKey, text string) (bool, error) {
 	normalized := agent.TaskCommand(text)
 	if normalized == text && !strings.HasPrefix(text, "/task") {
 		low := strings.ToLower(text)
-		if !strings.HasPrefix(low, "сделаем ") && !strings.HasPrefix(low, "нужно произвести ") && !strings.HasPrefix(low, "произвести ") && !strings.HasPrefix(low, "нет") && !strings.HasPrefix(low, "сделай ") && !strings.HasPrefix(low, "произведено ") && !strings.HasPrefix(low, "готово ") {
+		if !strings.HasPrefix(low, "создай задачу производства ") && !strings.HasPrefix(low, "создать задачу производства ") && !strings.HasPrefix(low, "сделаем ") && !strings.HasPrefix(low, "нужно произвести ") && !strings.HasPrefix(low, "произвести ") && !strings.HasPrefix(low, "нет") && !strings.HasPrefix(low, "сделай ") && !strings.HasPrefix(low, "произведено ") && !strings.HasPrefix(low, "готово ") {
 			numeric := strings.Trim(text, "0123456789.! ") == ""
 			if !numeric {
 				return false, nil
@@ -51,6 +54,17 @@ func (b *Bot) taskMessage(key sessionKey, text string) (bool, error) {
 		return false, nil
 	}
 	if err != nil {
+		var denied *memory.TransitionDenied
+		if errors.As(err, &denied) {
+			answer := denied.Error()
+			if denied.ReasonCode == "CONFIRMATION_REQUIRED" {
+				t, e := b.Agent.Memory.ForUser(key.UserID).Task(memory.Scope{UserID: key.UserID, WorkshopID: w, TaskID: denied.TaskID})
+				if e == nil {
+					answer += "\n" + agent.TaskStatus(t, false)
+				}
+			}
+			return true, b.taskScreen(key, w, answer)
+		}
 		return true, b.sendMessage(key.ChatID, publicError(err))
 	}
 	if answer == memory.ErrNoTask.Error() {
@@ -78,10 +92,34 @@ func (b *Bot) taskScreen(key sessionKey, w int64, answer string) error {
 		if memory.TaskPermission(b.WS.DB(), key.UserID, w, t) != nil {
 			continue
 		}
-		if t.FSMVersion != 1 && t.Type != "assembly" && t.Type != "production_plan" {
+		if t.FSMVersion != 1 && t.Type != "assembly" && t.Type != "production" {
 			continue
 		}
+		if t.Status == "active" && t.CurrentStep == "confirm_task" {
+			answer += fmt.Sprintf("\nПодтверждение задачи: %s — %g шт.\n", t.State.ProductName, t.State.Quantity)
+			needs, e := b.Prod.ForUser(key.UserID).Requirements(w, t.State.ProductID, t.State.Quantity)
+			if e != nil {
+				answer += "Расчёт состава сейчас недоступен. Перед выпуском потребуется корректный BOM.\n"
+			} else {
+				ids := []int64{}
+				for id := range needs {
+					ids = append(ids, id)
+				}
+				sort.Slice(ids, func(i, j int) bool { return ids[i] < ids[j] })
+				for _, id := range ids {
+					material, e := b.Inv.ForUser(key.UserID).Material(w, id)
+					if e != nil {
+						return e
+					}
+					answer += fmt.Sprintf("%s: %s\n", material["name"], inventory.FormatQuantity(needs[id], inventory.DisplayUnit(material)))
+				}
+			}
+			answer += "Утвердить параметры? Склад при утверждении не меняется."
+		}
 		add := func(label, action string) {
+			if !b.taskActionAllowed(key, w, t, action) {
+				return
+			}
 			raw, _ := json.Marshal(taskButtonData{t.ID, t.Version, action})
 			choices = append(choices, choice{Text: label, Action: "fsm_apply", Workshop: w, Value: string(raw)})
 		}
@@ -101,6 +139,7 @@ func (b *Bot) taskScreen(key sessionKey, w int64, answer string) error {
 			}
 		}
 		add("❌ Отменить "+shortTaskID(t.ID), "cancel")
+		add("✏️ Изменить параметры", "edit_parameters")
 	}
 	parts := materialMessageParts(answer)
 	if len(parts) == 0 {
@@ -113,6 +152,22 @@ func (b *Bot) taskScreen(key sessionKey, w int64, answer string) error {
 	}
 	return b.screen(key, parts[len(parts)-1], choices...)
 }
+
+func (b *Bot) taskActionAllowed(key sessionKey, w int64, t *memory.Task, action string) bool {
+	if action == "complete" {
+		action = "production_posted"
+	}
+	if action == "accept_quantity" {
+		action = "set_quantity"
+	}
+	f := memory.TaskStateMachine{Memory: b.Agent.Memory.ForUser(key.UserID)}
+	for _, d := range f.AllowedTransitions(memory.Scope{UserID: key.UserID, WorkshopID: w, TaskID: t.ID}, t) {
+		if d.Key == action {
+			return true
+		}
+	}
+	return false
+}
 func (b *Bot) taskButton(a buttonAction) error {
 	var data taskButtonData
 	if err := json.Unmarshal([]byte(a.Value), &data); err != nil {
@@ -120,7 +175,7 @@ func (b *Bot) taskButton(a buttonAction) error {
 	}
 	sc := memory.Scope{UserID: a.Key.UserID, WorkshopID: a.Workshop, TaskID: data.ID}
 	m := b.Agent.Memory.ForUser(a.Key.UserID)
-	intent := memory.TaskIntent{Action: data.Action, Version: data.Version}
+	intent := memory.TaskIntent{Action: data.Action, Version: data.Version, Confirmed: true, Source: "telegram_button"}
 	if data.Action == "complete" {
 		return b.completionStart(a.Key, a.Workshop, data.ID, "")
 	}
@@ -132,7 +187,7 @@ func (b *Bot) taskButton(a buttonAction) error {
 		intent.Action = "set_quantity"
 		intent.Quantity = &t.State.Quantity
 	}
-	t, err := (memory.TaskStateMachine{Memory: m}).Apply(sc, intent)
+	t, err := (memory.TaskStateMachine{Memory: m}).Request(sc, memory.TransitionRequest{TaskID: sc.TaskID, ActorUserID: sc.UserID, Transition: intent.Action, Source: intent.Source, Payload: intent})
 	if err != nil {
 		return err
 	}

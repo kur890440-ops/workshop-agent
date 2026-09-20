@@ -185,7 +185,7 @@ func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, 
 	if isColorReference(lower) && material == nil {
 		return "Уточните материал: к чему относится цвет? Например, PETG.", usage, nil
 	}
-	if task != nil && hasAny(lower, "план", "парти", "расчет", "расчёт", "задач", "сколько нужно") {
+	if task != nil && hasAny(lower, "парти", "расчет", "расчёт", "задач", "сколько нужно") {
 		return a.taskAnswer(user, workshop, task, built.Long), usage, nil
 	}
 	if hasAny(lower, "отчет", "отчёт", "сводк") {
@@ -332,7 +332,7 @@ func formatMaterial(item map[string]any) string {
 	return fmt.Sprintf("%s: %s.", item["name"], inventory.Quantity(item, "current_stock"))
 }
 func (a *WorkshopAgent) taskAnswer(user, workshop int64, task *memory.Task, prefs []memory.LongTerm) string {
-	title := fmt.Sprintf("План: %g шт. %s.", task.State.Quantity, task.State.ProductName)
+	title := fmt.Sprintf("Задача: %g шт. %s.", task.State.Quantity, task.State.ProductName)
 	for _, key := range []string{"packaging", "material", "override"} {
 		if value := task.State.Parameters[key]; value != "" {
 			title += "\nТолько для этой задачи: " + value

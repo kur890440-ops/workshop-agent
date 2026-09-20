@@ -149,13 +149,19 @@ func (b *Bot) completionStart(key sessionKey, w int64, id, number string) error 
 		return b.productionReceipt(key, p)
 	}
 	if t.Phase == "execution" {
+		_, _ = (memory.TaskStateMachine{Memory: m}).Apply(sc, memory.TaskIntent{Action: "complete", Version: t.Version, Source: "telegram_message"})
 		return b.denyExecutionCompletion(key, w, t.ID, t.Phase)
 	}
 	if t.Status != "active" || t.Phase != "validation" {
+		_, _ = (memory.TaskStateMachine{Memory: m}).Apply(sc, memory.TaskIntent{Action: "complete", Version: t.Version, Source: "telegram_message"})
 		if e = b.sendMessage(key.ChatID, "Сначала выполните текущий шаг задачи. Начало и возобновление требуют отдельного подтверждения."); e != nil {
 			return e
 		}
 		return b.orderCard(key, w, id)
+	}
+	if t.State.ValidationResult != "passed" || t.CurrentStep != "confirm_completion" {
+		_, err := (memory.TaskStateMachine{Memory: m}).Apply(sc, memory.TaskIntent{Action: "complete", Version: t.Version, Source: "telegram_message"})
+		return b.taskScreen(key, w, publicError(err)+"\nПодтвердите проверку результата кнопкой текущего шага.")
 	}
 	if number == "" {
 		b.uiMu.Lock()
@@ -167,7 +173,7 @@ func (b *Bot) completionStart(key sessionKey, w int64, id, number string) error 
 		if t.State.ProducedQuantity != nil {
 			previous = fmt.Sprintf(" Ранее указано: %g шт.", *t.State.ProducedQuantity)
 		}
-		return b.screen(key, fmt.Sprintf("Задача: %s. Этап: %s.\nПо плану: %g шт.%s\nСколько фактически изготовлено? Введите положительное целое число. Отмена: /setup_stop.", t.State.ProductName, t.Phase, t.State.Quantity, previous)+b.assignmentText(key, w, t.CreatedByUserID, t.AssignedToUserID), choice{Text: "Отмена", Action: "completion_cancel", Workshop: w})
+		return b.screen(key, fmt.Sprintf("Задача: %s. Этап: %s.\nПо задаче: %g шт.%s\nСколько фактически изготовлено? Введите положительное целое число. Отмена: /setup_stop.", t.State.ProductName, t.Phase, t.State.Quantity, previous)+b.assignmentText(key, w, t.CreatedByUserID, t.AssignedToUserID), choice{Text: "Отмена", Action: "completion_cancel", Workshop: w})
 	}
 	n, e := pieceCount(number)
 	if e != nil {
@@ -188,14 +194,14 @@ func (b *Bot) completionStart(key sessionKey, w int64, id, number string) error 
 	}
 	var workshopName string
 	_ = b.WS.DB().QueryRow("SELECT name FROM workshops WHERE id=?", w).Scan(&workshopName)
-	text := fmt.Sprintf("Завершить задачу?\nМастерская: %s\nТовар: %s\nПлан: %g шт. Факт: %d шт.", workshopName, t.State.ProductName, t.State.Quantity, n) + b.assignmentText(key, w, t.CreatedByUserID, t.AssignedToUserID)
+	text := fmt.Sprintf("Завершить задачу?\nМастерская: %s\nТовар: %s\nЗадача: %g шт. Факт: %d шт.", workshopName, t.State.ProductName, t.State.Quantity, n) + b.assignmentText(key, w, t.CreatedByUserID, t.AssignedToUserID)
 	text += "\nБудет списано:"
-	for _, r := range preview.Plan.Materials {
+	for _, r := range preview.Calculation.Materials {
 		text += fmt.Sprintf("\n%s: %s. Остаток: %s → %s", r.Name, inventory.FormatQuantity(r.Quantity, r.DisplayUnit), inventory.FormatQuantity(r.Before, r.DisplayUnit), inventory.FormatQuantity(r.After, r.DisplayUnit))
 	}
-	text += fmt.Sprintf("\nБудет оприходовано: %d шт. готового товара. Остаток: %g → %g шт.", n, preview.Plan.ProductBefore, preview.Plan.ProductAfter)
+	text += fmt.Sprintf("\nБудет оприходовано: %d шт. готового товара. Остаток: %g → %g шт.", n, preview.Calculation.ProductBefore, preview.Calculation.ProductAfter)
 	choices := []choice{{Text: "Изменить результат", Action: "completion_edit", Workshop: w, Value: id}, {Text: "Отмена", Action: "completion_cancel", Workshop: w}}
-	if shortage := preview.Plan.Shortage(); shortage != "" {
+	if shortage := preview.Calculation.Shortage(); shortage != "" {
 		text = "Нельзя завершить со списанием:" + shortage
 		choices = append(choices, choice{Text: "Материалы", Action: "completion_materials", Workshop: w})
 	} else {
@@ -212,7 +218,7 @@ func (b *Bot) completionScreen(key sessionKey, text string, choices ...choice) e
 	}
 	return b.screen(key, parts[len(parts)-1], choices...)
 }
-func (b *Bot) productionReceipt(key sessionKey, p products.ProductionPlan) error {
+func (b *Bot) productionReceipt(key sessionKey, p products.ProductionCalculation) error {
 	text := fmt.Sprintf("Задача завершена. Выпуск проведён: %s — %g шт.\nЗапись производства №%d.\nСписано:", p.ProductName, p.Quantity, p.RecordID)
 	for _, r := range p.Materials {
 		text += fmt.Sprintf("\n%s: %s. Остаток после проведения: %s.", r.Name, inventory.FormatQuantity(r.Quantity, r.DisplayUnit), inventory.FormatQuantity(r.After, r.DisplayUnit))

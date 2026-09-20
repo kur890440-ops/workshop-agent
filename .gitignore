@@ -5,5 +5,6 @@
 .vscode/
 .DS_Store
 bin/
+reports/task-only-refactor/migration-before.json
 reports/day11-memory/preview-profile/
 reports/day11-memory/preview-profile-cdp/

@@ -33,8 +33,6 @@ const (
 	ProductionUpdate  Permission = "production.update"
 	ShipmentsRead     Permission = "shipments.read"
 	ShipmentsWrite    Permission = "shipments.write"
-	PlanningRead      Permission = "planning.read"
-	PlanningWrite     Permission = "planning.write"
 	AuditRead         Permission = "audit.read"
 	TasksRead         Permission = "tasks.read"
 	TasksCreate       Permission = "tasks.create"
@@ -46,8 +44,8 @@ const (
 var ErrDenied = errors.New("У вас нет прав для этой операции. Обратитесь к владельцу или администратору мастерской.")
 var ErrDisabled = errors.New("Ваш доступ к мастерской отключён.")
 var ErrChooseWorkshop = errors.New("Выберите доступную мастерскую.")
-var all = []Permission{WorkshopRead, WorkshopManage, WorkshopDelete, OwnershipTransfer, MembersRead, MembersInvite, MembersManage, InventoryRead, InventoryWrite, ProductsRead, ProductsWrite, BOMRead, BOMWrite, ProductionRead, ProductionCreate, ProductionUpdate, ShipmentsRead, ShipmentsWrite, PlanningRead, PlanningWrite, AuditRead}
-var read = []Permission{WorkshopRead, MembersRead, InventoryRead, ProductsRead, BOMRead, ProductionRead, ShipmentsRead, PlanningRead}
+var all = []Permission{WorkshopRead, WorkshopManage, WorkshopDelete, OwnershipTransfer, MembersRead, MembersInvite, MembersManage, InventoryRead, InventoryWrite, ProductsRead, ProductsWrite, BOMRead, BOMWrite, ProductionRead, ProductionCreate, ProductionUpdate, ShipmentsRead, ShipmentsWrite, AuditRead}
+var read = []Permission{WorkshopRead, MembersRead, InventoryRead, ProductsRead, BOMRead, ProductionRead, ShipmentsRead}
 
 // Permissions returns a copy so callers cannot mutate policy.
 func Permissions(role Role) []Permission {

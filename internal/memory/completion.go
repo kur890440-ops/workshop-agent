@@ -15,9 +15,9 @@ import (
 var ErrPostingRequired = errors.New("Для завершения требуется проверка выпуска и подтверждение «Завершить и списать».")
 
 type Completion struct {
-	Token string
-	Plan  products.ProductionPlan
-	Task  *Task
+	Token       string
+	Calculation products.ProductionCalculation
+	Task        *Task
 }
 
 func completionTask(tx *sql.Tx, sc Scope) (*Task, error) {
@@ -39,10 +39,10 @@ func completionTask(tx *sql.Tx, sc Scope) (*Task, error) {
 	return t, nil
 }
 func canPost(t *Task) bool {
-	return t.FSMVersion == 1 && t.Status == "active" && t.Phase == "validation" && (t.CurrentStep == "verify_result" || t.CurrentStep == "confirm_completion")
+	return t.FSMVersion == 1 && t.Status == "active" && t.Phase == "validation" && t.CurrentStep == "confirm_completion" && t.State.ValidationResult == "passed"
 }
-func receipt(tx *sql.Tx, sc Scope) (products.ProductionPlan, error) {
-	var p products.ProductionPlan
+func receipt(tx *sql.Tx, sc Scope) (products.ProductionCalculation, error) {
+	var p products.ProductionCalculation
 	var raw string
 	e := tx.QueryRow("SELECT composition_json FROM production_records WHERE task_id=? AND workshop_id=?", sc.TaskID, sc.WorkshopID).Scan(&raw)
 	if e != nil {
@@ -51,8 +51,8 @@ func receipt(tx *sql.Tx, sc Scope) (products.ProductionPlan, error) {
 	e = json.Unmarshal([]byte(raw), &p)
 	return p, e
 }
-func (s *Service) CompletionReceipt(sc Scope) (products.ProductionPlan, error) {
-	var p products.ProductionPlan
+func (s *Service) CompletionReceipt(sc Scope) (products.ProductionCalculation, error) {
+	var p products.ProductionCalculation
 	e := s.tx(sc, func(tx *sql.Tx) error {
 		if _, e := completionTask(tx, sc); e != nil {
 			return e
@@ -77,14 +77,14 @@ func (s *Service) PrepareCompletion(sc Scope, chat int64, qty float64) (Completi
 		}
 		out.Task = publicTask(t)
 		if t.Status == "completed" {
-			out.Plan, e = receipt(tx, sc)
+			out.Calculation, e = receipt(tx, sc)
 			return e
 		}
-		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase}); e != nil {
+		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase, ValidationPassed: t.State.ValidationResult == "passed"}); e != nil {
 			return e
 		}
 		if !canPost(t) {
-			return ErrTransition
+			return (TaskStateMachine{s}).deny(t, "production_posted", "PRECONDITION_FAILED", "Сначала подтвердите проверку результата кнопкой текущего шага. Затем откройте завершение.")
 		}
 		if e = session(tx, sc); e != nil {
 			return e
@@ -92,7 +92,7 @@ func (s *Service) PrepareCompletion(sc Scope, chat int64, qty float64) (Completi
 		if e = auth.Require(tx, t.AssignedToUserID, sc.WorkshopID, auth.TasksExecute); e != nil {
 			return e
 		}
-		out.Plan, e = products.CalculateProductionTx(tx, sc.UserID, sc.WorkshopID, t.State.ProductID, qty)
+		out.Calculation, e = products.CalculateProductionTx(tx, sc.UserID, sc.WorkshopID, t.State.ProductID, qty)
 		if e != nil {
 			return e
 		}
@@ -100,7 +100,7 @@ func (s *Service) PrepareCompletion(sc Scope, chat int64, qty float64) (Completi
 		if e != nil {
 			return e
 		}
-		_, e = tx.Exec("INSERT INTO task_completion_intents(id,user_id,workshop_id,chat_id,session_id,task_id,version,plan_json,expires_at) VALUES(?,?,?,?,?,?,?,?,?)", out.Token, sc.UserID, sc.WorkshopID, chat, sc.SessionID, t.ID, t.Version, compact(out.Plan), time.Now().Add(15*time.Minute).Unix())
+		_, e = tx.Exec("INSERT INTO task_completion_intents(id,user_id,workshop_id,chat_id,session_id,task_id,version,calculation_json,expires_at) VALUES(?,?,?,?,?,?,?,?,?)", out.Token, sc.UserID, sc.WorkshopID, chat, sc.SessionID, t.ID, t.Version, compact(out.Calculation), time.Now().Add(15*time.Minute).Unix())
 		return e
 	})
 	return out, e
@@ -111,13 +111,13 @@ func (s *Service) CancelCompletion(sc Scope, chat int64) error {
 		return e
 	})
 }
-func (s *Service) PostCompletion(sc Scope, chat int64, token string) (products.ProductionPlan, error) {
-	var out products.ProductionPlan
+func (s *Service) PostCompletion(sc Scope, chat int64, token string) (products.ProductionCalculation, error) {
+	var out products.ProductionCalculation
 	e := s.tx(sc, func(tx *sql.Tx) error {
 		var version int
 		var sessionID, expires int64
 		var raw string
-		if e := tx.QueryRow("SELECT task_id,version,session_id,plan_json,expires_at FROM task_completion_intents WHERE id=? AND user_id=? AND workshop_id=? AND chat_id=?", token, sc.UserID, sc.WorkshopID, chat).Scan(&sc.TaskID, &version, &sessionID, &raw, &expires); e != nil {
+		if e := tx.QueryRow("SELECT task_id,version,session_id,calculation_json,expires_at FROM task_completion_intents WHERE id=? AND user_id=? AND workshop_id=? AND chat_id=?", token, sc.UserID, sc.WorkshopID, chat).Scan(&sc.TaskID, &version, &sessionID, &raw, &expires); e != nil {
 			return e
 		}
 		t, e := completionTask(tx, sc)
@@ -134,7 +134,7 @@ func (s *Service) PostCompletion(sc Scope, chat int64, token string) (products.P
 		if e = session(tx, sc); e != nil {
 			return e
 		}
-		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase}); e != nil {
+		if e := invariants.Check(tx, invariants.ProposedAction{ActionType: "complete_task", UserID: sc.UserID, WorkshopID: sc.WorkshopID, TaskID: t.ID}, invariants.Facts{Phase: t.Phase, ValidationPassed: t.State.ValidationResult == "passed"}); e != nil {
 			return e
 		}
 		if !canPost(t) || t.Version != version {
@@ -143,28 +143,18 @@ func (s *Service) PostCompletion(sc Scope, chat int64, token string) (products.P
 		if e = auth.Require(tx, t.AssignedToUserID, sc.WorkshopID, auth.TasksExecute); e != nil {
 			return e
 		}
-		var plan products.ProductionPlan
-		if e = json.Unmarshal([]byte(raw), &plan); e != nil {
+		var calculation products.ProductionCalculation
+		if e = json.Unmarshal([]byte(raw), &calculation); e != nil {
 			return e
 		}
-		if plan.ProductID != t.State.ProductID {
+		if calculation.ProductID != t.State.ProductID {
 			return ErrTaskChanged
 		}
-		out, e = products.PostProductionTx(tx, sc.UserID, sc.WorkshopID, t.CreatedByUserID, t.AssignedToUserID, t.ID, plan)
+		out, e = products.PostProductionTx(tx, sc.UserID, sc.WorkshopID, t.CreatedByUserID, t.AssignedToUserID, t.ID, calculation)
 		if e != nil {
 			return e
 		}
-		before := *publicTask(t)
-		t.State.ProducedQuantity = &out.Quantity
-		t.Status = "completed"
-		setStep(t, "done", "completed", "none", "NONE")
-		t.Version++
-		now := time.Now().UTC().Format(time.RFC3339Nano)
-		t.CompletedAt = &now
-		if _, e = tx.Exec("UPDATE working_memory SET state_json=?,status='completed',phase='done',current_step='completed',expected_action='none',expected_action_type='NONE',version=?,completed_at=?,updated_at=? WHERE task_id=? AND workshop_id=?", compact(t.State), t.Version, now, now, t.ID, sc.WorkshopID); e != nil {
-			return e
-		}
-		if e = taskEvent(tx, sc, before, *publicTask(t), "production_posted"); e != nil {
+		if e = (TaskStateMachine{s}).finishPosting(tx, sc, t, out.Quantity); e != nil {
 			return e
 		}
 		_, e = tx.Exec("UPDATE task_completion_intents SET consumed=1 WHERE id=?", token)

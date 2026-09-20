@@ -37,8 +37,8 @@ func TestDay14TelegramPolicyAndCancellation(t *testing.T) {
 	}
 	sc.TaskID = task.ID
 	q := 1.
-	for _, action := range []string{"set_quantity", "confirm_plan", "start_production"} {
-		task, e = f.Apply(sc, memory.TaskIntent{Action: action, Quantity: &q, Version: task.Version})
+	for _, action := range []string{"set_quantity", "confirm_task", "start_production"} {
+		task, e = f.Apply(sc, memory.TaskIntent{Confirmed: true, Action: action, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)
 		}

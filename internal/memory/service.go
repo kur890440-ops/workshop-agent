@@ -249,58 +249,10 @@ func (s *Service) ActiveWorking(sc Scope) (*Task, error) {
 	return publicTask(t), nil
 }
 func (s *Service) UpdateWorkingMemory(sc Scope, state TaskState, status string) error {
-	if status != "active" && status != "waiting_input" {
-		return errors.New("invalid active task status")
-	}
-	return s.tx(sc, func(tx *sql.Tx) error {
-		if err := s.legacyTaskPermission(tx, sc); err != nil {
-			return err
-		}
-		if err := preservePrivateTaskState(tx, sc, &state); err != nil {
-			return err
-		}
-		if err := validateState(tx, sc, state); err != nil {
-			return err
-		}
-		res, err := tx.Exec(`UPDATE working_memory SET state_json=?,status=?,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND COALESCE(assigned_to_user_id,user_id)=user_id AND fsm_version=0 AND status IN ('active','waiting_input')`, compact(state), status, sc.TaskID, sc.UserID, sc.WorkshopID)
-		if err != nil {
-			return err
-		}
-		n, _ := res.RowsAffected()
-		if n != 1 {
-			return ErrNoTask
-		}
-		return nil
-	})
+	return (TaskStateMachine{s}).legacyUpdateWorkingMemory(sc, state, status)
 }
 func (s *Service) CompleteWorkingMemory(sc Scope, cancel bool) error {
-	if !cancel {
-		t, e := s.Task(sc)
-		if e != nil {
-			return e
-		}
-		if shared(t) {
-			return ErrPostingRequired
-		}
-	}
-	status := "completed"
-	if cancel {
-		status = "cancelled"
-	}
-	return s.tx(sc, func(tx *sql.Tx) error {
-		if err := s.legacyTaskPermission(tx, sc); err != nil {
-			return err
-		}
-		res, err := tx.Exec(`UPDATE working_memory SET status=?,completed_at=CURRENT_TIMESTAMP,updated_at=CURRENT_TIMESTAMP WHERE task_id=? AND user_id=? AND workshop_id=? AND COALESCE(assigned_to_user_id,user_id)=user_id AND fsm_version=0 AND status IN ('active','waiting_input')`, status, sc.TaskID, sc.UserID, sc.WorkshopID)
-		if err != nil {
-			return err
-		}
-		n, _ := res.RowsAffected()
-		if n != 1 {
-			return ErrNoTask
-		}
-		return nil
-	})
+	return (TaskStateMachine{s}).legacyCompleteWorkingMemory(sc, cancel)
 }
 
 var preferenceValues = map[string]map[string]bool{"response_style": {"concise": true, "detailed": true}, "summary_first": {"true": true, "false": true}, "response_format": {"table": true, "text": true}, "language": {"ru": true, "en": true}}
@@ -415,7 +367,7 @@ func (s *Service) RelevantLongTerm(sc Scope, query, taskType string, productID i
 		query += " profile"
 	}
 	// SQL narrows scope AND task/category/entity/key before applying the hard retrieval limit.
-	rows, err := s.DB.Query(`SELECT id,memory_type,category,scope_type,COALESCE(entity_id,0),key,value_json,source_type,version FROM long_term_memory WHERE is_active=1 AND ((scope_type='user' AND user_id=?) OR (scope_type IN ('workshop','process') AND workshop_id=?) OR (scope_type='product' AND workshop_id=? AND entity_id=?)) AND (category=? OR (scope_type='product' AND entity_id=?) OR instr(?,key)>0 OR (category='quality_control' AND (? LIKE '%контрол%' OR ? LIKE '%провер%' OR ? IN ('production_plan','assembly')))) ORDER BY updated_at DESC,id DESC LIMIT 8`, sc.UserID, sc.WorkshopID, sc.WorkshopID, productID, taskType, productID, query, query, query, taskType)
+	rows, err := s.DB.Query(`SELECT id,memory_type,category,scope_type,COALESCE(entity_id,0),key,value_json,source_type,version FROM long_term_memory WHERE is_active=1 AND ((scope_type='user' AND user_id=?) OR (scope_type IN ('workshop','process') AND workshop_id=?) OR (scope_type='product' AND workshop_id=? AND entity_id=?)) AND (category=? OR (scope_type='product' AND entity_id=?) OR instr(?,key)>0 OR (category='quality_control' AND (? LIKE '%контрол%' OR ? LIKE '%провер%' OR ? IN ('production','assembly')))) ORDER BY updated_at DESC,id DESC LIMIT 8`, sc.UserID, sc.WorkshopID, sc.WorkshopID, productID, taskType, productID, query, query, query, taskType)
 	if err != nil {
 		return nil, err
 	}

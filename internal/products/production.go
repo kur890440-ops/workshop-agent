@@ -27,7 +27,7 @@ type PostingError struct{ Message string }
 
 func (e *PostingError) Error() string { return e.Message }
 
-type ProductionPlan struct {
+type ProductionCalculation struct {
 	ProductID                   int64
 	ProductName                 string
 	Quantity                    float64
@@ -64,8 +64,8 @@ func productionAdd(a, b float64) float64 {
 
 // CalculateProductionTx expands nested BOMs to raw materials, never also
 // consuming the intermediate product. All reads use the caller's transaction.
-func CalculateProductionTx(tx *sql.Tx, actor, w, p int64, quantity float64) (ProductionPlan, error) {
-	out := ProductionPlan{ProductID: p, Quantity: quantity}
+func CalculateProductionTx(tx *sql.Tx, actor, w, p int64, quantity float64) (ProductionCalculation, error) {
+	out := ProductionCalculation{ProductID: p, Quantity: quantity}
 	for _, perm := range []auth.Permission{auth.ProductionCreate, auth.InventoryWrite, auth.BOMRead, auth.ProductsRead} {
 		if e := auth.Require(tx, actor, w, perm); e != nil {
 			return out, e
@@ -153,13 +153,13 @@ func CalculateProductionTx(tx *sql.Tx, actor, w, p int64, quantity float64) (Pro
 		snapshot.Materials[i].After = 0
 	}
 	raw, _ := json.Marshal(struct {
-		Plan     ProductionPlan
-		Versions []string
+		Calculation ProductionCalculation
+		Versions    []string
 	}{snapshot, versions})
 	out.Fingerprint = fmt.Sprintf("%x", sha256.Sum256(raw))
 	return out, nil
 }
-func (p ProductionPlan) Shortage() string {
+func (p ProductionCalculation) Shortage() string {
 	text := ""
 	for _, m := range p.Materials {
 		if m.After < 0 {
@@ -170,7 +170,7 @@ func (p ProductionPlan) Shortage() string {
 }
 
 // PostProductionTx must be committed together with the task transition.
-func PostProductionTx(tx *sql.Tx, actor, w, creator, assignee int64, task string, p ProductionPlan) (ProductionPlan, error) {
+func PostProductionTx(tx *sql.Tx, actor, w, creator, assignee int64, task string, p ProductionCalculation) (ProductionCalculation, error) {
 	fresh, e := CalculateProductionTx(tx, actor, w, p.ProductID, p.Quantity)
 	if e != nil {
 		return p, e

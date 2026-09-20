@@ -54,10 +54,14 @@ func (s *Store) Migrate() error {
 		return err
 	}
 	var done int
+	var taskOnlyDone int
+	var controlledDone int
 	if legacy > 0 {
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=108`).Scan(&taskOnlyDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=109`).Scan(&controlledDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if done != 4 && s.Path != "" && s.Path != ":memory:" {
+		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
@@ -70,6 +74,9 @@ func (s *Store) Migrate() error {
 	}
 	defer tx.Rollback()
 	for i, stmt := range migrations() {
+		if taskOnlyDone != 0 && strings.Contains(stmt, "CREATE TABLE IF NOT EXISTS production_plans") {
+			continue
+		}
 		if _, err := tx.Exec(stmt); err != nil {
 			return fmt.Errorf("migration %d failed: %w", i+1, err)
 		}
@@ -96,6 +103,12 @@ func (s *Store) Migrate() error {
 		return fmt.Errorf("task completion migration: %w", err)
 	}
 	if err := migrateInvariants(tx); err != nil {
+		return err
+	}
+	if err := migrateTaskOnly(tx); err != nil {
+		return fmt.Errorf("task-only migration: %w", err)
+	}
+	if err := migrateControlledTransitions(tx); err != nil {
 		return err
 	}
 	return tx.Commit()

@@ -86,6 +86,14 @@ func main() {
 		}
 		return
 	}
+	if len(os.Args) == 2 && os.Args[1] == "day15-transitions-report" {
+		path, e := experiment.RunDay15()
+		fmt.Println(path)
+		if e != nil {
+			log.Fatal(e)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "semantic-report" {
 		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
 		if err != nil {

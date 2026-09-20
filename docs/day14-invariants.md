@@ -8,7 +8,7 @@
 - CURRENT TASK STATE RULES: Day13 FSM хранит phase/step/status/version. Ранее WA-D094 разрешал проведение из execution/record_result; Day14 отменяет этот shortcut.
 - CURRENT STACK CONSTRAINTS: Go, SQLite, Telegram. LLM только интерпретирует команды из разрешённой схемы.
 - CURRENT ARCHITECTURE DECISIONS: сервисы владеют бизнес-логикой; личная память и профиль не являются источником разрешений; общие задачи мастерской имеют автора и исполнителя.
-- REUSE PLAN: auth.Require, TaskStateMachine, CalculateProductionTx/PostProductionTx, транзакционное изменение остатков, действующие nonce-кнопки, user_preferences, long_term_memory, Audit Log.
+- Повторно используемые механизмы: auth.Require, TaskStateMachine, CalculateProductionTx/PostProductionTx, транзакционное изменение остатков, действующие nonce-кнопки, user_preferences, long_term_memory, Audit Log.
 - MIGRATIONS REQUIRED: 107 — invariant_settings и invariant_traces. Данные мастерской не переносятся и не удаляются.
 
 ## L0 · Архитектура

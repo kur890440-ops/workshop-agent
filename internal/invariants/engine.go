@@ -35,6 +35,7 @@ type ProposedAction struct {
 	Scope      ScopeContext   `json:"scope"`
 }
 type Facts struct {
+	ValidationPassed bool
 	Phase            string
 	ResultingStock   float64
 	Confirmed        bool
@@ -135,7 +136,7 @@ func (e InvariantEngine) Evaluate(q auth.Querier, a ProposedAction, f Facts) Res
 		case MaterialCheck:
 			if f.MaterialShortage != "" {
 				reason = f.MaterialShortage
-				alt = "Пополните материалы или измените план до запуска производства."
+				alt = "Пополните материалы или измените параметры задачи до запуска производства."
 			}
 		case "authorized_workshop":
 			p := auth.WorkshopRead
@@ -152,8 +153,8 @@ func (e InvariantEngine) Evaluate(q auth.Querier, a ProposedAction, f Facts) Res
 				alt = "Обратитесь к OWNER или ADMIN за доступом."
 			}
 		case "validation_before_completion":
-			if f.Phase != "validation" {
-				reason = fmt.Sprintf("Текущая фаза: %s. Пропуск проверки запрещён.", f.Phase)
+			if f.Phase != "validation" || !f.ValidationPassed {
+				reason = fmt.Sprintf("Текущая фаза: %s. Нужна успешная проверка результата. Пропуск проверки запрещён.", f.Phase)
 				alt = "Сначала укажите фактический выпуск через /task result <количество>, затем проверьте расчёт и подтвердите завершение."
 			}
 		case "nonnegative_inventory":
@@ -164,7 +165,7 @@ func (e InvariantEngine) Evaluate(q auth.Querier, a ProposedAction, f Facts) Res
 		case "stock_depleted":
 			if f.ResultingStock == 0 {
 				reason = "Остаток станет нулевым."
-				alt = "При необходимости запланируйте пополнение."
+				alt = "При необходимости оформите пополнение."
 			}
 		case "bom_confirmation":
 			if !f.Confirmed {
@@ -179,7 +180,7 @@ func (e InvariantEngine) Evaluate(q auth.Querier, a ProposedAction, f Facts) Res
 			alt = "Используйте допустимый переход TaskStateMachine."
 		case "go_sqlite_telegram":
 			reason = "Замена рабочего persistence нарушает активное ограничение стека."
-			alt = "Можно подготовить план миграции и интерфейс хранилища, сохранив текущий backend SQLite."
+			alt = "Можно подготовить порядок миграции и интерфейс хранилища, сохранив текущий backend SQLite."
 		case "protected_ownership":
 			reason = "Нельзя удалить последнего владельца."
 			alt = "Сначала выполните явную передачу ownership."

@@ -10,12 +10,18 @@ import (
 	"workshop-agent/internal/personalization"
 )
 
-var taskStart = regexp.MustCompile(`(?i)^(?:нужно произвести|сделаем|произвести)\s+(\d+)\s+(.+?)[.!]?$`)
+var taskStart = regexp.MustCompile(`(?i)^(?:создай задачу производства|создать задачу производства|нужно произвести|сделаем|произвести)\s+(\d+)\s+(.+?)[.!]?$`)
 var taskNumber = regexp.MustCompile(`(?i)^(?:нет,?\s*(?:сделай\s*)?|сделай\s+|произведено\s+|готово\s+)?(\d+)[.!]?$`)
 
 func TaskCommand(text string) string {
 	t := strings.TrimRight(strings.ToLower(strings.TrimSpace(text)), ".!?")
 	switch t {
+	case "что я сейчас могу сделать", "что можно сейчас", "доступные действия":
+		return "/task actions"
+	case "проверка пройдена":
+		return "/task verify_result"
+	case "сразу заверши", "я сказал заверши", "закрой задачу", "готово, закрывай", "пропусти проверку", "я владелец, всё равно пропусти":
+		return "/task complete"
 	case "задачи", "задача", "📋 текущая задача", "на чем мы остановились", "на чём мы остановились", "что сейчас нужно от меня", "что от меня нужно", "что в работе":
 		return "/task"
 	case "поставь задачу на паузу", "поставь пока на паузу", "пауза", "сделай паузу":
@@ -25,17 +31,17 @@ func TaskCommand(text string) string {
 	case "задача выполнена":
 		return "/task complete"
 	case "запускай":
-		return "/task confirm_plan"
+		return "/task confirm_task"
 	case "всё правильно", "все правильно":
 		return "/task verify_result"
 	}
 	return text
 }
 func TaskStatus(t *memory.Task, detailed bool) string {
-	phases := map[string]string{"planning": "Планирование", "execution": "Выполнение", "validation": "Проверка", "done": "Завершено"}
-	steps := map[string]string{"select_product": "Выбор товара", "set_quantity": "Подтверждение количества", "confirm_plan": "Подтверждение плана", "start_production": "Начало выполнения", "record_result": "Ввод результата", "verify_result": "Проверка результата", "confirm_completion": "Подтверждение завершения", "completed": "Завершено"}
-	expected := map[string]string{"select_product": "Выберите товар: /task product <ID> (ID показаны ниже).", "confirm_quantity": "Укажите плановое количество: /task quantity 25 или «Нет, 25». Даже предложенное количество нужно подтвердить.", "confirm_plan": "Подтвердите план кнопкой или /task confirm_plan.", "start_production": "Подтвердите начало шага: /task start_production.", "user_input_produced_quantity": "Укажите количество фактически произведённых изделий: /task result 25.", "verify_result": "Проверьте введённый результат: /task verify_result или /task correct_result.", "confirm_completion": "Завершите проверку: /task complete.", "none": "Ничего: задача завершена."}
-	result := fmt.Sprintf("Задача #%s\nПроизводственный план: %g шт. %s\nЭтап: %s\nШаг: %s\nОжидается: %s\nСтатус: %s", t.ID, t.State.Quantity, t.State.ProductName, phases[t.Phase], steps[t.CurrentStep], expected[t.ExpectedAction], t.Status)
+	phases := map[string]string{"planning": "Подготовка задачи", "execution": "Выполнение", "validation": "Проверка", "done": "Завершено"}
+	steps := map[string]string{"select_product": "Выбор товара", "set_quantity": "Подтверждение количества", "confirm_task": "Подтверждение параметров задачи", "start_production": "Начало выполнения", "record_result": "Ввод результата", "verify_result": "Проверка результата", "confirm_completion": "Подтверждение завершения", "completed": "Завершено"}
+	expected := map[string]string{"select_product": "Выберите товар: /task product <ID> (ID показаны ниже).", "confirm_quantity": "Укажите количество по задаче: /task quantity 25 или «Нет, 25». Даже предложенное количество нужно подтвердить.", "confirm_task": "Подтвердите параметры задачи кнопкой или /task confirm_task.", "start_production": "Подтвердите начало шага: /task start_production.", "user_input_produced_quantity": "Укажите количество фактически произведённых изделий: /task result 25.", "verify_result": "Проверьте введённый результат: /task verify_result или /task correct_result.", "confirm_completion": "Завершите проверку: /task complete.", "none": "Ничего: задача завершена."}
+	result := fmt.Sprintf("Задача #%s\nПроизводственная задача: %g шт. %s\nЭтап: %s\nШаг: %s\nОжидается: %s\nСтатус: %s", t.ID, t.State.Quantity, t.State.ProductName, phases[t.Phase], steps[t.CurrentStep], expected[t.ExpectedAction], t.Status)
 	result += fmt.Sprintf("\nАвтор: #%d\nИсполнитель: #%d", t.CreatedByUserID, t.AssignedToUserID)
 	if t.State.ProducedQuantity != nil {
 		result += fmt.Sprintf("\nЗаявленный результат: %g шт.", *t.State.ProducedQuantity)
@@ -46,7 +52,7 @@ func TaskStatus(t *memory.Task, detailed bool) string {
 	if detailed {
 		result += fmt.Sprintf("\nType: %s · phase=%s · step=%s · version=%d", t.Type, t.Phase, t.CurrentStep, t.Version)
 	}
-	for _, cmd := range []string{"/task product <ID>", "/task quantity 25", "/task result 25", "/task confirm_plan", "/task start_production", "/task verify_result", "/task correct_result", "/task complete"} {
+	for _, cmd := range []string{"/task product <ID>", "/task quantity 25", "/task result 25", "/task confirm_task", "/task start_production", "/task verify_result", "/task correct_result", "/task complete"} {
 		result = strings.ReplaceAll(result, cmd, cmd+" "+t.ID)
 	}
 	return result + "\nДля выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт."
@@ -121,6 +127,12 @@ func (a *WorkshopAgent) TaskMessage(user, workshop int64, text string) (bool, st
 				selectID = parts[3]
 			}
 		}
+		if action == "correct_result" {
+			selectID = ""
+			if len(parts) > 2 && len(parts[len(parts)-1]) == 32 {
+				selectID = parts[len(parts)-1]
+			}
+		}
 		if selectID != "" {
 			sc.TaskID = selectID
 			t, err = m.Task(sc)
@@ -152,7 +164,7 @@ func (a *WorkshopAgent) TaskMessage(user, workshop int64, text string) (bool, st
 			return true, memory.ErrNoTask.Error(), nil
 		}
 		if t.FSMVersion == 0 {
-			if t.Type != "assembly" && t.Type != "production_plan" {
+			if t.Type != "assembly" && t.Type != "production" {
 				return false, "", nil
 			}
 			if action == "show" {
@@ -177,14 +189,27 @@ func (a *WorkshopAgent) TaskMessage(user, workshop int64, text string) (bool, st
 			if e != nil {
 				return true, "", e
 			}
-			raw, _ := json.MarshalIndent(struct {
-				Task    *memory.Task
-				History any
-			}{t, history}, "", "  ")
+			trace, e := m.TransitionTrace(sc)
+			if e != nil {
+				return true, "", e
+			}
+			raw, _ := json.MarshalIndent(map[string]any{"trace": trace, "history": history}, "", "  ")
 			return true, string(raw), nil
 		}
+		if action == "actions" {
+			answer := TaskStatus(t, false) + "\nДоступно сейчас:"
+			for _, d := range f.AllowedTransitions(sc, t) {
+				answer += "\n• " + d.Label
+			}
+			return true, answer, nil
+		}
 		if action != "show" {
-			intent := memory.TaskIntent{Action: action, Version: t.Version}
+			intent := memory.TaskIntent{Action: action, Version: t.Version, Source: "user_message"}
+			// Explicit slash commands are confirmations bound to a visible task ID.
+			intent.Confirmed = strings.HasPrefix(strings.TrimSpace(original), "/task ")
+			if action == "correct_result" {
+				intent.Reason = strings.TrimSpace(strings.TrimSuffix(strings.TrimPrefix(text, "/task correct_result"), t.ID))
+			}
 			switch action {
 			case "quantity", "result":
 				value, e := strconv.ParseFloat(strings.ReplaceAll(arg, ",", "."), 64)
@@ -200,7 +225,7 @@ func (a *WorkshopAgent) TaskMessage(user, workshop int64, text string) (bool, st
 				intent.ProductID, _ = strconv.ParseInt(arg, 10, 64)
 				intent.Action = "select_product"
 			}
-			t, err = f.Apply(sc, intent)
+			t, err = f.Request(sc, memory.TransitionRequest{TaskID: sc.TaskID, ActorUserID: sc.UserID, Transition: intent.Action, Source: intent.Source, Payload: intent})
 		}
 	}
 	if err != nil {

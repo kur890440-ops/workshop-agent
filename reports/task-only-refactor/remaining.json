@@ -1,0 +1,1674 @@
+{
+  "pattern": "plan|план (case insensitive)",
+  "matches": [
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 9,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 21,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 22,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 27,
+      "occurrences": 4,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 30,
+      "occurrences": 2,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 32,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 36,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 38,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 46,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 60,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 68,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 97,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-only-refactor.md",
+      "line": 98,
+      "occurrences": 1,
+      "reason": "Legacy migration explanation and audit references"
+    },
+    {
+      "path": "docs/task-completion-posting.md",
+      "line": 40,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/assembly-task-intent.md",
+      "line": 43,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "README.md",
+      "line": 252,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 52,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 77,
+      "occurrences": 2,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 78,
+      "occurrences": 2,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 79,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 89,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/day13-task-state.md",
+      "line": 156,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "docs/prompts/assembly-task-intent.txt",
+      "line": 151,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 13,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 43,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 73,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 103,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 497,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 502,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 504,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 509,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 511,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 516,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 518,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/results.json",
+      "line": 523,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "internal/agent/personalization.go",
+      "line": 51,
+      "occurrences": 2,
+      "reason": "Substring in explanation; unrelated to domain"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 3,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 14,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 24,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 33,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 42,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 50,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260918T125116.721198500Z/report.html",
+      "line": 131,
+      "occurrences": 9,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 48,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 144,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 240,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 338,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 434,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 530,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 588,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 626,
+      "occurrences": 3,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/results.json",
+      "line": 659,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/results.json",
+      "line": 211,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/results.json",
+      "line": 212,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/results.json",
+      "line": 317,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/results.json",
+      "line": 318,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T134951Z/results.json",
+      "line": 48,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/identity-access/migration.json",
+      "line": 32,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/report.html",
+      "line": 146,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T200159.589354700Z/report.html",
+      "line": 178,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/validation.json",
+      "line": 33,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 18,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 48,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 74,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 116,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 142,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 184,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 213,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 237,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 238,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135225Z/report.html",
+      "line": 259,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 48,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 144,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 240,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 338,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 434,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 530,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 588,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 626,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/results.json",
+      "line": 659,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T134951Z/report.html",
+      "line": 14,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 14,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 16,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 18,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 22,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 72,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 78,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/report.html",
+      "line": 80,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 14,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 51,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 73,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 113,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 139,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 172,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 200,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 219,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day12-personalization/20260917T135104Z/report.html",
+      "line": 240,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/report.html",
+      "line": 118,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/report.html",
+      "line": 143,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/results.json",
+      "line": 211,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/results.json",
+      "line": 212,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/results.json",
+      "line": 317,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day14-invariants/20260917T195739.235221800Z/results.json",
+      "line": 318,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "internal/experiment/day13.go",
+      "line": 168,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/experiment/day13.go",
+      "line": 179,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/experiment/day13.go",
+      "line": 182,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/agent/task_fsm.go",
+      "line": 35,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 447,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 458,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 498,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 528,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 556,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 576,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 604,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 635,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 647,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 673,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 693,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 721,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 752,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 764,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 958,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 978,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1049,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1078,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1098,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1169,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1855,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1936,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1956,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 1999,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 2025,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 2052,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day11-memory/20260916T174744.744562000Z/results.json",
+      "line": 2096,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 6,
+      "occurrences": 3,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 11,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 23,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 34,
+      "occurrences": 3,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 39,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 51,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 62,
+      "occurrences": 3,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 67,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 79,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 90,
+      "occurrences": 5,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 95,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 96,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 97,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 107,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 118,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 135,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 146,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 163,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 191,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 202,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 219,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 230,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 247,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 258,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 275,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 286,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 303,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 315,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 332,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 344,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 361,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 390,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 402,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 419,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 431,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 448,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 477,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 494,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 499,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 501,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 506,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 508,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 513,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 515,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 518,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/results.json",
+      "line": 520,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "internal/llm/openrouter.go",
+      "line": 51,
+      "occurrences": 1,
+      "reason": "Substring in explanation; unrelated to domain"
+    },
+    {
+      "path": "internal/memory/assembly.go",
+      "line": 79,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/assembly.go",
+      "line": 85,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/invariants_test.go",
+      "line": 65,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/shared_tasks.go",
+      "line": 152,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 3,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 14,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 17,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 18,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 20,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 22,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 23,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 24,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 26,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 29,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 31,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 32,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 34,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 36,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 37,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 38,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 39,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 40,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 42,
+      "occurrences": 4,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 43,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 48,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 49,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 55,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 57,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 62,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 63,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 68,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 69,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 74,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 75,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 81,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 82,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 89,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 91,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 97,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 98,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 104,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 105,
+      "occurrences": 1,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 111,
+      "occurrences": 2,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "reports/day13-task-state/20260917T145218.996792000Z/report.html",
+      "line": 112,
+      "occurrences": 13,
+      "reason": "Historical immutable experiment report"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 90,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 94,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 194,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 200,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 202,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 204,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 247,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 257,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 259,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 263,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/memory/task_fsm.go",
+      "line": 265,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/telegram/completion_test.go",
+      "line": 37,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/telegram/completion_test.go",
+      "line": 39,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/storage/identity_migration.go",
+      "line": 107,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/migrations.go",
+      "line": 124,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/migrations.go",
+      "line": 128,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks.go",
+      "line": 16,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks.go",
+      "line": 20,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks.go",
+      "line": 21,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/sqlite.go",
+      "line": 75,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks_test.go",
+      "line": 20,
+      "occurrences": 2,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks_test.go",
+      "line": 49,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/shared_tasks_test.go",
+      "line": 56,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/telegram/orders_test.go",
+      "line": 83,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/telegram/orders.go",
+      "line": 79,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/storage/task_state.go",
+      "line": 14,
+      "occurrences": 2,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_state.go",
+      "line": 15,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 20,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 21,
+      "occurrences": 2,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 26,
+      "occurrences": 4,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 27,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 67,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 94,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 106,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 118,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only_test.go",
+      "line": 120,
+      "occurrences": 2,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 12,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 25,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 29,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 35,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 73,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 74,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 75,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 76,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 77,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 99,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 101,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 131,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_only.go",
+      "line": 175,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/storage/task_completion.go",
+      "line": 19,
+      "occurrences": 1,
+      "reason": "Historical schema, migration 108, or migration regression fixture"
+    },
+    {
+      "path": "internal/telegram/shared_pause_test.go",
+      "line": 43,
+      "occurrences": 1,
+      "reason": "Substring in explanation; unrelated to domain"
+    },
+    {
+      "path": "internal/telegram/task_fsm_test.go",
+      "line": 17,
+      "occurrences": 1,
+      "reason": "Technical preparation phase of Task; no separate entity"
+    },
+    {
+      "path": "internal/telegram/task_fsm_test.go",
+      "line": 20,
+      "occurrences": 1,
+      "reason": "Regression assertion forbidding retired UI terminology"
+    }
+  ],
+  "excluded_audit_artifacts": "This audit script/output and the immutable before-search archive describe retired names; binary SQLite backups are not source code."
+}

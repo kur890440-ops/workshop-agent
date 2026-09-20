@@ -1,0 +1,135 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>День 13 · Состояние задачи</title><style>*{box-sizing:border-box}body{margin:0;background:#edf3f5;color:#18363d;font:16px/1.6 system-ui}main{max-width:1100px;margin:auto;padding:28px}section,header,article{background:white;padding:24px;border-radius:16px;margin:18px 0}h1{font-size:clamp(28px,5vw,46px);line-height:1.15}h2{color:#176b68}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f0f5f6;padding:16px}p{overflow-wrap:anywhere}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:16px}.state{border-left:4px solid #168580;padding:12px;background:#f2f8f7}@media(max-width:600px){main{padding:12px}section,article,header{padding:16px}}@media print{body{background:white;font-size:11pt}main{padding:0}section,article{border:1px solid #ddd;border-radius:0}h2{break-after:avoid}}</style><main>
+<header><p>WORKSHOP AGENT · 20260918T143540.025308300Z</p><h1>День 13 · Состояние задачи</h1><p>Task State Machine в Workshop Agent</p></header>
+<section><h2>1. Зачем Task State Machine</h2><p>Продолжение без повторного объяснения: параметры и следующий шаг восстанавливаются из SQLite, а не из старого разговора.</p><h2>2. Модель Task State</h2><p>Та же working_memory: task_id, user_id, workshop_id, task_type, state_json; phase, current_step, expected_action/type, status, version, fsm_version, created/updated/started/paused/completed_at. История — task_transitions, атомарно с состоянием и Audit Log.</p><h2>3. State diagram</h2><pre>PLANNING
+    ↓
+EXECUTION
+    ↓
+VALIDATION
+    ↓
+DONE
+
+Исправление результата:
+VALIDATION → EXECUTION
+ACTIVE ↔ PAUSED: любой незавершённый этап
+CANCELLED / FAILED: терминальные lifecycle statuses</pre><h2>4. Phase / Step / Expected Action</h2><p>planning: select_product → set_quantity → confirm_task; execution: start_production → record_result; validation: verify_result → confirm_completion; done: completed. Шаги и ожидаемые действия задаёт код; LLM может передать только intent.</p><h2>5. Working Memory vs Task State</h2><p>Working Memory: какие данные собраны? FSM: какой этап, шаг и что ожидается? Short-Term: последние реплики. Domain DB: факты склада/производства. Заявленный результат задачи не создаёт production_records или списание.</p></section>
+<section><h2>6. Обычный проход задачи</h2><p>Ниже реальные вызовы обработчика и снимки SQLite на отдельной fixture.db. Нет придуманных ответов или LLM-вызовов. Перед «Продолжим» соединения сервисов закрываются и открываются заново, затем начинается новая сессия.</p></section>
+<article><p><b>USER:</b> Сделаем 20 дефлекторов.</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 20 шт. дефлекторов
+Этап: Подготовка задачи
+Шаг: Подтверждение количества
+Ожидается: Укажите количество по задаче: /task quantity 25 a7b41334d8a2cb9d85e10f09ecaf3502 или «Нет, 25». Даже предложенное количество нужно подтвердить.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">planning / set_quantity · active<br>Expected: confirm_quantity<br>Товар: дефлекторов · Задача: 20 · Версия: 1</div></article><article><p><b>USER:</b> /task pause</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 20 шт. дефлекторов
+Этап: Подготовка задачи
+Шаг: Подтверждение количества
+Ожидается: Укажите количество по задаче: /task quantity 25 a7b41334d8a2cb9d85e10f09ecaf3502 или «Нет, 25». Даже предложенное количество нужно подтвердить.
+Статус: paused
+Автор: #1
+Исполнитель: #1
+На паузе. Для продолжения: /task resume a7b41334d8a2cb9d85e10f09ecaf3502
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">planning / set_quantity · paused<br>Expected: confirm_quantity<br>Товар: дефлекторов · Задача: 20 · Версия: 2</div></article><article><p><b>USER:</b> /task resume</p><pre>Продолжаем с сохранённого шага.
+Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 20 шт. дефлекторов
+Этап: Подготовка задачи
+Шаг: Подтверждение количества
+Ожидается: Укажите количество по задаче: /task quantity 25 a7b41334d8a2cb9d85e10f09ecaf3502 или «Нет, 25». Даже предложенное количество нужно подтвердить.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">planning / set_quantity · active<br>Expected: confirm_quantity<br>Товар: дефлекторов · Задача: 20 · Версия: 3</div></article><article><p><b>USER:</b> Нет, 25.</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Подготовка задачи
+Шаг: Подтверждение параметров задачи
+Ожидается: Подтвердите параметры задачи кнопкой или /task confirm_task a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">planning / confirm_task · active<br>Expected: confirm_task<br>Товар: дефлекторов · Задача: 25 · Версия: 4</div></article><article><p><b>USER:</b> /task confirm_task</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Выполнение
+Шаг: Начало выполнения
+Ожидается: Подтвердите начало шага: /task start_production a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">execution / start_production · active<br>Expected: start_production<br>Товар: дефлекторов · Задача: 25 · Версия: 5</div></article><article><p><b>USER:</b> Поставь пока на паузу.</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Выполнение
+Шаг: Начало выполнения
+Ожидается: Подтвердите начало шага: /task start_production a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: paused
+Автор: #1
+Исполнитель: #1
+На паузе. Для продолжения: /task resume a7b41334d8a2cb9d85e10f09ecaf3502
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">execution / start_production · paused<br>Expected: start_production<br>Товар: дефлекторов · Задача: 25 · Версия: 6</div></article><article><p><b>USER:</b> /session new</p><pre>Начат новый диалог. Рабочая задача и постоянные предпочтения сохранены.</pre><div class="state">execution / start_production · paused<br>Expected: start_production<br>Товар: дефлекторов · Задача: 25 · Версия: 6</div></article><article><p><b>USER:</b> Продолжим.</p><pre>Продолжаем с сохранённого шага.
+Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Выполнение
+Шаг: Начало выполнения
+Ожидается: Подтвердите начало шага: /task start_production a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">execution / start_production · active<br>Expected: start_production<br>Товар: дефлекторов · Задача: 25 · Версия: 7</div></article><article><p><b>USER:</b> что сейчас нужно от меня?</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Выполнение
+Шаг: Начало выполнения
+Ожидается: Подтвердите начало шага: /task start_production a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">execution / start_production · active<br>Expected: start_production<br>Товар: дефлекторов · Задача: 25 · Версия: 7</div></article><article><p><b>USER:</b> /task start_production</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Выполнение
+Шаг: Ввод результата
+Ожидается: Укажите количество фактически произведённых изделий: /task result 25 a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">execution / record_result · active<br>Expected: user_input_produced_quantity<br>Товар: дефлекторов · Задача: 25 · Версия: 8</div></article><article><p><b>USER:</b> /task result 25</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Проверка
+Шаг: Проверка результата
+Ожидается: Проверьте введённый результат: /task verify_result a7b41334d8a2cb9d85e10f09ecaf3502 или /task correct_result a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Заявленный результат: 25 шт.
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">validation / verify_result · active<br>Expected: verify_result<br>Товар: дефлекторов · Задача: 25 · Версия: 9</div></article><article><p><b>USER:</b> /task pause</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Проверка
+Шаг: Проверка результата
+Ожидается: Проверьте введённый результат: /task verify_result a7b41334d8a2cb9d85e10f09ecaf3502 или /task correct_result a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: paused
+Автор: #1
+Исполнитель: #1
+Заявленный результат: 25 шт.
+На паузе. Для продолжения: /task resume a7b41334d8a2cb9d85e10f09ecaf3502
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">validation / verify_result · paused<br>Expected: verify_result<br>Товар: дефлекторов · Задача: 25 · Версия: 10</div></article><article><p><b>USER:</b> /task resume</p><pre>Продолжаем с сохранённого шага.
+Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Проверка
+Шаг: Проверка результата
+Ожидается: Проверьте введённый результат: /task verify_result a7b41334d8a2cb9d85e10f09ecaf3502 или /task correct_result a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Заявленный результат: 25 шт.
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">validation / verify_result · active<br>Expected: verify_result<br>Товар: дефлекторов · Задача: 25 · Версия: 11</div></article><article><p><b>USER:</b> /task complete</p><p><b>Отклонено:</b> Переход отклонён. Этап: Проверка; шаг: verify_result.
+Сначала выполните задачу и проверьте результат. Прямое завершение запрещено.
+Сначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.</p><div class="state">validation / verify_result · active<br>Expected: verify_result<br>Товар: дефлекторов · Задача: 25 · Версия: 11</div></article><article><p><b>USER:</b> /task verify_result</p><pre>Задача #a7b41334d8a2cb9d85e10f09ecaf3502
+Производственная задача: 25 шт. дефлекторов
+Этап: Проверка
+Шаг: Подтверждение завершения
+Ожидается: Завершите проверку: /task complete a7b41334d8a2cb9d85e10f09ecaf3502.
+Статус: active
+Автор: #1
+Исполнитель: #1
+Заявленный результат: 25 шт.
+Для выпуска и списания компонентов используйте «Завершить задачу» и проверьте финальный расчёт.</pre><div class="state">validation / confirm_completion · active<br>Expected: confirm_completion<br>Товар: дефлекторов · Задача: 25 · Версия: 12</div></article><article><p><b>USER:</b> /task resume a7b41334d8a2cb9d85e10f09ecaf3502</p><p><b>Отклонено:</b> Переход отклонён. Этап: Завершено; шаг: completed.
+Задача завершена или отменена. Обычное продолжение запрещено.
+Сначала выполните текущий шаг. Доступные действия: /task actions. Состояние не изменено.</p><div class="state">done / completed · completed<br>Expected: none<br>Товар: дефлекторов · Задача: 25 · Версия: 13</div></article>
+<section><h2>7–9. Pause в planning, execution, validation</h2><p>Сценарий выше делает паузу на каждом этапе: меняется только lifecycle status и метаданные перехода. Шаг, ожидаемое действие и task_data сохраняются.</p><h2>10. Resume в новой session</h2><p>«Продолжим» после переоткрытия БД восстанавливает 25 дефлекторов и execution/start_production. Данные старого диалога не нужны. Отдельный Go integration test также запускает дочерний OS-процесс, который загружает и продолжает задачу.</p><h2>11. Invalid transitions</h2><p>Complete до confirm_completion, переход из DONE, повторный callback с устаревшей версией и изменения чужой задачи запрещены. Две активные задачи недопустимы; несколько paused требуют явного выбора ID.</p><h2>12. Transition history</h2><p>created: : → planning:set_quantity ·  → active · 2026-09-18 14:35:40</p><p>pause: planning:set_quantity → planning:set_quantity · active → paused · 2026-09-18 14:35:40</p><p>resume: planning:set_quantity → planning:set_quantity · paused → active · 2026-09-18 14:35:40</p><p>set_quantity: planning:set_quantity → planning:confirm_task · active → active · 2026-09-18 14:35:40</p><p>confirm_task: planning:confirm_task → execution:start_production · active → active · 2026-09-18 14:35:40</p><p>pause: execution:start_production → execution:start_production · active → paused · 2026-09-18 14:35:40</p><p>resume: execution:start_production → execution:start_production · paused → active · 2026-09-18 14:35:40</p><p>start_production: execution:start_production → execution:record_result · active → active · 2026-09-18 14:35:40</p><p>record_result: execution:record_result → validation:verify_result · active → active · 2026-09-18 14:35:40</p><p>pause: validation:verify_result → validation:verify_result · active → paused · 2026-09-18 14:35:40</p><p>resume: validation:verify_result → validation:verify_result · paused → active · 2026-09-18 14:35:40</p><p>verify_result: validation:verify_result → validation:confirm_completion · active → active · 2026-09-18 14:35:41</p><p>production_posted: validation:confirm_completion → done:completed · active → completed · 2026-09-18 14:35:41</p><h2>13. Вывод</h2><p>done_terminal: <b>true</b></p><p>production_posted_once: <b>true</b></p><p>quantity_preserved_after_reopen: <b>true</b></p><p>Task — единая сущность работы; production и assembly — типы задачи. Legacy-задачи сохранены с fsm_version=0, без автоматического объявления их выполненными по новым правилам. Завершение выполняется через подтверждённую атомарную проводку выпуска и компонентов. Все новые переходы проходят авторизацию и проверку версии. Python/pytest suite нет: используются Go tests. Day 15 не выполняется.</p></section><footer>Автономный HTML без CDN · results.json · fixture.db · рабочая БД не использовалась.</footer></main></html>

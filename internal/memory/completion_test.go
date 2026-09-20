@@ -59,8 +59,8 @@ func newCompletionFixture(t *testing.T) completionFixture {
 	}
 	sc.TaskID = task.ID
 	q := 5.
-	for _, action := range []string{"set_quantity", "confirm_plan", "start_production", "record_result"} {
-		task, e = f.Apply(sc, TaskIntent{Action: action, Quantity: &q, Version: task.Version})
+	for _, action := range []string{"set_quantity", "confirm_task", "start_production", "record_result", "verify_result"} {
+		task, e = f.Apply(sc, TaskIntent{Confirmed: true, Action: action, Quantity: &q, Version: task.Version})
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -73,8 +73,8 @@ func TestCompletionAtomicReceiptRestartAndFreshStock(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if len(c.Plan.Materials) != 2 || c.Plan.Materials[0].Quantity != 600 {
-		t.Fatal(c.Plan)
+	if len(c.Calculation.Materials) != 2 || c.Calculation.Materials[0].Quantity != 600 {
+		t.Fatal(c.Calculation)
 	}
 	if _, e = f.m.DB.Exec("UPDATE materials SET current_stock=current_stock+1000 WHERE id=?", f.gypsum); e != nil {
 		t.Fatal(e)
@@ -216,8 +216,8 @@ func TestCompletionNestedAggregationAndDailyOnce(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if c.Plan.Materials[0].Quantity != 2400 {
-		t.Fatal(c.Plan.Materials)
+	if c.Calculation.Materials[0].Quantity != 2400 {
+		t.Fatal(c.Calculation.Materials)
 	}
 	if _, e = f.m.PostCompletion(f.sc, 900001, c.Token); e != nil {
 		t.Fatal(e)

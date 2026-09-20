@@ -53,7 +53,7 @@ func (MemoryRouter) Route(text string, scope Scope, task *Task) Candidate {
 		}
 		return c
 	}
-	if containsAny(s, "соберем", "соберём", "запланируй", "партия", "рассчитай партию") && number.MatchString(s) {
+	if containsAny(s, "соберем", "соберём", "создай задачу", "партия", "рассчитай партию") && number.MatchString(s) {
 		c.Target = Working
 		c.Category = "assembly"
 		c.Key = "create"

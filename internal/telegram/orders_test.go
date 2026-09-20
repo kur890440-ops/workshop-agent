@@ -15,7 +15,7 @@ func TestOrdersReadSelectionAndLegacyAdoption(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, text := range []string{"заказ", "заказы", "  ТЕКУЩИЕ ЗАКАЗЫ  ", "покажи заказы", "список заказов", "собрать заказ"} {
+	for _, text := range []string{"/tasks", "Что сейчас в работе?", "заказ", "заказы", "  ТЕКУЩИЕ ЗАКАЗЫ  ", "покажи заказы", "список заказов", "собрать заказ"} {
 		h.message(t, 900001, text)
 		requireAnswer(t, h, "Учёт заказов пока не настроен")
 		requireAnswer(t, h, "5 шт.")
@@ -30,10 +30,10 @@ func TestOrdersReadSelectionAndLegacyAdoption(t *testing.T) {
 	if err != nil || before.FSMVersion != 0 || before.Version != 1 {
 		t.Fatal(before, err)
 	}
-	h.click(t, 900001, "Подготовить план к сборке")
+	h.click(t, 900001, "Подготовить задачу к сборке")
 	h.click(t, 900001, "Подтвердить")
 	after, err := m.Task(sc)
-	if err != nil || after.ID != original.ID || after.FSMVersion != 1 || after.CurrentStep != "confirm_plan" || after.Status != "active" {
+	if err != nil || after.ID != original.ID || after.FSMVersion != 1 || after.CurrentStep != "confirm_task" || after.Status != "active" {
 		t.Fatal(after, err)
 	}
 	h.click(t, 900001, "Подтвердить текущий шаг")
@@ -80,7 +80,7 @@ func TestAssemblyMenuDraftEditsAndFSM(t *testing.T) {
 	h.message(t, 900001, "3")
 	h.click(t, 900001, "Создать задачу")
 	task, err := h.bot.Agent.Memory.ForUser(1).ActiveWorking(memory.Scope{UserID: 1, WorkshopID: w})
-	if err != nil || task == nil || task.State.Quantity != 3 || task.State.ProductID != p || task.FSMVersion != 1 || task.CurrentStep != "confirm_plan" || task.Phase != "planning" {
+	if err != nil || task == nil || task.State.Quantity != 3 || task.State.ProductID != p || task.FSMVersion != 1 || task.CurrentStep != "confirm_task" || task.Phase != "planning" {
 		t.Fatal(task, err)
 	}
 	h.click(t, 900001, "Создать задачу")

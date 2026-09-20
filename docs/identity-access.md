@@ -49,8 +49,6 @@
 | production.create, production.update | да | да | да | — |
 | shipments.read | да | да | да | да |
 | shipments.write | да | да | да | — |
-| planning.read | да | да | да | да |
-| planning.write | да | да | — | — |
 | audit.read | да | да | — | — |
 
 Всего 21 permission. Матрица находится в одном пакете и расширяется без добавления проверок ролей в Telegram handlers. Разрешение workshop.delete зарезервировано: отдельный сценарий удаления мастерской не добавлялся.
@@ -140,4 +138,4 @@ Trace показывает Membership status, Role, фактически дос�
 - workshop knowledge: workshop_id;
 - product knowledge: workshop_id + product_id.
 
-Сами Memory Layers не добавлялись. Старые MVP-заготовки production/shipment/planning не превращались в новые ERP-сервисы: их дальнейшее развитие остаётся отдельной задачей. Реальные Telegram-запросы и работа с пользователями через сеть в ходе проверки не выполнялись.
+Сами Memory Layers не добавлялись. Старые MVP-заготовки production/shipment не превращались в новые ERP-сервисы: их дальнейшее развитие остаётся отдельной задачей. Реальные Telegram-запросы и работа с пользователями через сеть в ходе проверки не выполнялись.

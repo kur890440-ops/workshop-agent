@@ -20,7 +20,7 @@ AgentContextBuilder получает текущий снимок задачи; D
 
 До Day 13 working_memory содержала task_id, task_type, state_json, status,
 created_at, updated_at, completed_at. Состояния active/waiting_input/completed/
-cancelled не описывали этапы и шаги. /task показывал план, complete/cancel закрывали
+cancelled не описывали этапы и шаги. /task показывал задачу, complete/cancel закрывали
 его напрямую. Рабочая память уже сохранялась между сессиями и рестартами.
 
 ## L1 — Entities, persistence, ownership
@@ -48,12 +48,12 @@ Working Memory отвечает «какие параметры собраны»
 
 - **WA-D071**: migration 104 расширяет working_memory, перестраивая CHECK статуса
   в SQLite; сохраняет существующие ID, JSON, даты, статусы. Старые задачи имеют
-  fsm_version=0, новые production_plan — 1. Миграция идемпотентна, проверена тестом.
+  fsm_version=0, новые production — 1. Миграция идемпотентна, проверена тестом.
 - **WA-D072**: основные phases planning → execution → validation → done.
   Статусы новых задач active, paused, completed, cancelled, failed. waiting_input
   оставлен только для обратной совместимости legacy. DONE терминален.
 - **WA-D073**: шаги и expected actions — стабильные identifiers, задаваемые кодом.
-  Один полноценный учебный workflow production_plan; другой workflow требует
+  Один полноценный учебный workflow production; другой workflow требует
   отдельного явно проверяемого определения в TaskStateMachine, не свободного JSON.
 - **WA-D074**: пауза меняет lifecycle и timestamps/version, сохраняя phase, step,
   expected_action и task_data. Resume не реконструирует задачу из разговора.
@@ -61,26 +61,26 @@ Working Memory отвечает «какие параметры собраны»
   partial index; paused-задач может быть несколько. При неоднозначности нужен ID.
   Resume при наличии другой active-задачи отклоняется.
 - **WA-D076**: все изменения проходят проверку владельца задачи, активной Workshop,
-  Membership и PlanningWrite; товар проверяется в текущей Workshop. LLM выдаёт
+  Membership и TasksCreate / TasksExecute; товар проверяется в текущей Workshop. LLM выдаёт
   intent, а не поля phase/status. Legacy update/complete не могут изменить FSM v1.
 - **WA-D077**: кнопка содержит task_id/version и привязана существующим nonce к
   пользователю, чату и Workshop. Устаревшая версия отклоняется; повторный callback
   не продвигает задачу на ещё один шаг. Изменения фиксируются под write lock.
-- **WA-D078**: окончание production_plan не создаёт production_records, резерв,
-  списание, отгрузку или изменение BOM. Для этого нужен отдельный доменный сценарий
-  с проверками и атомарной проводкой. Учебный FSM явно сообщает это пользователю.
+- **WA-D078 (заменено WA-D093)**: исходное учебное завершение не проводило выпуск.
+  Сейчас задача завершается только через подтверждённую атомарную проводку выпуска
+  и списания компонентов. Простой Apply(complete) возвращает требование проводки.
 
 ### Transition table
 
 | До | Intent / обязательные данные | После |
 |---|---|---|
 | planning/select_product | select_product, товар текущей Workshop | planning/set_quantity |
-| planning/set_quantity или confirm_plan | set_quantity, целое 1…1e9 | planning/confirm_plan |
-| planning/confirm_plan | confirm_plan, товар и количество заданы | execution/start_production |
+| planning/set_quantity или confirm_task | set_quantity, целое 1…1e9 | planning/confirm_task |
+| planning/confirm_task | confirm_task, товар и количество заданы | execution/start_production |
 | execution/start_production | start_production | execution/record_result |
 | execution/record_result | record_result, целое 0…1e9 | validation/verify_result |
 | validation/verify_result | verify_result, результат задан | validation/confirm_completion |
-| validation/confirm_completion | complete, результат задан | done/completed |
+| validation/verify_result или confirm_completion | production_posted, подтверждены результат и расход | done/completed |
 | validation/* | correct_result | execution/record_result, прежний результат очищен |
 | незавершённая active | pause | тот же phase/step, paused |
 | paused, нет другой active | resume | тот же phase/step, active |
@@ -97,10 +97,15 @@ cancelled/failed и устаревшая версия возвращают ош�
 Выбор: `/task product <ID>`. Количество: `/task quantity 25`, «Нет, 25» или кнопка
 подтверждения предложенного количества.
 
-Далее: `/task confirm_plan` («Запускай») → `/task start_production` →
+Далее: `/task confirm_task` → `/task start_production` →
 `/task result 25` → `/task verify_result` («Всё правильно») → `/task complete`.
 Кнопка «✅ Подтвердить текущий шаг» выполняет только ожидаемый переход.
 Для исправления результата: `/task correct_result`.
+
+После Day 15 фраза «Запускай» предлагает кнопку подтверждения, а сама не меняет этап.
+Возврат на доработку требует причины: `/task correct_result <причина> [task_id]`.
+Завершение требует отдельно подтверждённой успешной проверки результата.
+[Актуальные правила переходов](day15-controlled-transitions.md).
 
 `/task`, «на чём мы остановились?», «что сейчас нужно от меня?» показывают этап,
 шаг, expected action, параметры, статус. Подробный профиль добавляет диагностику;
@@ -133,8 +138,8 @@ Paused-задача не становится foreground до resume. /session n
 - Profile brief/detailed не меняет переходы; старые Telegram-сценарии сохранены.
 - Автотесты используют временные БД и fake Telegram transport.
 
-[HTML-отчёт](../reports/day13-task-state/20260917T145218.996792000Z/report.html) ·
-[Снимки и проверки](../reports/day13-task-state/20260917T145218.996792000Z/results.json).
+[HTML-отчёт](../reports/day13-task-state/20260918T125116.721198500Z/report.html) ·
+[Снимки и проверки](../reports/day13-task-state/20260918T125116.721198500Z/results.json).
 Отчёт показывает реальные вызовы обработчика, pause/resume, закрытие/повторное
 открытие сервисов и новую сессию. Все три проверки отчёта true. Рабочая БД не
 менялась. Отдельный process restart проверяется integration test, не HTML-командой.
@@ -144,18 +149,18 @@ Paused-задача не становится foreground до resume. /session n
 
 Верификация: `go test ./...`; сборка `bin/workshop-agent.exe`. Pytest неприменим:
 проект на Go, Python suite отсутствует. Миграция рабочей базы выполнится при запуске
-обновлённого бота; старые планы не переводятся автоматически в новый workflow.
+обновлённого бота; старые задачи не переводятся автоматически в новый workflow.
 
 Для применения изменений: **Ctrl+C → `.\bin\workshop-agent.exe`**.
 
-### Исправление совместимости старых планов
+### Исправление совместимости старых задач
 
-Старые assembly/production_plan тоже являются текущими рабочими задачами.
+Старые assembly/production тоже являются текущими рабочими задачами.
 Просмотр явно показывает их статус и предлагает паузу. При явной pause/resume/cancel
-сервис переводит такой план в FSM v1 в той же транзакции, сохраняя task_id, тип,
-товар, количество и остальные параметры. Этап — planning: confirm_plan при наличии
+сервис переводит такую задачу в FSM v1 в той же транзакции, сохраняя task_id, тип,
+товар, количество и остальные параметры. Этап — planning: confirm_task при наличии
 товара и целого положительного количества, иначе соответствующий шаг ввода.
 Выполнение не предполагается автоматически. Это уточняет прежнюю границу legacy:
 при чтении и миграции БД формат не меняется, при явном управлении меняется.
-«Что в работе?» и «Сделай паузу» обрабатываются локально. Проверен старый план
+«Что в работе?» и «Сделай паузу» обрабатываются локально. Проверена старая задача
 на 5 сливов, пауза и продолжение после новой сессии, без дубликата задачи и выпуска.

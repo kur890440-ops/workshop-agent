@@ -11,7 +11,7 @@ import (
 	"workshop-agent/internal/auth"
 )
 
-var ErrActivePlan = errors.New("Уже есть активная задача. Посмотрите /task; завершите её через /task complete или отмените через /task cancel, затем повторите сборку.")
+var ErrActiveTask = errors.New("Уже есть активная задача. Посмотрите /task; завершите её через /task complete или отмените через /task cancel, затем повторите сборку.")
 
 // ConfirmAssemblyDraft consumes the pending intent and creates an ordinary
 // working task atomically. It never writes inventory or production tables.
@@ -64,7 +64,7 @@ func (s *Service) ConfirmAssemblyDraft(sc Scope, chat, draftID int64, state Task
 			return err
 		}
 		if n != 0 {
-			return ErrActivePlan
+			return ErrActiveTask
 		}
 		if state.Quantity <= 0 || state.Quantity > 1e9 || math.Trunc(state.Quantity) != state.Quantity {
 			return errors.New("Некорректное количество изделий")
@@ -76,16 +76,16 @@ func (s *Service) ConfirmAssemblyDraft(sc Scope, chat, draftID int64, state Task
 			return err
 		}
 		id := hex.EncodeToString(nonce)
-		if _, err := tx.Exec("INSERT INTO working_memory(user_id,workshop_id,task_id,task_type,state_json,status,phase,current_step,expected_action,expected_action_type,fsm_version,created_by_user_id,assigned_to_user_id) VALUES(?,?,?,'assembly',?,'active','planning','confirm_plan','confirm_plan','USER_CONFIRMATION',1,?,?)", sc.UserID, sc.WorkshopID, id, compact(state), sc.UserID, draft.Assignee); err != nil {
+		if _, err := tx.Exec("INSERT INTO working_memory(user_id,workshop_id,task_id,task_type,state_json,status,phase,current_step,expected_action,expected_action_type,fsm_version,created_by_user_id,assigned_to_user_id) VALUES(?,?,?,'assembly',?,'active','planning','confirm_task','confirm_task','USER_CONFIRMATION',1,?,?)", sc.UserID, sc.WorkshopID, id, compact(state), sc.UserID, draft.Assignee); err != nil {
 			return err
 		}
 		if _, err := tx.Exec("DELETE FROM pending_actions WHERE id=?", draftID); err != nil {
 			return err
 		}
-		task := Task{CreatedByUserID: sc.UserID, AssignedToUserID: draft.Assignee, ID: id, Type: "assembly", UserID: sc.UserID, WorkshopID: sc.WorkshopID, State: state, Status: "active", Phase: "planning", CurrentStep: "confirm_plan", ExpectedAction: "confirm_plan", ExpectedActionType: "USER_CONFIRMATION", Version: 1, FSMVersion: 1}
+		task := Task{CreatedByUserID: sc.UserID, AssignedToUserID: draft.Assignee, ID: id, Type: "assembly", UserID: sc.UserID, WorkshopID: sc.WorkshopID, State: state, Status: "active", Phase: "planning", CurrentStep: "confirm_task", ExpectedAction: "confirm_task", ExpectedActionType: "USER_CONFIRMATION", Version: 1, FSMVersion: 1}
 		if err := taskEvent(tx, sc, Task{}, task, "created_from_draft"); err != nil {
 			return err
 		}
-		return memoryAudit(tx, sc, "ASSEMBLY_PLAN_CREATED", "assembly", nil, state, "confirmed_draft")
+		return nil
 	})
 }
