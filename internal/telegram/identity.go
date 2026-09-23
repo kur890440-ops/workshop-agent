@@ -17,6 +17,8 @@ import (
 	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/marketplace"
+	wb "workshop-agent/internal/marketplace/wildberries"
 	"workshop-agent/internal/memory"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/workshops"
@@ -54,6 +56,18 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	var rate *wb.RateLimitError
+	if errors.As(err, &rate) {
+		return rate.Message()
+	}
+	var marketplaceError marketplace.Error
+	if errors.As(err, &marketplaceError) {
+		return marketplaceError.Error()
+	}
+	var wbError wb.Error
+	if errors.As(err, &wbError) {
+		return wbError.Error() + ". Проверьте статус /wb."
+	}
 	var transitionDenied *memory.TransitionDenied
 	if errors.As(err, &transitionDenied) {
 		return transitionDenied.Error()
@@ -305,6 +319,9 @@ func (b *Bot) home(key sessionKey) error {
 	choices = append(choices, choice{Text: "👤 Профиль", Action: "profile_home"})
 	choices = append(choices, choice{Text: "📋 Текущая задача", Action: "fsm_show", Workshop: active})
 	choices = append(choices, choice{Text: "Задачи", Action: "orders_all", Workshop: active})
+	if b.Marketplace != nil {
+		choices = append(choices, choice{Text: "Wildberries", Action: "wb_status", Workshop: active})
+	}
 	choices = append(choices, choice{Text: "📊 Сводка за сегодня", Action: "daily_summary", Workshop: active})
 	return b.screen(key, "⚙️ Мастерская\n🏭 Текущая мастерская: "+current.Name+"\nВаша роль: "+roleName(current.Role)+"\n\nСклад: /materials, /products, /stock, /to_order\nНастройка: /setup", choices...)
 }
@@ -475,6 +492,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 				return errors.New("workshop context changed")
 			}
 		}
+	}
+	if strings.HasPrefix(a.Action, "wb_") {
+		return b.wbButton(a)
 	}
 	if strings.HasPrefix(a.Action, "orders_") {
 		return b.ordersButton(a)

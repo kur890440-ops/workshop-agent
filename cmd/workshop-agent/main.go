@@ -14,6 +14,8 @@ import (
 	"workshop-agent/internal/experiment"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/marketplace"
+	"workshop-agent/internal/marketplace/wildberries"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/telegram"
@@ -149,6 +151,12 @@ func main() {
 	}
 
 	agentSvc := agent.NewWorkshopAgent(llmClient, wsSvc, invSvc, prodSvc)
+	marketplaceSvc, err := marketplace.New(wsSvc.DB(), wildberries.NewWithProfile(os.Getenv("WB_API_TOKEN"), os.Getenv("WB_API_PROFILE")))
+	if err != nil {
+		log.Fatal("marketplace initialization failed")
+	}
+	defer marketplaceSvc.Close()
+	agentSvc.Marketplace = marketplaceSvc
 	agentSvc.Memory.MaxMessages = cfg.ShortTermMaxMessages
 	agentSvc.Memory.MaxTokens = cfg.ShortTermMaxTokens
 	_ = agentSvc
@@ -159,6 +167,7 @@ func main() {
 	}
 
 	_ = context.Background()
+	bot.Marketplace = marketplaceSvc
 	fmt.Println("WorkshopAgent готов. Telegram token и LLM настроены из .env.")
 	bot.Start()
 }

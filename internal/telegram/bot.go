@@ -19,6 +19,7 @@ import (
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/marketplace"
 	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
@@ -36,6 +37,8 @@ type Bot struct {
 	Started       bool
 	HTTPClient    *http.Client
 	Agent         *agent.WorkshopAgent
+	Marketplace   *marketplace.Service
+	wbWait        sync.WaitGroup
 	setupMu       sync.Mutex
 	setup         map[sessionKey]*setupSession
 	uiMu          sync.Mutex
@@ -159,6 +162,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		return auth.ErrDenied
 	}
 	text := strings.TrimSpace(msg.Text)
+	if b.Marketplace.SensitiveInput(text) {
+		return b.sendMessage(msg.Chat.ID, "Токены через Telegram не принимаются и не сохраняются приложением. Задайте WB_API_TOKEN локально и перезапустите приложение.")
+	}
 	chatID := msg.Chat.ID
 	userID, err := b.WS.UpsertUser(msg.From.ID, msg.From.Username, msg.From.FirstName, msg.From.LastName)
 	if err != nil {
@@ -169,6 +175,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	}
 	if text == "" {
 		return nil
+	}
+	if handled, e := b.wbMessage(sessionKey{chatID, userID}, text); handled {
+		return e
 	}
 	if handled, e := b.formMessage(sessionKey{chatID, userID}, text); handled {
 		return e

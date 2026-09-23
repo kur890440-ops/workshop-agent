@@ -9,6 +9,7 @@ import (
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
+	"workshop-agent/internal/marketplace"
 	"workshop-agent/internal/memory"
 	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
@@ -16,11 +17,12 @@ import (
 )
 
 type WorkshopAgent struct {
-	LLM    llm.Client
-	WS     *workshops.Service
-	Inv    *inventory.Service
-	Prod   *products.Service
-	Memory *memory.Service
+	LLM         llm.Client
+	WS          *workshops.Service
+	Inv         *inventory.Service
+	Prod        *products.Service
+	Memory      *memory.Service
+	Marketplace *marketplace.Service
 }
 
 func NewWorkshopAgent(llmClient llm.Client, ws *workshops.Service, inv *inventory.Service, prod *products.Service) *WorkshopAgent {

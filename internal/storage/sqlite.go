@@ -56,12 +56,16 @@ func (s *Store) Migrate() error {
 	var done int
 	var taskOnlyDone int
 	var controlledDone int
+	var marketplaceDone int
+	var cooldownDone int
 	if legacy > 0 {
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=108`).Scan(&taskOnlyDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=109`).Scan(&controlledDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=110`).Scan(&marketplaceDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=111`).Scan(&cooldownDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0) && s.Path != "" && s.Path != ":memory:" {
+		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
@@ -110,6 +114,12 @@ func (s *Store) Migrate() error {
 	}
 	if err := migrateControlledTransitions(tx); err != nil {
 		return err
+	}
+	if err := migrateMarketplace(tx); err != nil {
+		return fmt.Errorf("marketplace migration: %w", err)
+	}
+	if err := migrateMarketplaceCooldown(tx); err != nil {
+		return fmt.Errorf("marketplace cooldown migration: %w", err)
 	}
 	return tx.Commit()
 }

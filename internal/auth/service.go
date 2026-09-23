@@ -39,6 +39,8 @@ const (
 	TasksAssign       Permission = "tasks.assign"
 	TasksExecute      Permission = "tasks.execute"
 	TasksManage       Permission = "tasks.manage"
+	MarketplaceRead   Permission = "marketplace.read"
+	MarketplaceManage Permission = "marketplace.manage"
 )
 
 var ErrDenied = errors.New("У вас нет прав для этой операции. Обратитесь к владельцу или администратору мастерской.")
@@ -50,6 +52,12 @@ var read = []Permission{WorkshopRead, MembersRead, InventoryRead, ProductsRead, 
 // Permissions returns a copy so callers cannot mutate policy.
 func Permissions(role Role) []Permission {
 	var out []Permission
+	if role == Owner || role == Admin || role == Employee || role == Viewer {
+		out = append(out, MarketplaceRead)
+	}
+	if role == Owner {
+		out = append(out, MarketplaceManage)
+	}
 	if role == Owner || role == Admin {
 		out = append(out, TasksRead, TasksCreate, TasksAssign, TasksExecute, TasksManage)
 	}

@@ -20,8 +20,14 @@ import (
 )
 
 func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, user, chat int64, text string) (answer string, usage *llm.Usage, err error) {
+	if a.Marketplace.SensitiveInput(text) {
+		return "Не передавайте секреты в диалог. WB_API_TOKEN задаётся только локально.", &llm.Usage{}, nil
+	}
 	if err = auth.Require(a.WS.DB(), user, workshop, auth.WorkshopRead); err != nil {
 		return
+	}
+	if handled, response, e := a.marketplaceMessage(user, workshop, text); handled {
+		return response, &llm.Usage{}, e
 	}
 	if action := invariants.AdviceAction(text); action != "" {
 		r := (invariants.InvariantEngine{}).Evaluate(a.WS.DB(), invariants.ProposedAction{ActionType: action, UserID: user, WorkshopID: workshop}, invariants.Facts{})
