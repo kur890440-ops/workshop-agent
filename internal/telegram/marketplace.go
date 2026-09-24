@@ -138,6 +138,12 @@ func (b *Bot) wbButton(a buttonAction) error {
 			return e
 		}
 		choices := []choice{{Text: "Статус WB", Action: "wb_status", Workshop: a.Workshop, Target: c.ID}}
+		if b.DailySummary != nil {
+			choices = append(choices, choice{Text: "Последняя сводка", Action: "bg_summary", Workshop: a.Workshop})
+		}
+		if b.Background != nil {
+			choices = append(choices, choice{Text: "Автосинхронизация", Action: "bg_status", Workshop: a.Workshop})
+		}
 		if c.ID > 0 {
 			choices = append(choices, choice{Text: "Проверить WB", Action: "wb_check", Workshop: a.Workshop, Target: c.ID}, choice{Text: "Обновить WB", Action: "wb_sync", Workshop: a.Workshop, Target: c.ID, Value: "all"}, choice{Text: "Карточки WB", Action: "wb_cards", Workshop: a.Workshop, Target: c.ID}, choice{Text: "Остатки WB", Action: "wb_stocks", Workshop: a.Workshop, Target: c.ID}, choice{Text: "Заказы WB", Action: "wb_orders", Workshop: a.Workshop, Target: c.ID})
 		}

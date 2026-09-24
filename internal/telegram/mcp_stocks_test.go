@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 
@@ -11,15 +10,6 @@ import (
 	"workshop-agent/internal/marketplace"
 )
 
-func TestDay17TelegramChild(t *testing.T) {
-	if len(os.Args) < 3 || os.Args[len(os.Args)-2] != "--" {
-		return
-	}
-	if wbmcpfixture.Run(context.Background(), os.Args[len(os.Args)-1]) != nil {
-		os.Exit(2)
-	}
-	os.Exit(0)
-}
 func TestDay17TelegramCommandResultAndErrors(t *testing.T) {
 	for _, mode := range []string{"success", "missing", "rate", "api"} {
 		t.Run(mode, func(t *testing.T) {
@@ -31,8 +21,14 @@ func TestDay17TelegramCommandResultAndErrors(t *testing.T) {
 			if _, err = h.bot.WS.DB().Exec(`UPDATE marketplace_connections SET seller_id='day17-fixture' WHERE id=?`, id); err != nil {
 				t.Fatal(err)
 			}
-			exe, _ := os.Executable()
-			client := mcpclient.NewCommand(exe, "-test.run=^TestDay17TelegramChild$", "--", mode)
+			server, err := wbmcpfixture.Server(mode)
+			if err != nil {
+				t.Fatal(err)
+			}
+			client, err := mcpclient.NewInMemory(context.Background(), server)
+			if err != nil {
+				t.Fatal(err)
+			}
 			defer client.Close()
 			h.bot.Agent.MCP = client
 			h.message(t, 900001, "/wb_stocks trace")

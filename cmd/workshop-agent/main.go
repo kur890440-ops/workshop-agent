@@ -5,16 +5,17 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
+	"os/signal"
 
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
+	"workshop-agent/internal/background"
 	"workshop-agent/internal/bootstrap"
 	"workshop-agent/internal/cli"
 	"workshop-agent/internal/config"
 	"workshop-agent/internal/experiment"
 	"workshop-agent/internal/integrations/mcpclient"
-	"workshop-agent/internal/integrations/wbmcpfixture"
+	"workshop-agent/internal/integrations/mcpmanager"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
@@ -26,22 +27,39 @@ import (
 )
 
 func main() {
-	// Offline Day17 modes must run BEFORE config.Load reads local credentials.
-	if len(os.Args) == 2 && os.Args[1] == "day17-mock-server" {
-		if err := wbmcpfixture.Run(context.Background(), "success"); err != nil {
-			os.Exit(1)
+	// Version and offline diagnostics run before reading configuration or opening the application DB.
+	if len(os.Args) == 1 || len(os.Args) == 2 && (os.Args[1] == "--version" || os.Args[1] == "version") {
+		fmt.Printf("WorkshopAgent v%s\n", version)
+		if len(os.Args) == 2 {
+			return
+		}
+	}
+	if len(os.Args) == 2 && os.Args[1] == "mcp-status" {
+		manager, e := mcpmanager.New(context.Background(), wildberries.New(""), nil)
+		if e != nil {
+			log.Fatal("MCP initialization failed")
+		}
+		if e = manager.Close(); e != nil {
+			log.Fatal("MCP cleanup failed")
+		}
+		if e = mcpclient.Print(os.Stdout, manager.Client.State()); e != nil {
+			log.Fatal("MCP status output failed")
+		}
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "day18-background-report" {
+		path, e := experiment.RunDay18(context.Background())
+		fmt.Println(path)
+		if e != nil {
+			log.Fatal("Day18 mock report failed: ", e)
 		}
 		return
 	}
 	if len(os.Args) == 2 && os.Args[1] == "day17-mcp-report" {
-		executable, err := os.Executable()
-		if err != nil {
-			log.Fatal("executable unavailable")
-		}
-		path, err := experiment.RunDay17(context.Background(), executable, []string{"day17-mock-server"}, "reports/day17-first-mcp-tool")
+		path, e := experiment.RunDay17(context.Background(), "reports/day17-first-mcp-tool")
 		fmt.Println(path)
-		if err != nil {
-			log.Fatal("Day17 mock report failed")
+		if e != nil {
+			log.Fatal("Day17 mock report failed: ", e)
 		}
 		return
 	}
@@ -173,22 +191,21 @@ func main() {
 	}
 
 	agentSvc := agent.NewWorkshopAgent(llmClient, wsSvc, invSvc, prodSvc)
-	marketplaceSvc, err := marketplace.New(wsSvc.DB(), wildberries.NewWithProfile(os.Getenv("WB_API_TOKEN"), os.Getenv("WB_API_PROFILE")))
+	wbAPI := wildberries.NewWithProfile(os.Getenv("WB_API_TOKEN"), os.Getenv("WB_API_PROFILE"))
+	marketplaceSvc, err := marketplace.New(wsSvc.DB(), wbAPI)
 	if err != nil {
 		log.Fatal("marketplace initialization failed")
 	}
 	defer marketplaceSvc.Close()
 	agentSvc.Marketplace = marketplaceSvc
-	envFile, err := filepath.Abs(".env")
+	jobs := background.New(wsSvc.DB(), nil, nil)
+	manager, err := mcpmanager.New(context.Background(), wbAPI, jobs)
 	if err != nil {
-		log.Fatal("MCP configuration path error")
+		log.Fatal("MCP initialization failed")
 	}
-	dbFile, err := filepath.Abs(cfg.DatabasePath)
-	if err != nil {
-		log.Fatal("MCP database path error")
-	}
-	agentSvc.MCP = mcpclient.New(filepath.Join("bin", "wb-mcp-server-day16.exe"), envFile, dbFile)
-	defer agentSvc.MCP.Close()
+	defer manager.Close()
+	agentSvc.MCP = manager.Client
+	jobs.WB.MCP = manager.Client
 	agentSvc.Memory.MaxMessages = cfg.ShortTermMaxMessages
 	agentSvc.Memory.MaxTokens = cfg.ShortTermMaxTokens
 	_ = agentSvc
@@ -200,6 +217,16 @@ func main() {
 
 	_ = context.Background()
 	bot.Marketplace = marketplaceSvc
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	jobs.Sender = bot
+	bot.Background = jobs
+	bot.DailySummary = manager
+	bot.JobContext = ctx
+	jobs.Scheduler.Start(ctx)
+	defer jobs.Scheduler.Close()
 	fmt.Println("WorkshopAgent готов. Telegram token и LLM настроены из .env.")
-	bot.Start()
+	bot.StartContext(ctx)
+	jobs.Scheduler.Close()
+	bot.WaitBackground()
 }

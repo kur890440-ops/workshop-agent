@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
@@ -36,83 +34,97 @@ type StocksResult struct {
 	DurationMS int64                `json:"duration_ms"`
 }
 
-// Service owns one long-lived SDK session. The child reads its own configuration;
-// neither this service nor tool arguments receive credentials.
+// Service owns the application's one in-process MCP client/server session pair.
+// No credentials, operating-system processes or network listeners live here.
 type Service struct {
-	mu        sync.Mutex
-	command   func(context.Context) *exec.Cmd
-	session   *mcp.ClientSession
-	transport *trackedTransport
-	cmd       *exec.Cmd
-	cancel    context.CancelFunc
-	discovery Discovery
-	seller    string
-	verified  time.Time
-	closed    bool
-	cancelled bool
+	mu            sync.Mutex
+	session       *mcp.ClientSession
+	serverSession *mcp.ServerSession
+	discovery     Discovery
+	seller        string
+	verified      time.Time
+	closed        bool
 }
 
-func New(executable, envFile, database string) *Service {
-	return NewCommand(executable, "-env-file", envFile, "-database", database)
+// NewInMemory performs actual initialize and ListTools via the official SDK.
+func NewInMemory(ctx context.Context, server *mcp.Server) (*Service, error) {
+	if server == nil {
+		return nil, Error("mcp_connection_error")
+	}
+	serverTransport, clientTransport := mcp.NewInMemoryTransports()
+	ss, err := server.Connect(ctx, serverTransport, nil)
+	if err != nil {
+		return nil, Error("mcp_connection_error")
+	}
+	cs, err := NewClient().Connect(ctx, clientTransport, nil)
+	if err != nil {
+		_ = ss.Close()
+		return nil, Error("mcp_connection_error")
+	}
+	s := &Service{session: cs, serverSession: ss}
+	s.discovery, err = listTools(ctx, cs)
+	if err != nil {
+		_ = s.Close()
+		return nil, Error("mcp_discovery_error")
+	}
+	if s.discovery.Server != "workshop-agent-wb" {
+		_ = s.Close()
+		return nil, Error("mcp_tool_policy_error")
+	}
+	for _, tool := range s.discovery.Tools {
+		if !tool.ReadOnly && tool.Name != "schedule_wb_daily_sync" {
+			_ = s.Close()
+			return nil, Error("mcp_tool_policy_error")
+		}
+	}
+	for _, name := range []string{StocksTool, "wb_get_seller", PricesTool} {
+		if !s.readOnly(name) {
+			_ = s.Close()
+			return nil, Error("mcp_tool_policy_error")
+		}
+	}
+	return s, nil
 }
-
-// NewCommand accepts administrator-owned launch configuration, never user input.
-// It also permits the application's explicit, credential-free mock report mode.
-func NewCommand(executable string, args ...string) *Service {
-	args = append([]string(nil), args...)
-	return &Service{command: func(ctx context.Context) *exec.Cmd {
-		cmd := exec.CommandContext(ctx, executable, args...)
-		cmd.Env = ChildEnvironment()
-		cmd.Stderr = io.Discard
-		return cmd
-	}}
+func (s *Service) readOnly(name string) bool {
+	for _, tool := range s.discovery.Tools {
+		if tool.Name == name {
+			return tool.ReadOnly
+		}
+	}
+	return false
 }
-
 func (s *Service) connect(ctx context.Context) error {
 	if s.closed {
 		return Error("mcp_closed")
 	}
-	if s.session != nil {
-		return nil
-	}
-	life, cancel := context.WithCancel(context.Background())
-	s.cancel = cancel
-	s.cancelled = false
-	s.cmd = s.command(life)
-	s.transport = &trackedTransport{inner: &mcp.CommandTransport{Command: s.cmd, TerminateDuration: time.Second}}
-	var err error
-	s.session, err = NewClient().Connect(ctx, s.transport, nil)
-	if err != nil {
-		s.cleanup()
+	if s.session == nil {
 		return Error("mcp_connection_error")
 	}
-	s.discovery, err = listTools(ctx, s.session)
-	if err != nil {
-		s.cleanup()
-		return Error("mcp_discovery_error")
+	return ctx.Err()
+}
+
+// Schedule is a dedicated local mutation path. The manager issues its one-use grant;
+// neither this method nor the read-only dispatcher grants user/workshop authority.
+func (s *Service) Schedule(ctx context.Context, grant string, input, out any) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.connect(ctx); err != nil {
+		return err
 	}
-	if s.discovery.Server != "workshop-agent-wb" || s.discovery.WriteToolsExposed != 0 {
-		s.cleanup()
-		return Error("mcp_tool_policy_error")
+	result, err := s.session.CallTool(ctx, &mcp.CallToolParams{Name: "schedule_wb_daily_sync", Arguments: input, Meta: mcp.Meta{"workshop-grant": grant}})
+	if err != nil || result.IsError {
+		return Error("schedule_denied_or_invalid")
 	}
-	for _, name := range []string{StocksTool, "wb_get_seller"} {
-		found := false
-		for _, tool := range s.discovery.Tools {
-			if tool.Name == name && tool.ReadOnly {
-				found = true
-			}
-		}
-		if !found {
-			s.cleanup()
-			return Error("mcp_tool_policy_error")
-		}
+	raw, err := json.Marshal(result.StructuredContent)
+	if err != nil || len(raw) > 65536 || json.Unmarshal(raw, out) != nil {
+		return Error("mcp_invalid_result")
 	}
 	return nil
 }
 
 // callTool is the only dispatch point. Discovery does not grant execution rights.
 func (s *Service) callTool(ctx context.Context, name string, input NoArgs, out any) error {
-	if name != StocksTool && name != "wb_get_seller" {
+	if (name != StocksTool && name != "wb_get_seller" && name != "wb_get_prices") || !s.readOnly(name) {
 		return Error("mcp_tool_not_allowed")
 	}
 	result, err := s.session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: input})
@@ -160,12 +172,6 @@ func (s *Service) Stocks(ctx context.Context, expectedSeller string) (out Stocks
 	defer s.mu.Unlock()
 	ctx, cancel := context.WithTimeout(ctx, 100*time.Second)
 	defer cancel()
-	defer func() {
-		if ctx.Err() != nil {
-			s.cancelled = true
-			_ = s.cleanup()
-		}
-	}()
 	if err = s.connect(ctx); err != nil {
 		return out, err
 	}
@@ -205,29 +211,19 @@ func (s *Service) cleanup() error {
 	var err error
 	if s.session != nil {
 		err = s.session.Close()
-		s.discovery.SessionClosed = true
 		s.session = nil
+		s.discovery.SessionClosed = true
 	}
-	if s.transport != nil && s.transport.conn != nil {
-		if e := s.transport.conn.Close(); e != nil {
+	if s.serverSession != nil {
+		e := s.serverSession.Close()
+		if err == nil {
 			err = e
 		}
+		s.serverSession = nil
+		s.discovery.ServerClosed = true
 	}
-	if s.cancel != nil {
-		s.cancel()
-	}
-	s.discovery.ChildExited = s.cmd != nil && s.cmd.ProcessState != nil && s.cmd.ProcessState.Exited()
 	s.seller = ""
-	// Cancellation may be reported by the SDK again while closing an already
-	// cancelled call. A reaped child and closed session still mean cleanup worked.
-	if s.discovery.ChildExited && (errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)) {
-		err = nil
-	}
-	var exitErr *exec.ExitError
-	if s.cancelled && s.discovery.ChildExited && errors.As(err, &exitErr) {
-		err = nil
-	}
-	if err != nil {
+	if err != nil && !errors.Is(err, context.Canceled) {
 		return Error("mcp_cleanup_error")
 	}
 	return nil
@@ -238,4 +234,14 @@ func (s *Service) Close() error {
 	s.closed = true
 	return s.cleanup()
 }
-func (s *Service) State() Discovery { s.mu.Lock(); defer s.mu.Unlock(); return s.discovery }
+func (s *Service) State() Discovery {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d := s.discovery
+	d.Tools = append([]Tool(nil), s.discovery.Tools...)
+	for i := range d.Tools {
+		d.Tools[i].InputSchema = append(json.RawMessage(nil), d.Tools[i].InputSchema...)
+		d.Tools[i].OutputSchema = append(json.RawMessage(nil), d.Tools[i].OutputSchema...)
+	}
+	return d
+}

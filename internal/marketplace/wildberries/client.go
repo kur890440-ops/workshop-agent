@@ -67,6 +67,7 @@ func NewWithProfile(token, profile string) *Client {
 		c.intervals["common"] = time.Minute
 		c.intervals["analytics"] = 20 * time.Second
 	}
+	c.intervals["prices"] = 600 * time.Millisecond
 	return c
 }
 func (c *Client) Configured() bool {
@@ -126,6 +127,8 @@ func retryDelay(h string, attempt int) time.Duration {
 }
 func endpoint(method, host, path string) (string, bool) {
 	switch {
+	case method == "GET" && host == "discounts-prices-api.wildberries.ru" && path == "/api/v2/list/goods/filter":
+		return "prices", true
 	case method == "GET" && host == "common-api.wildberries.ru" && path == "/api/v1/seller-info":
 		return "common", true
 	case method == "POST" && host == "content-api.wildberries.ru" && path == "/content/v2/get/cards/list":
@@ -144,11 +147,15 @@ func endpoint(method, host, path string) (string, bool) {
 	return "", false
 }
 func (c *Client) request(ctx context.Context, method, host, path string, body, out any) error {
+	return c.requestQuery(ctx, method, host, path, nil, body, out)
+}
+func (c *Client) requestQuery(ctx context.Context, method, host, path string, query url.Values, body, out any) error {
 	group, ok := endpoint(method, host, path)
 	if !ok {
 		return InvalidInput
 	}
 	u := url.URL{Scheme: "https", Host: host, Path: path}
+	u.RawQuery = query.Encode()
 	if !c.Configured() {
 		return NotConfigured
 	}

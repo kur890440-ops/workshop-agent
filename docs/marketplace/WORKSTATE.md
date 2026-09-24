@@ -1,5 +1,60 @@
 # Marketplace — оперативное состояние
 
+## Дополнение Day18: summary, 2026-09-24
+
+[WA-D157](../day18-summary.md): wb_get_daily_summary читает persisted aggregate
+через тот же MCP/server/service. Команда /wb_auto summary [trace], кнопка
+«Последняя сводка». Новых таблиц/миграций/планировщиков/EXE нет.
+Summary tests и финальный go test ./... — exit 0 (Telegram 54.238s,
+background 3.463s, mcpmanager 0.846s; остальные passed/cached).
+Offline report: reports/day18-background-jobs/20260924T145621.939783000Z/report.html;
+summary-mcp.json — фактический MCP result, WB calls delta=0.
+Сборка прежнего bin/workshop-agent.exe v0.18.3 — exit 0, других EXE нет.
+Готовый EXE: --version, mcp-status (8 tools/in-memory), day18-background-report — exit 0.
+git diff --check — exit 0. Рабочие .env/БД и реальные WB/Telegram не использовались.
+Дополнение завершено; дальше остановиться.
+Ниже — историческое состояние предыдущей версии.
+
+## Текущий рефакторинг Day16–18, 2026-09-24
+
+Источник требований/новых решений: [WA-D154–156](../day18-refactor.md).
+MCP in-memory, общий service/repository/scheduler/registry, migration114,
+scheduling tool, bootstrap и regressions реализованы. Старые cmd server/smoke удалены.
+Полный `go test ./...` прошёл, включая дополнительные architecture/safety tests.
+Offline Day17: `reports/day17-first-mcp-tool/20260924T143348.151387200Z/report.html`.
+Offline Day18: `reports/day18-background-jobs/20260924T143348.455734200Z/report.html`,
+Passed=true, 2 runs / 8 snapshots / 2 diffs, реальные MCP ListTools/CallTool в памяти,
+WB mock, Telegram summary захвачен без отправки.
+Завершено: старые server/smoke EXE и workshop-agent.exe~ удалены.
+Clean build `go build -o bin/workshop-agent.exe ./cmd/workshop-agent` — exit 0.
+В bin/ только workshop-agent.exe, 23 113 728 bytes, версия 0.18.2.
+Готовый EXE: --version, mcp-status, day17-mcp-report, day18-background-report — exit 0.
+mcp-status: 7 tools, in-memory, 0 WB write / 1 local mutation; обе сессии закрыты.
+Финальный `go test ./...` — exit 0 (Telegram 55.647s, background 4.496s,
+mcpclient 0.482s, mcpmanager 0.670s, wbmcp 0.761s, остальные passed/cached).
+`git diff --check` — exit 0. .env/рабочая БД не читались и не изменялись.
+Обновлены cmd bootstrap/version; mcpclient/manager/fixture; background layers;
+storage migration114; agent/Telegram trace/tests; offline reports; L0–L3 и usage.
+Рефакторинг завершён. Следующий день не начинать без нового задания.
+Отдельная live-проверка WB/Telegram владельцем остаётся за пределами offline-приёмки.
+
+Нижеследующее — историческое состояние до рефакторинга; прежние указания
+про две сборки и запущенные EXE заменены текущей записью.
+
+## Day18 — завершён 2026-09-24
+
+Основной документ: [Day18](../day18-background-jobs.md), WA-D151–153.
+Добавлены migration113, persistent WB_DAILY_SYNC, Prices read MCP tool,
+snapshots/current/diff, schedule timezone, Telegram menu и mock report.
+Финальный go test ./... — exit 0 (background 6.328s, Telegram 66.940s),
+обе сборки и git diff --check — exit 0. Отчёт:
+`reports/day18-background-jobs/20260924T132053.913479400Z/report.html` — Passed=true,
+2 runs, 8 snapshots, 2 diffs; actual STDIO, mock WB/Telegram, один catch-up.
+Рабочие app/server запущены: не перезаписывать
+их EXE. Сборки в bin/workshop-agent-check.exe и bin/check/wb-mcp-server-day16.exe.
+Реальный env/DB/WB/Telegram не использовались. Доказательства и установка — Day18.
+Остановиться; Day19 не начинать без нового задания.
+
 ## Day 17 — завершён, 2026-09-24
 
 Продолжение: [Day17](../day17-first-mcp-tool.md), решения WA-D149–150.

@@ -39,7 +39,7 @@ type CooldownStore interface {
 func (c *Client) SetCooldownStore(s CooldownStore) { c.store = s }
 func ValidRateGroup(s string) bool {
 	switch s {
-	case "common", "analytics", "content", "marketplace":
+	case "common", "analytics", "content", "marketplace", "prices":
 		return true
 	}
 	return false

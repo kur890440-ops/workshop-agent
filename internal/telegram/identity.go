@@ -57,6 +57,9 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	if text := backgroundError(err); text != "" {
+		return text
+	}
 	if message := agent.MCPErrorMessage(err); message != "" {
 		return message
 	}
@@ -499,6 +502,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 	}
 	if strings.HasPrefix(a.Action, "wb_") {
 		return b.wbButton(a)
+	}
+	if strings.HasPrefix(a.Action, "bg_") {
+		return b.backgroundButton(a)
 	}
 	if strings.HasPrefix(a.Action, "orders_") {
 		return b.ordersButton(a)

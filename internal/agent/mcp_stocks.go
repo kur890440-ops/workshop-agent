@@ -56,7 +56,7 @@ func (a *WorkshopAgent) MCPStocks(ctx context.Context, user, workshop int64, tra
 	}
 	fmt.Fprintf(&b, "Получено через MCP. Время: %s.\nОстатки цеха и складов продавца сюда не входят.", result.Value.FetchedAt)
 	if trace {
-		fmt.Fprintf(&b, "\nMCP TRACE\n/wb_stocks → wb_get_wb_stocks → wildberries.Client.WBStocks → success\nTransport: stdio; duration: %d ms.", result.DurationMS)
+		fmt.Fprintf(&b, "\nMCP TRACE\n/wb_stocks → wb_get_wb_stocks → wildberries.Client.WBStocks → success\nTransport: %s; duration: %d ms.", result.Discovery.Transport, result.DurationMS)
 	}
 	return b.String(), result, nil
 }

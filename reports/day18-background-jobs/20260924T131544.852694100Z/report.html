@@ -1,0 +1,18 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Day18 WB daily sync</title><style>body{font:16px system-ui;max-width:1000px;margin:32px auto;padding:20px}pre{white-space:pre-wrap;background:#eef3f6;padding:16px}td,th{padding:8px;text-align:left}</style><h1>Day18 · WB_DAILY_SYNC</h1><p>Passed: true. MOCK WB &#43; actual MCP STDIO; Telegram captured, not sent; clock advanced for catch-up</p><pre>08:00 Workshop timezone → persistent BackgroundJob → Scheduler
+→ existing MCP Client → STDIO → existing WB MCP Server
+→ WB API Client (mock here) → SQLite snapshots/current
+→ diff/aggregate → Telegram summary (captured here)</pre><table><tr><th>Job / Workshop</th><td>1 / 1</td></tr><tr><th>Schedule / Timezone</th><td>DAILY 08:00 / Europe/Moscow</td></tr><tr><th>Last / Next (UTC Unix)</th><td>1790488800 / 1790571600</td></tr><tr><th>Status</th><td>success; job=active</td></tr><tr><th>Price MCP tool</th><td>wb_get_prices → wildberries.Client.Prices</td></tr><tr><th>Stock MCP tool</th><td>wb_get_wb_stocks → wildberries.Client.WBStocks</td></tr><tr><th>Products / Price changes / Stock changes</th><td>3 / 1 / 1</td></tr><tr><th>Zero / Low / Errors</th><td>1 / 2 / 0</td></tr><tr><th>Runs / Snapshot rows / Diffs</th><td>2 / 8 / 2</td></tr><tr><th>Restart/catch-up</th><td>Service and MCP process recreated; advanced three days, two ticks: one additional run. Passed=true</td></tr><tr><th>Cleanup</th><td>Session=true, process=true, write tools=0</td></tr></table><pre>Wildberries · Утренняя синхронизация
+Результат: success
+Обновлено товаров: 3
+Цены: изменилось — 0.
+Остатки: изменилось — 0; нулевых — 1; низких — 1.
+Ошибок: 0
+Следующий запуск: 25.09.2026 08:00 (Europe/Moscow)
+Источник: WB через MCP. Остатки цеха не изменены.</pre><pre>Wildberries · Утренняя синхронизация
+Результат: success
+Обновлено товаров: 3
+Цены: изменилось — 1.
+Остатки: изменилось — 1; нулевых — 1; низких — 2.
+Ошибок: 0
+Следующий запуск: 28.09.2026 08:00 (Europe/Moscow)
+Источник: WB через MCP. Остатки цеха не изменены.</pre><p>Offline evidence, not live WB validation. No real messages sent. <a href="result.json">Actual result JSON</a>.</p></html>

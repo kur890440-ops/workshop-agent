@@ -1,5 +1,15 @@
 # L2 — контракты, инварианты и решения
 
+Day18 дополнен [WA-D157: сохранённая сводка через MCP](../day18-summary.md).
+
+Актуальное уточнение Day16–18: [WA-D154–156, один процесс и in-memory MCP](../day18-refactor.md).
+Оно заменяет старые требования STDIO/отдельных EXE и WB-specific jobs;
+остальные ограничения безопасности, изоляции и сохранения данных остаются в силе.
+
+
+Day18: [WA-D151–153](../day18-background-jobs.md) — persisted schedule, scope,
+snapshot/current/diff/lease и новый read-only prices method. Определения там.
+
 Day17: [WA-D149–150](../day17-first-mcp-tool.md) — явный MCP stocks tool,
 область доступа, серверная конфигурация и общие cooldown. Определения находятся
 в указанном документе; прежние решения сохраняются.

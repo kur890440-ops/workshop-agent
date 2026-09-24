@@ -1,12 +1,25 @@
 # Первый этап WB: настройка и использование
 
+Wildberries → «Последняя сводка» или `/wb_auto summary` читает сохранённый
+aggregate через MCP без новых WB запросов. `/wb_auto summary trace` показывает
+run ID и путь чтения. [Подробности](../day18-summary.md).
+
+Day18: `/wb_auto` — управление ежедневной синхронизацией цен и остатков.
+Включение только явно владельцем; начальные DAILY_AT_TIME 08:00 / Europe/Moscow / threshold 5.
+Одна сборка и актуальные команды: [рефакторинг Day18](../day18-refactor.md).
+
+Безопасная диагностика: `.\bin\workshop-agent.exe mcp-status`.
+Миграция 114 переносит jobs/runs/snapshots с сохранением ID; перед миграцией
+существующего файла БД storage делает резервную копию. Сборку выполняйте после
+остановки приложения через Ctrl+C: `go build -o bin/workshop-agent.exe ./cmd/workshop-agent`.
+
 ## Day17: остатки через MCP
 
 После запуска обновлённого `bin/workshop-agent.exe` из корня проекта:
 `/wb_stocks` — получить остатки через MCP; `/wb_stocks trace` — добавить безопасный
-технический trace. Сервер `bin/wb-mcp-server-day16.exe` приложение запускает само.
+технический trace. MCP-сервер создаётся внутри того же процесса через in-memory transport.
 Нужны включённая привязка мастерской, ранее проверенный seller ID и marketplace.read.
-Сервер сам читает корневой `.env`; токен в аргументы инструмента не передаётся.
+Bootstrap читает конфигурацию один раз и передаёт токен только WB API client; MCP не получает токен.
 Сохранённые ограничения WB продолжают действовать, включая seller-info.
 Старые `/wb stocks` и кнопка остатков работают через прежний sync/cache flow.
 Подробности и границы: [Day17](../day17-first-mcp-tool.md).
@@ -14,12 +27,12 @@
 Offline-демонстрация без чтения `.env`, реального WB и Telegram:
 
 ```powershell
-.\bin\workshop-agent-check.exe day17-mcp-report
+.\bin\workshop-agent.exe day17-mcp-report
 ```
 
 ## Исправление rate_limited (2026-09-23)
 
-Основной бинарник: `bin/workshop-agent.exe`; проверочный: `bin/workshop-agent-check.exe`.
+Основной и единственный production-бинарник: `bin/workshop-agent.exe`.
 Остановите старый бот через Ctrl+C и запустите новый из корня проекта.
 При первом запуске применяется migration 111 с резервной копией перед миграцией.
 Она добавляет метаданные ожидания; производственные таблицы не изменяет.

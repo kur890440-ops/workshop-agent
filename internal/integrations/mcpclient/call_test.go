@@ -3,7 +3,7 @@ package mcpclient
 import (
 	"context"
 	"encoding/json"
-	"os"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"strings"
 	"testing"
 	"time"
@@ -11,33 +11,24 @@ import (
 	"workshop-agent/internal/integrations/wbmcpfixture"
 )
 
-func TestDay17Child(t *testing.T) {
-	if len(os.Args) < 3 || os.Args[len(os.Args)-2] != "--" {
-		return
-	}
-	if os.Getenv("WB_API_TOKEN") != "" || os.Getenv("TELEGRAM_BOT_TOKEN") != "" {
-		os.Exit(9)
-	}
-	if wbmcpfixture.Run(context.Background(), os.Args[len(os.Args)-1]) != nil {
-		os.Exit(2)
-	}
-	os.Exit(0)
-}
 func stockClient(t *testing.T, mode string) *Service {
 	t.Helper()
-	exe, err := os.Executable()
-	if err != nil {
-		t.Fatal(err)
+	server, e := wbmcpfixture.Server(mode)
+	if e != nil {
+		t.Fatal(e)
 	}
-	s := NewCommand(exe, "-test.run=^TestDay17Child$", "--", mode)
+	s, e := NewInMemory(context.Background(), server)
+	if e != nil {
+		t.Fatal(e)
+	}
 	t.Cleanup(func() {
-		if err := s.Close(); err != nil {
-			t.Error(err)
+		if e := s.Close(); e != nil {
+			t.Error(e)
 		}
 	})
 	return s
 }
-func TestDay17STDIOStocksAndSafeFailures(t *testing.T) {
+func TestDay17InMemoryStocksAndSafeFailures(t *testing.T) {
 	t.Setenv("WB_API_TOKEN", "synthetic-secret-marker")
 	t.Setenv("TELEGRAM_BOT_TOKEN", "synthetic-secret-marker")
 	for _, tc := range []struct{ mode, code string }{
@@ -55,14 +46,14 @@ func TestDay17STDIOStocksAndSafeFailures(t *testing.T) {
 					t.Fatalf("result=%+v error=%v", out, err)
 				}
 				// A second call reuses the actual session and identity.
-				pid := s.cmd.Process.Pid
-				if _, e := s.Stocks(ctx, "day17-fixture"); e != nil || s.cmd.Process.Pid != pid {
+				session := s.session
+				if _, e := s.Stocks(ctx, "day17-fixture"); e != nil || s.session != session {
 					t.Fatal("session not reused", e)
 				}
 			} else if err != Error(tc.code) {
 				t.Fatalf("want %s got %v", tc.code, err)
 			}
-			if out.Discovery.Server != "workshop-agent-wb" || len(out.Discovery.Tools) != 5 || out.Discovery.WriteToolsExposed != 0 {
+			if out.Discovery.Server != "workshop-agent-wb" || len(out.Discovery.Tools) != 6 || out.Discovery.WriteToolsExposed != 0 {
 				t.Fatal(out.Discovery)
 			}
 			if e := s.callTool(ctx, "write_anything", NoArgs{}, nil); e != Error("mcp_tool_not_allowed") {
@@ -75,17 +66,31 @@ func TestDay17STDIOStocksAndSafeFailures(t *testing.T) {
 			if e := s.Close(); e != nil {
 				t.Fatal(e)
 			}
-			if state := s.State(); !state.SessionClosed || !state.ChildExited {
+			if state := s.State(); !state.SessionClosed || !state.ServerClosed {
 				t.Fatal(state)
 			}
 		})
 	}
 }
 func TestDay17NoServerIsConnectionError(t *testing.T) {
-	s := NewCommand("nonexistent-day17-server.exe")
-	defer s.Close()
-	if _, err := s.Stocks(context.Background(), "day17-fixture"); err != Error("mcp_connection_error") {
-		t.Fatal(err)
+	if _, e := NewInMemory(context.Background(), nil); e != Error("mcp_connection_error") {
+		t.Fatal(e)
+	}
+}
+
+func TestDay18PricesOverExistingInMemory(t *testing.T) {
+	for _, mode := range []string{"success", "price_error", "missing"} {
+		t.Run(mode, func(t *testing.T) {
+			s := stockClient(t, mode)
+			out, e := s.Prices(context.Background(), "day17-fixture")
+			if mode == "success" {
+				if e != nil || len(out.Data) != 1 || out.Data[0].PriceCents != 10000 {
+					t.Fatal(out, e)
+				}
+			} else if e == nil {
+				t.Fatal("expected controlled error")
+			}
+		})
 	}
 }
 func TestDay17CancellationAndCleanup(t *testing.T) {
@@ -96,10 +101,31 @@ func TestDay17CancellationAndCleanup(t *testing.T) {
 	if err != Error("wb_timeout") {
 		t.Fatal(err)
 	}
-	if err = s.Close(); err != nil {
-		t.Fatalf("%v: transport=%T %v; process=%v", err, s.transport.conn.err, s.transport.conn.err, s.cmd.ProcessState)
+	if s.State().SessionClosed {
+		t.Fatal("request cancellation closed global session")
 	}
-	if !s.State().ChildExited {
-		t.Fatal("child not reaped")
+	if _, e := s.Prices(context.Background(), "day17-fixture"); e != nil {
+		t.Fatal("session unusable after cancellation", e)
+	}
+	if err = s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if !s.State().ServerClosed {
+		t.Fatal("server not closed")
+	}
+}
+
+func TestWriteClassificationBlocksWBExecution(t *testing.T) {
+	server, e := wbmcpfixture.Server("success")
+	if e != nil {
+		t.Fatal(e)
+	}
+	// Override the otherwise trusted name with a mutation classification.
+	mcp.AddTool(server, &mcp.Tool{Name: StocksTool, Description: "unsafe write", Annotations: &mcp.ToolAnnotations{ReadOnlyHint: false}}, func(context.Context, *mcp.CallToolRequest, NoArgs) (*mcp.CallToolResult, NoArgs, error) {
+		t.Fatal("write handler invoked")
+		return nil, NoArgs{}, nil
+	})
+	if _, e = NewInMemory(context.Background(), server); e != Error("mcp_tool_policy_error") {
+		t.Fatal(e)
 	}
 }

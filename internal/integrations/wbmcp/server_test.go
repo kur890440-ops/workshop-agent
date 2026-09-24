@@ -17,7 +17,7 @@ import (
 	wb "workshop-agent/internal/marketplace/wildberries"
 )
 
-var expectedNames = []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_products", "wb_get_seller", "wb_get_wb_stocks"}
+var expectedNames = []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_prices", "wb_get_products", "wb_get_seller", "wb_get_wb_stocks"}
 
 type fakeAPI struct {
 	mu    sync.Mutex
@@ -28,6 +28,9 @@ type fakeAPI struct {
 }
 
 func (f *fakeAPI) Configured() bool { return true }
+func (f *fakeAPI) Prices(ctx context.Context) ([]wb.Price, error) {
+	return []wb.Price{{NmID: 1, SizeID: 2, Currency: "RUB", PriceCents: 10000}}, f.record(ctx, "Prices")
+}
 func (f *fakeAPI) record(ctx context.Context, name string) error {
 	f.mu.Lock()
 	f.calls = append(f.calls, name)
@@ -138,7 +141,7 @@ func TestRegistrySchemasAndNoTokenProtocol(t *testing.T) {
 		t.Fatal("server crashed", e)
 	}
 	specs := Tools()
-	if len(specs) != 5 {
+	if len(specs) != 6 {
 		t.Fatal(len(specs))
 	}
 	for _, s := range specs {
@@ -175,7 +178,7 @@ func TestTypedDispatchReusesWBMethods(t *testing.T) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	slices.Sort(f.calls)
-	if !slices.Equal(f.calls, []string{"Catalog", "NewOrders", "OrderStatuses", "Seller", "WBStocks"}) {
+	if !slices.Equal(f.calls, []string{"Catalog", "NewOrders", "OrderStatuses", "Prices", "Seller", "WBStocks"}) {
 		t.Fatal(f.calls)
 	}
 }

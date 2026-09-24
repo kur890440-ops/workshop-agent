@@ -1,0 +1,15 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><title>Day 17 — MCP tool</title><style>body{font:16px system-ui;max-width:1000px;margin:32px auto;padding:20px}pre{white-space:pre-wrap;background:#eef3f6;padding:16px}dt{font-weight:bold}</style><h1>Day 17 — первый инструмент MCP</h1><p>Проверка: true. MOCK WB / real MCP in-memory / actual WorkshopAgent.MCPStocks</p><p>Telegram delivery не запускалась; вход в прикладной обработчик из CLI отчёта. Реальный WB API не вызывался.</p><pre>Telegram /wb_stocks (production entry)
+↓ Workshop Agent.MCPStocks (executed in this report)
+↓ Marketplace authorization
+↓ MCP Client → tools/call → in-memory
+↓ existing WB MCP Server → wb_get_wb_stocks
+↓ WBStocks (mock API here; Wildberries API in production)
+↑ structured result → human response</pre><dl><dt>Tool</dt><dd>wb_get_wb_stocks</dd><dt>Description</dt><dd>Получает остатки по вариантам и складам Wildberries. Не включает остатки цеха или склады продавца.</dd><dt>Go method</dt><dd>wildberries.Client.WBStocks</dd><dt>Classification</dt><dd>READ_ONLY=true WRITE=false DESTRUCTIVE=false REQUIRES_CONFIRMATION=false</dd><dt>Input schema</dt><dd><pre>{&#34;additionalProperties&#34;:false,&#34;type&#34;:&#34;object&#34;}</pre></dd><dt>Actual input</dt><dd>{}</dd></dl><h2>Результат приложения</h2><pre>Wildberries · Остатки на складах WB
+nmID 101 · вариант 201 · склад 301 Mock warehouse — 12 шт.
+nmID 102 · вариант 202 · склад 301 Mock warehouse — 4 шт.
+nmID 103 · вариант 203 · склад 302 Mock warehouse 2 — 0 шт.
+Получено через MCP. Время: 2026-09-24T14:23:32Z.
+Остатки цеха и складов продавца сюда не входят.
+MCP TRACE
+/wb_stocks → wb_get_wb_stocks → wildberries.Client.WBStocks → success
+Transport: in-memory; duration: 1 ms.</pre><h2>Проверки транспорта</h2><p>Tools: 6, write tools: 0; protocol: 2025-11-25; session closed: true; server closed: true</p><h2>Structured output</h2><p>source, fetched_at, complete, untrusted_data, data[nmId, chrtId, warehouseId, warehouseName, quantity]. Полный фактический результат — <a href="result.json">result.json</a>.</p></html>

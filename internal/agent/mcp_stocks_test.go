@@ -2,7 +2,6 @@ package agent
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -12,16 +11,6 @@ import (
 	"workshop-agent/internal/marketplace"
 	"workshop-agent/internal/workshops"
 )
-
-func TestDay17AppChild(t *testing.T) {
-	if len(os.Args) < 3 || os.Args[len(os.Args)-2] != "--" {
-		return
-	}
-	if wbmcpfixture.Run(context.Background(), os.Args[len(os.Args)-1]) != nil {
-		os.Exit(2)
-	}
-	os.Exit(0)
-}
 
 // Only configuration status is available in-process. Any attempted direct WB
 // method dispatch panics via the nil embedded interface, catching MCP bypasses.
@@ -53,8 +42,14 @@ func TestDay17ApplicationUsesMCPAndEnforcesScope(t *testing.T) {
 	if _, err = ws.DB().Exec(`UPDATE marketplace_connections SET seller_id='day17-fixture' WHERE id=?`, id); err != nil {
 		t.Fatal(err)
 	}
-	exe, _ := os.Executable()
-	client := mcpclient.NewCommand(exe, "-test.run=^TestDay17AppChild$", "--", "success")
+	server, err := wbmcpfixture.Server("success")
+	if err != nil {
+		t.Fatal(err)
+	}
+	client, err := mcpclient.NewInMemory(context.Background(), server)
+	if err != nil {
+		t.Fatal(err)
+	}
 	defer client.Close()
 	a := &WorkshopAgent{WS: ws, Marketplace: svc, MCP: client}
 	answer, usage, err := a.HandleMessageForWorkshop(context.Background(), w, u, 991701, "/wb_stocks trace")

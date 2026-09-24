@@ -59,7 +59,11 @@ func (s *Store) Migrate() error {
 	var marketplaceDone int
 	var cooldownDone int
 	var pacingDone int
+	var backgroundDone int
+	var genericDone int
 	if legacy > 0 {
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=114`).Scan(&genericDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=113`).Scan(&backgroundDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=108`).Scan(&taskOnlyDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=109`).Scan(&controlledDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=110`).Scan(&marketplaceDone)
@@ -67,7 +71,7 @@ func (s *Store) Migrate() error {
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=112`).Scan(&pacingDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0) && s.Path != "" && s.Path != ":memory:" {
+		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
@@ -125,6 +129,12 @@ func (s *Store) Migrate() error {
 	}
 	if err := migrateMarketplacePacing(tx); err != nil {
 		return fmt.Errorf("marketplace pacing migration: %w", err)
+	}
+	if err := migrateBackground(tx); err != nil {
+		return fmt.Errorf("background migration: %w", err)
+	}
+	if err := migrateGenericBackground(tx); err != nil {
+		return fmt.Errorf("generic background migration: %w", err)
 	}
 	return tx.Commit()
 }

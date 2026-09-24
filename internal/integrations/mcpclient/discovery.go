@@ -8,41 +8,28 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"os"
-	"os/exec"
 	"sort"
-	"sync"
-	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Tool struct {
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	ReadOnly    bool            `json:"read_only"`
-	InputSchema json.RawMessage `json:"input_schema"`
+	Name         string          `json:"name"`
+	Description  string          `json:"description"`
+	ReadOnly     bool            `json:"read_only"`
+	OutputSchema json.RawMessage `json:"output_schema"`
+	InputSchema  json.RawMessage `json:"input_schema"`
 }
 type Discovery struct {
-	Server            string `json:"server"`
-	Protocol          string `json:"protocol"`
-	Transport         string `json:"transport"`
-	Tools             []Tool `json:"tools"`
-	WriteToolsExposed int    `json:"write_tools_exposed"`
-	SessionClosed     bool   `json:"session_closed"`
-	ChildExited       bool   `json:"child_exited"`
-}
-
-// ChildEnvironment reads only OS runtime essentials, never WB/LLM/Telegram credentials.
-func ChildEnvironment() []string {
-	out := []string{}
-	for _, key := range []string{"SystemRoot", "WINDIR", "TEMP", "TMP"} {
-		if value, ok := os.LookupEnv(key); ok {
-			out = append(out, key+"="+value)
-		}
-	}
-	return out
+	Server             string `json:"server"`
+	Protocol           string `json:"protocol"`
+	Transport          string `json:"transport"`
+	Tools              []Tool `json:"tools"`
+	LocalMutationTools int    `json:"local_mutation_tools"`
+	WriteToolsExposed  int    `json:"write_tools_exposed"`
+	SessionClosed      bool   `json:"session_closed"`
+	ServerClosed       bool   `json:"server_closed"`
 }
 
 // NewClient selects the SDK's initialize lifecycle for the Day 16 discovery flow.
@@ -60,68 +47,8 @@ func NewClient() *mcp.Client {
 	})
 	return client
 }
-func Discover(ctx context.Context, executable string) (Discovery, error) {
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, executable, "-no-token")
-	cmd.Env = ChildEnvironment()
-	cmd.Stderr = io.Discard
-	return discoverCommand(ctx, cmd)
-}
-
-// Track Close once, including failed initialization. The SDK transport owns Wait.
-type trackedTransport struct {
-	inner *mcp.CommandTransport
-	conn  *trackedConnection
-}
-type trackedConnection struct {
-	mcp.Connection
-	once sync.Once
-	err  error
-}
-
-func (c *trackedConnection) Close() error {
-	c.once.Do(func() { c.err = c.Connection.Close() })
-	return c.err
-}
-func (t *trackedTransport) Connect(ctx context.Context) (mcp.Connection, error) {
-	c, err := t.inner.Connect(ctx)
-	if err != nil {
-		return nil, err
-	}
-	t.conn = &trackedConnection{Connection: c}
-	return t.conn, nil
-}
-func discoverCommand(ctx context.Context, cmd *exec.Cmd) (out Discovery, err error) {
-	out.Transport = "stdio"
-	transport := &trackedTransport{inner: &mcp.CommandTransport{Command: cmd, TerminateDuration: time.Second}}
-	client := NewClient()
-	session, e := client.Connect(ctx, transport, nil)
-	defer func() {
-		if session != nil {
-			if e := session.Close(); e != nil && err == nil {
-				err = errors.New("mcp_cleanup_error")
-			}
-			out.SessionClosed = true
-		}
-		if transport.conn != nil {
-			if e := transport.conn.Close(); e != nil && err == nil {
-				err = errors.New("mcp_cleanup_error")
-			}
-		}
-		out.ChildExited = cmd.ProcessState != nil && cmd.ProcessState.Exited()
-		if cmd.Process != nil && !out.ChildExited && err == nil {
-			err = errors.New("mcp_child_cleanup_error")
-		}
-	}()
-	if e != nil {
-		return out, errors.New("mcp_connection_error")
-	}
-	return listTools(ctx, session)
-}
-
 func listTools(ctx context.Context, session *mcp.ClientSession) (out Discovery, err error) {
-	out.Transport = "stdio"
+	out.Transport = "in-memory"
 	initialized := session.InitializeResult()
 	if initialized == nil || initialized.ServerInfo == nil {
 		return out, errors.New("mcp_initialization_error")
@@ -145,11 +72,17 @@ func listTools(ctx context.Context, session *mcp.ClientSession) (out Discovery, 
 			if e != nil {
 				return out, errors.New("mcp_invalid_schema")
 			}
+			outputSchema, e := json.Marshal(tool.OutputSchema)
+			if e != nil {
+				return out, errors.New("mcp_invalid_schema")
+			}
 			readOnly := tool.Annotations != nil && tool.Annotations.ReadOnlyHint
-			if !readOnly {
+			if !readOnly && tool.Name == "schedule_wb_daily_sync" {
+				out.LocalMutationTools++
+			} else if !readOnly {
 				out.WriteToolsExposed++
 			}
-			out.Tools = append(out.Tools, Tool{Name: tool.Name, Description: tool.Description, ReadOnly: readOnly, InputSchema: schema})
+			out.Tools = append(out.Tools, Tool{Name: tool.Name, Description: tool.Description, ReadOnly: readOnly, InputSchema: schema, OutputSchema: outputSchema})
 		}
 		if result.NextCursor == "" {
 			sort.Slice(out.Tools, func(i, j int) bool { return out.Tools[i].Name < out.Tools[j].Name })

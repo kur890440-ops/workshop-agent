@@ -1,5 +1,24 @@
 # L3 — этапы реализации и приёмка
 
+Day18 дополнен [WA-D157: сохранённая сводка через MCP](../day18-summary.md).
+
+Рефакторинг Day16–18 принят offline: полный go test ./... и clean build прошли;
+готовый workshop-agent.exe v0.18.2 выполнил ListTools (7 tools, in-memory),
+Day17 и Day18 reports. [Доказательства](../day18-refactor.md#финальная-приёмка).
+Реальные API/Telegram и рабочая БД не использовались.
+
+Актуальное уточнение Day16–18: [WA-D154–156, один процесс и in-memory MCP](../day18-refactor.md).
+Оно заменяет старые требования STDIO/отдельных EXE и WB-specific jobs;
+остальные ограничения безопасности, изоляции и сохранения данных остаются в силе.
+
+
+Day18 offline-приёмка завершена 2026-09-24: persistent WB_DAILY_SYNC,
+timezone/DST, snapshot/current/diff, partial, scope/revoke, pause/resume/cancel,
+restart/catch-up/duplicate/overlap/lease, Telegram mock, новый prices MCP.
+Полный go test ./... и обе сборки прошли. Фактические результаты и HTML:
+[Day18](../day18-background-jobs.md#проверки-и-установка). Основные EXE пока работают
+на прежней версии и не заменены. D1/live V1 не закрыты.
+
 Day17 завершён на mock-данных 2026-09-24: полный go test ./..., сборки,
 application → MCP STDIO → mock WB → человекочитаемый ответ; Day16 smoke сохранён.
 Подробные тесты/артефакты: [Day17](../day17-first-mcp-tool.md#проверки--состояние).

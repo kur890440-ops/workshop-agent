@@ -1,6 +1,17 @@
 # L1 — модули, сущности и размещение данных
 
+Day18 дополнен [WA-D157: сохранённая сводка через MCP](../day18-summary.md).
+
+Актуальное уточнение Day16–18: [WA-D154–156, один процесс и in-memory MCP](../day18-refactor.md).
+Оно заменяет старые требования STDIO/отдельных EXE и WB-specific jobs;
+остальные ограничения безопасности, изоляции и сохранения данных остаются в силе.
+
+
 @PROJECT:WORKSHOP_AGENT @NO_COMPRESS @PRESERVE
+
+Day18: Scheduler → прежний MCP client → server → WB API; новые jobs/runs,
+snapshots/current/diffs и timezone/threshold описаны в [Day18](../day18-background-jobs.md#реализация).
+Эти таблицы не являются производственными остатками, ценами или памятью LLM.
 
 Статус: модель реализована миграцией 110; результаты проверок — в L3.
 

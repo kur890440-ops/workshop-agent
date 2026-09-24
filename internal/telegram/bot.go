@@ -17,6 +17,7 @@ import (
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/background"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
@@ -38,6 +39,9 @@ type Bot struct {
 	HTTPClient    *http.Client
 	Agent         *agent.WorkshopAgent
 	Marketplace   *marketplace.Service
+	Background    *background.Service
+	DailySummary  dailySummaryReader
+	JobContext    context.Context
 	wbWait        sync.WaitGroup
 	setupMu       sync.Mutex
 	setup         map[sessionKey]*setupSession
@@ -87,6 +91,10 @@ type botError struct{ msg string }
 func (e *botError) Error() string { return e.msg }
 
 func (b *Bot) Start() {
+	b.StartContext(context.Background())
+}
+func (b *Bot) WaitBackground() { b.wbWait.Wait() }
+func (b *Bot) StartContext(ctx context.Context) {
 	if !b.Started {
 		log.Println("Telegram-бот не инициализирован.")
 		return
@@ -94,10 +102,17 @@ func (b *Bot) Start() {
 	log.Println("Telegram-бот запущен. Начинаю long-polling обновлений.")
 	offset := int64(0)
 	for {
-		updates, err := b.getUpdates(offset)
+		if ctx.Err() != nil {
+			return
+		}
+		updates, err := b.getUpdatesContext(ctx, offset)
 		if err != nil {
 			log.Printf("polling error: %v", err)
-			time.Sleep(5 * time.Second)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(5 * time.Second):
+			}
 			continue
 		}
 		for _, update := range updates {
@@ -124,12 +139,19 @@ func (b *Bot) Start() {
 }
 
 func (b *Bot) getUpdates(offset int64) ([]telegramUpdate, error) {
+	return b.getUpdatesContext(context.Background(), offset)
+}
+func (b *Bot) getUpdatesContext(ctx context.Context, offset int64) ([]telegramUpdate, error) {
 	url := fmt.Sprintf("https://api.telegram.org/bot%s/getUpdates?offset=%d&timeout=30&allowed_updates=%s", b.Token, offset, urlQueryEscape("[\"message\",\"callback_query\"]"))
 	// Long polling must outlive Telegram's 30-second wait. Keep ordinary API
 	// requests on the original short timeout and retain the configured transport.
 	pollClient := *b.HTTPClient
 	pollClient.Timeout = 45 * time.Second
-	resp, err := pollClient.Get(url)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, errors.New("Telegram polling configuration failed")
+	}
+	resp, err := pollClient.Do(req)
 	if err != nil {
 		var networkError net.Error
 		if errors.As(err, &networkError) && networkError.Timeout() {
@@ -177,6 +199,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		return nil
 	}
 	if handled, e := b.mcpStocksMessage(sessionKey{chatID, userID}, text); handled {
+		return e
+	}
+	if handled, e := b.backgroundMessage(sessionKey{chatID, userID}, text); handled {
 		return e
 	}
 	if handled, e := b.wbMessage(sessionKey{chatID, userID}, text); handled {

@@ -395,11 +395,31 @@ LLM определяет намерение и извлекает названи
 
 Подробности и решения L0–L3: [docs/active-dialog-buttons.md](docs/active-dialog-buttons.md).
 
-## Day 16: WB MCP через STDIO
+## Day 16–18: MCP и фоновые задачи в одном процессе
 
-Добавлены отдельные Go MCP server и smoke client на официальном SDK v1.7.0
-(Go >=1.25.0). Пять read-only tools используют существующий WB API client.
-Discovery работает без WB token, TCP listener и запуска Telegram-бота.
+Production artifact: `bin/workshop-agent.exe`. Запуск из корня проекта:
 
-После сборки: `.\bin\mcp-wb-smoke-day16.exe`. Команды сборки, mapping методов,
-ограничения и фактический HTML report: [docs/day16-mcp.md](docs/day16-mcp.md).
+```powershell
+.\bin\workshop-agent.exe
+```
+
+При запуске выводится версия; `--version` выводит её без запуска бота.
+MCP использует официальный SDK in-memory transport: один сервер, одна сессия,
+шесть WB API read tools, `wb_get_daily_summary` для сохранённой сводки и локальный `schedule_wb_daily_sync`. Отдельный сервер не нужен.
+Общий scheduler исполняет persistent jobs через registry; первая задача —
+`WB_DAILY_SYNC`, цены и остатки ежедневно в 08:00 по timezone мастерской.
+
+```powershell
+go build -o bin/workshop-agent.exe ./cmd/workshop-agent
+.\bin\workshop-agent.exe mcp-status
+.\bin\workshop-agent.exe day17-mcp-report
+.\bin\workshop-agent.exe day18-background-report
+```
+
+Диагностика не читает `.env`, не открывает рабочую БД и не вызывает реальные API.
+Telegram: `/wb_auto`, `/wb_auto enable`, `/wb_auto run`, `pause`, `resume`, `cancel`,
+`/wb_auto time 08:00 Europe/Moscow [порог]`, `/wb_auto trace`.
+[Архитектура, миграция, приёмка](docs/day18-refactor.md).
+
+Последняя сохранённая сводка: `/wb_auto summary` или кнопка «Последняя сводка».
+[Day18 summary через MCP](docs/day18-summary.md).

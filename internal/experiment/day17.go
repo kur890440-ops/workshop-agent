@@ -18,9 +18,9 @@ import (
 	"workshop-agent/internal/workshops"
 )
 
-// RunDay17 uses the actual application handler, SDK client and server over OS
-// pipes. Only the downstream WB API is a mock. No config.Load, bot or live DB.
-func RunDay17(ctx context.Context, executable string, args []string, root string) (string, error) {
+// RunDay17 uses the actual application handler, SDK client and server over official SDK
+// in-memory transport. Only the downstream WB API is a mock. No config.Load, bot or live DB.
+func RunDay17(ctx context.Context, root string) (string, error) {
 	dir := filepath.Join(root, time.Now().UTC().Format("20060102T150405.000000000Z"))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
@@ -49,13 +49,20 @@ func RunDay17(ctx context.Context, executable string, args []string, root string
 	if _, err = ws.DB().Exec(`UPDATE marketplace_connections SET seller_id='day17-fixture' WHERE id=?`, id); err != nil {
 		return "", err
 	}
-	client := mcpclient.NewCommand(executable, args...)
+	server, err := wbmcpfixture.Server("success")
+	if err != nil {
+		return "", err
+	}
+	client, err := mcpclient.NewInMemory(ctx, server)
+	if err != nil {
+		return "", err
+	}
 	defer client.Close()
 	a := &agent.WorkshopAgent{WS: ws, Marketplace: mp, MCP: client}
 	answer, result, callErr := a.MCPStocks(ctx, user, workshop, true)
 	closeErr := client.Close()
 	state := client.State()
-	passed := callErr == nil && closeErr == nil && len(result.Value.Data) == 3 && strings.Contains(answer, "Получено через MCP") && state.SessionClosed && state.ChildExited && state.WriteToolsExposed == 0
+	passed := callErr == nil && closeErr == nil && len(result.Value.Data) == 3 && strings.Contains(answer, "Получено через MCP") && state.SessionClosed && state.ServerClosed && state.WriteToolsExposed == 0
 	var spec wbmcp.ToolSpec
 	for _, tool := range wbmcp.Tools() {
 		if tool.Name == mcpclient.StocksTool {
@@ -74,7 +81,7 @@ func RunDay17(ctx context.Context, executable string, args []string, root string
 		Tool                            wbmcp.ToolSpec
 		Result                          mcpclient.StocksResult
 		State                           mcpclient.Discovery
-	}{"MOCK WB / real MCP STDIO / actual WorkshopAgent.MCPStocks", "/wb_stocks trace", answer, schema, passed, spec, result, state}
+	}{"MOCK WB / real MCP in-memory / actual WorkshopAgent.MCPStocks", "/wb_stocks trace", answer, schema, passed, spec, result, state}
 	raw, err := json.MarshalIndent(r, "", "  ")
 	if err != nil {
 		return "", err
@@ -85,10 +92,10 @@ func RunDay17(ctx context.Context, executable string, args []string, root string
 	t := template.Must(template.New("report").Parse(`<!doctype html><html lang="ru"><meta charset="utf-8"><title>Day 17 — MCP tool</title><style>body{font:16px system-ui;max-width:1000px;margin:32px auto;padding:20px}pre{white-space:pre-wrap;background:#eef3f6;padding:16px}dt{font-weight:bold}</style><h1>Day 17 — первый инструмент MCP</h1><p>Проверка: {{.Passed}}. {{.Mode}}</p><p>Telegram delivery не запускалась; вход в прикладной обработчик из CLI отчёта. Реальный WB API не вызывался.</p><pre>Telegram /wb_stocks (production entry)
 ↓ Workshop Agent.MCPStocks (executed in this report)
 ↓ Marketplace authorization
-↓ MCP Client → tools/call → STDIO
+↓ MCP Client → tools/call → in-memory
 ↓ existing WB MCP Server → wb_get_wb_stocks
 ↓ WBStocks (mock API here; Wildberries API in production)
-↑ structured result → human response</pre><dl><dt>Tool</dt><dd>{{.Tool.Name}}</dd><dt>Description</dt><dd>{{.Tool.Description}}</dd><dt>Go method</dt><dd>{{.Tool.GoMethod}}</dd><dt>Classification</dt><dd>READ_ONLY={{.Tool.ReadOnly}} WRITE={{.Tool.Write}} DESTRUCTIVE={{.Tool.Destructive}} REQUIRES_CONFIRMATION={{.Tool.RequiresConfirmation}}</dd><dt>Input schema</dt><dd><pre>{{.Schema}}</pre></dd><dt>Actual input</dt><dd>{}</dd></dl><h2>Результат приложения</h2><pre>{{.Response}}</pre><h2>Проверки транспорта</h2><p>Tools: {{len .State.Tools}}, write tools: {{.State.WriteToolsExposed}}; protocol: {{.State.Protocol}}; session closed: {{.State.SessionClosed}}; child exited: {{.State.ChildExited}}</p><h2>Structured output</h2><p>source, fetched_at, complete, untrusted_data, data[nmId, chrtId, warehouseId, warehouseName, quantity]. Полный фактический результат — <a href="result.json">result.json</a>.</p></html>`))
+↑ structured result → human response</pre><dl><dt>Tool</dt><dd>{{.Tool.Name}}</dd><dt>Description</dt><dd>{{.Tool.Description}}</dd><dt>Go method</dt><dd>{{.Tool.GoMethod}}</dd><dt>Classification</dt><dd>READ_ONLY={{.Tool.ReadOnly}} WRITE={{.Tool.Write}} DESTRUCTIVE={{.Tool.Destructive}} REQUIRES_CONFIRMATION={{.Tool.RequiresConfirmation}}</dd><dt>Input schema</dt><dd><pre>{{.Schema}}</pre></dd><dt>Actual input</dt><dd>{}</dd></dl><h2>Результат приложения</h2><pre>{{.Response}}</pre><h2>Проверки транспорта</h2><p>Tools: {{len .State.Tools}}, write tools: {{.State.WriteToolsExposed}}; protocol: {{.State.Protocol}}; session closed: {{.State.SessionClosed}}; server closed: {{.State.ServerClosed}}</p><h2>Structured output</h2><p>source, fetched_at, complete, untrusted_data, data[nmId, chrtId, warehouseId, warehouseName, quantity]. Полный фактический результат — <a href="result.json">result.json</a>.</p></html>`))
 	path := filepath.Join(dir, "report.html")
 	f, err := os.Create(path)
 	if err != nil {
