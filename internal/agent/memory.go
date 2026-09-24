@@ -26,6 +26,10 @@ func (a *WorkshopAgent) HandleMessageForWorkshop(ctx context.Context, workshop, 
 	if err = auth.Require(a.WS.DB(), user, workshop, auth.WorkshopRead); err != nil {
 		return
 	}
+	if text == "/wb_stocks" || text == "/wb_stocks trace" {
+		answer, _, err = a.MCPStocks(ctx, user, workshop, text == "/wb_stocks trace")
+		return answer, &llm.Usage{}, err
+	}
 	if handled, response, e := a.marketplaceMessage(user, workshop, text); handled {
 		return response, &llm.Usage{}, e
 	}

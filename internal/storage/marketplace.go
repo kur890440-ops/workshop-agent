@@ -2,6 +2,27 @@ package storage
 
 import "database/sql"
 
+// One-time removal of the obsolete application interval, never server-labelled waits.
+func migrateMarketplacePacing(tx *sql.Tx) error {
+	var n int
+	if err := tx.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=112`).Scan(&n); err != nil {
+		return err
+	}
+	if n != 0 {
+		return nil
+	}
+	for _, q := range []string{
+		`DELETE FROM marketplace_cooldowns WHERE source='local_interval'`,
+		`UPDATE marketplace_sync SET retry_at='',retry_source='',rate_operation='' WHERE retry_source='local_interval'`,
+		`INSERT INTO schema_migrations(number,name) VALUES(112,'wb_remove_legacy_local_interval')`,
+	} {
+		if _, err := tx.Exec(q); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func migrateMarketplaceCooldown(tx *sql.Tx) error {
 	var n int
 	if err := tx.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=111`).Scan(&n); err != nil {

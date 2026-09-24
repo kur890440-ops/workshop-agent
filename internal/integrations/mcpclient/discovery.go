@@ -1,5 +1,5 @@
-// Package mcpclient is the Workshop Agent's local MCP discovery boundary.
-// It deliberately exposes no automatic tool invocation or credential API.
+// Package mcpclient is the Workshop Agent's local SDK-backed MCP boundary.
+// Explicit read-only calls never accept credentials or LLM-selected tools.
 package mcpclient
 
 import (
@@ -117,6 +117,11 @@ func discoverCommand(ctx context.Context, cmd *exec.Cmd) (out Discovery, err err
 	if e != nil {
 		return out, errors.New("mcp_connection_error")
 	}
+	return listTools(ctx, session)
+}
+
+func listTools(ctx context.Context, session *mcp.ClientSession) (out Discovery, err error) {
+	out.Transport = "stdio"
 	initialized := session.InitializeResult()
 	if initialized == nil || initialized.ServerInfo == nil {
 		return out, errors.New("mcp_initialization_error")

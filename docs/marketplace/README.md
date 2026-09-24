@@ -9,6 +9,9 @@
 [Настройка и команды](USAGE.md) · [реестр API](API-CONTRACTS.md) ·
 [upstream attribution](THIRD-PARTY-NOTICES.md).
 
+[Day17 — первый MCP tool](../day17-first-mcp-tool.md): `/wb_stocks [trace]`,
+решения WA-D149–150, mock-приёмка завершена. Следующий этап не начат.
+
 ## Источники истины по слоям
 
 | Файл | Основное содержание | Сжатие |

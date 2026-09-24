@@ -184,6 +184,7 @@ func TestRejectWriteUnknownAndInvalidArguments(t *testing.T) {
 	cs := session(t, f, time.Second)
 	tests := []struct{ name, args string }{
 		{"wb_update_stocks", `{}`}, {"Attach", `{}`}, {"wb_get_seller", `{"token":"synthetic-secret"}`},
+		{"wb_get_wb_stocks", `{"token":"synthetic-secret"}`}, {"wb_get_wb_stocks", `{"limit":10}`},
 		{"wb_get_order_statuses", `{}`}, {"wb_get_order_statuses", `{"order_ids":[]}`},
 		{"wb_get_order_statuses", `{"order_ids":[0]}`}, {"wb_get_order_statuses", `{"order_ids":[1,1]}`},
 		{"wb_get_order_statuses", `{"order_ids":[1.5]}`}, {"wb_get_order_statuses", `{"order_ids":["synthetic-secret"]}`},

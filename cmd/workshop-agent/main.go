@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"path/filepath"
 
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
@@ -12,6 +13,8 @@ import (
 	"workshop-agent/internal/cli"
 	"workshop-agent/internal/config"
 	"workshop-agent/internal/experiment"
+	"workshop-agent/internal/integrations/mcpclient"
+	"workshop-agent/internal/integrations/wbmcpfixture"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
@@ -23,6 +26,25 @@ import (
 )
 
 func main() {
+	// Offline Day17 modes must run BEFORE config.Load reads local credentials.
+	if len(os.Args) == 2 && os.Args[1] == "day17-mock-server" {
+		if err := wbmcpfixture.Run(context.Background(), "success"); err != nil {
+			os.Exit(1)
+		}
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "day17-mcp-report" {
+		executable, err := os.Executable()
+		if err != nil {
+			log.Fatal("executable unavailable")
+		}
+		path, err := experiment.RunDay17(context.Background(), executable, []string{"day17-mock-server"}, "reports/day17-first-mcp-tool")
+		fmt.Println(path)
+		if err != nil {
+			log.Fatal("Day17 mock report failed")
+		}
+		return
+	}
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
@@ -157,6 +179,16 @@ func main() {
 	}
 	defer marketplaceSvc.Close()
 	agentSvc.Marketplace = marketplaceSvc
+	envFile, err := filepath.Abs(".env")
+	if err != nil {
+		log.Fatal("MCP configuration path error")
+	}
+	dbFile, err := filepath.Abs(cfg.DatabasePath)
+	if err != nil {
+		log.Fatal("MCP database path error")
+	}
+	agentSvc.MCP = mcpclient.New(filepath.Join("bin", "wb-mcp-server-day16.exe"), envFile, dbFile)
+	defer agentSvc.MCP.Close()
 	agentSvc.Memory.MaxMessages = cfg.ShortTermMaxMessages
 	agentSvc.Memory.MaxTokens = cfg.ShortTermMaxTokens
 	_ = agentSvc

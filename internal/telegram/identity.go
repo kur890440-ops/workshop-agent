@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	"workshop-agent/internal/agent"
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/invariants"
 	"workshop-agent/internal/inventory"
@@ -56,6 +57,9 @@ type choice struct {
 }
 
 func publicError(err error) string {
+	if message := agent.MCPErrorMessage(err); message != "" {
+		return message
+	}
 	var rate *wb.RateLimitError
 	if errors.As(err, &rate) {
 		return rate.Message()

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"workshop-agent/internal/auth"
+	"workshop-agent/internal/integrations/mcpclient"
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
@@ -23,6 +24,7 @@ type WorkshopAgent struct {
 	Prod        *products.Service
 	Memory      *memory.Service
 	Marketplace *marketplace.Service
+	MCP         *mcpclient.Service
 }
 
 func NewWorkshopAgent(llmClient llm.Client, ws *workshops.Service, inv *inventory.Service, prod *products.Service) *WorkshopAgent {

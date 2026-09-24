@@ -115,8 +115,8 @@ func TestPacingFakeClockAndCancellation(t *testing.T) {
 		t.Fatal(err)
 	}
 }
-func TestUnknownProfileConservativeAndLongLocalWait(t *testing.T) {
-	if New("fixture").intervals["common"] != 24*time.Hour || NewWithProfile("fixture", "personal").intervals["analytics"] != 20*time.Second {
+func TestDefaultProfileAndLongLocalWait(t *testing.T) {
+	if New("fixture").intervals["common"] != time.Minute || NewWithProfile("fixture", "personal").intervals["analytics"] != 20*time.Second {
 		t.Fatal("profile policy")
 	}
 	c := client(t, func(*http.Request) (*http.Response, error) { t.Fatal("request during wait"); return nil, nil })
@@ -125,5 +125,22 @@ func TestUnknownProfileConservativeAndLongLocalWait(t *testing.T) {
 	var r *RateLimitError
 	if !errors.As(err, &r) || r.Source != "local_interval" {
 		t.Fatal(err)
+	}
+}
+
+func TestServerSourceNotLostWhenLocalPacingIsLonger(t *testing.T) {
+	c := client(t, func(*http.Request) (*http.Response, error) {
+		r := response(429, "")
+		r.Header.Set("X-Ratelimit-Retry", "2")
+		return r, nil
+	})
+	c.intervals["common"] = time.Minute
+	_, err := c.Seller(context.Background())
+	var rate *RateLimitError
+	if !errors.As(err, &rate) || rate.Source != "wb_retry" || time.Until(rate.RetryAt) < 59*time.Second {
+		t.Fatal(err, rate)
+	}
+	if c.cooldowns["common"].Source != "wb_retry" {
+		t.Fatal("lost server provenance")
 	}
 }

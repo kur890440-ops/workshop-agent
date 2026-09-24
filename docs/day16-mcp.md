@@ -2,6 +2,22 @@
 
 @PROJECT:WORKSHOP_AGENT @L3:DAY16_MCP @PRESERVE
 
+## Диагностическая команда Day16/17 — проверено 2026-09-24
+
+Из корня проекта: `go run ./cmd/mcp-wb-smoke`.
+Нужен ранее собранный `bin/wb-mcp-server-day16.exe`; при отсутствии:
+`go build -o bin/wb-mcp-server-day16.exe ./cmd/wb-mcp-server`.
+Другой путь задаётся через `-server`. Используются прежний клиент, сервер и STDIO;
+names/descriptions/count приходят из SDK ListTools, не из констант CLI.
+Smoke передаёт `-no-token` и минимальное окружение, не читает `.env` и не вызывает WB.
+
+Результат: Connection: OK; Tools discovered: 5; Write tools exposed: 0;
+Session closed: true; Child process exited: true; exit 0.
+Артефакт: [report.html](../reports/day16-mcp/20260924T123620.894123100Z/report.html).
+Отсутствующий `-server` проверен: понятная ошибка с командой сборки, exit 1.
+`go test ./...` — exit 0. Изменения ограничены текстом вывода/ошибки smoke;
+архитектура MCP не менялась. Ранее собранный smoke EXE этим запуском не обновлялся.
+
 Статус 2026-09-23: Day 16 завершён. Полный go test ./... и реальный STDIO smoke
 прошли. WB API не вызывался; LLM tool calling не подключён.
 

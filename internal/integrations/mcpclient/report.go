@@ -10,7 +10,7 @@ import (
 )
 
 func Print(w io.Writer, d Discovery) error {
-	if _, err := fmt.Fprintf(w, "MCP connection: OK\nServer: %s\nTransport: %s\nProtocol: %s\nTools discovered: %d\n", d.Server, d.Transport, d.Protocol, len(d.Tools)); err != nil {
+	if _, err := fmt.Fprintf(w, "Connection: OK\nServer: %s\nTransport: %s\nProtocol: %s\nTools discovered: %d\n", d.Server, d.Transport, d.Protocol, len(d.Tools)); err != nil {
 		return err
 	}
 	for i, t := range d.Tools {

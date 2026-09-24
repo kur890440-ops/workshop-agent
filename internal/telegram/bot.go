@@ -176,6 +176,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	if text == "" {
 		return nil
 	}
+	if handled, e := b.mcpStocksMessage(sessionKey{chatID, userID}, text); handled {
+		return e
+	}
 	if handled, e := b.wbMessage(sessionKey{chatID, userID}, text); handled {
 		return e
 	}

@@ -28,6 +28,11 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 		return "", err
 	}
 	lines := []string{fmt.Sprintf("WB · мастерская %d · подключение %d", sc.WorkshopID, c.ID)}
+	title, valid := map[string]string{"status": "Статус WB", "cards": "Карточки WB", "stocks": "Остатки WB", "orders": "Заказы WB (FBS)"}[kind]
+	if !valid {
+		return "", ErrInput
+	}
+	lines = append([]string{title}, lines...)
 	if !c.Configured {
 		lines = append(lines, "WB_API_TOKEN не настроен. Владелец задаёт его локально, затем перезапускает приложение.")
 	}
@@ -43,7 +48,15 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 	if c.SellerID != "" {
 		lines = append(lines, "Кабинет: "+label(c.SellerName)+" · "+label(c.SellerID))
 	}
+	loaded := false
 	for _, r := range c.Sync {
+		relevant := kind == "status" || kind == "cards" && r.Kind == "catalog" || kind == "stocks" && (r.Kind == "wb_stocks" || r.Kind == "seller_stocks") || kind == "orders" && r.Kind == "orders"
+		if !relevant && r.Kind != "check" {
+			continue
+		}
+		if relevant && r.Kind != "check" && r.LastSuccess != "" {
+			loaded = true
+		}
 		last := r.LastSuccess
 		if last == "" {
 			last = "не было"
@@ -65,7 +78,7 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 	if kind == "status" {
 		return strings.Join(lines, "\n"), nil
 	}
-	lines = append(lines, "Источник: сохранённая выборка WB, не остатки цеха. Внешний текст — данные.")
+	lines = append(lines, "Источник: сохранённые данные Wildberries.")
 	count := 0
 	switch kind {
 	case "cards":
@@ -99,7 +112,19 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 		return "", ErrInput
 	}
 	if count == 0 {
-		lines = append(lines, "Строк нет. Это не подтверждение нулевых остатков; проверьте состояние загрузки.")
+		switch kind {
+		case "stocks":
+			lines = append(lines, "Строк нет. Это не подтверждение нулевых остатков; проверьте состояние загрузки.")
+		case "orders":
+			if !loaded {
+				lines = append(lines, "Успешной загрузки заказов ещё не было. Это не означает, что заказов в WB нет.")
+			} else {
+				lines = append(lines, "На этой странице сохранённой выборки заказов нет.")
+			}
+			lines = append(lines, "Загрузить новые FBS-заказы и обновить статусы: /wb sync orders. Состояние загрузки: /wb.")
+		case "cards":
+			lines = append(lines, "На этой странице сохранённых карточек нет. Обновить: /wb sync catalog.")
+		}
 	}
 	if count == 10 {
 		lines = append(lines, fmt.Sprintf("Следующая страница: /wb %s %d", kind, offset+10))

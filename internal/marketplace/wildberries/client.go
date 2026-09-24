@@ -62,7 +62,7 @@ func New(token string) *Client {
 func NewWithProfile(token, profile string) *Client {
 	tr := http.DefaultTransport.(*http.Transport).Clone()
 	tr.TLSClientConfig = &tls.Config{MinVersion: tls.VersionTLS12}
-	c := &Client{token: token, http: &http.Client{Transport: tr, Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, next: map[string]time.Time{}, intervals: map[string]time.Duration{"common": 24 * time.Hour, "content": 600 * time.Millisecond, "marketplace": 400 * time.Millisecond, "analytics": 30 * time.Minute}, cooldowns: map[string]RateLimitError{}, clock: time.Now, sleep: pause}
+	c := &Client{token: token, http: &http.Client{Transport: tr, Timeout: 30 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}, next: map[string]time.Time{}, intervals: map[string]time.Duration{"common": time.Minute, "content": 600 * time.Millisecond, "marketplace": 400 * time.Millisecond, "analytics": 20 * time.Second}, cooldowns: map[string]RateLimitError{}, clock: time.Now, sleep: pause}
 	if profile == "personal" || profile == "service" {
 		c.intervals["common"] = time.Minute
 		c.intervals["analytics"] = 20 * time.Second
@@ -214,7 +214,6 @@ func (c *Client) request(ctx context.Context, method, host, path string, body, o
 			c.mu.Lock()
 			if c.next[group].After(v.RetryAt) {
 				v.RetryAt = c.next[group]
-				v.Source = "local_interval"
 			}
 			c.mu.Unlock()
 			if err := c.saveCooldown(v); err != nil {

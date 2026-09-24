@@ -36,7 +36,10 @@ func run() error {
 	defer cancel()
 	result, err := mcpclient.Discover(ctx, executable)
 	if err != nil {
-		return err
+		if err.Error() == "mcp_connection_error" {
+			return fmt.Errorf("MCP connection failed: check the server executable (-server); build it with go build -o bin/%s ./cmd/wb-mcp-server", name)
+		}
+		return fmt.Errorf("MCP smoke failed during discovery or cleanup (%s)", err)
 	}
 	if result.Server != "workshop-agent-wb" || len(result.Tools) == 0 || result.WriteToolsExposed != 0 || !result.SessionClosed || !result.ChildExited {
 		return fmt.Errorf("MCP acceptance failed")
