@@ -1,0 +1,16 @@
+{
+  "default": {
+    "name": "Default",
+    "ozon_client_id": "gAAAAABquSRBM-zyruExO9gv35xYsxP6r9v9TBECi-MD7i5RC5WkuAwCJT8gG9zowph2bfFznv8QbOlcXuOrM7aGMLO5UrB9JA==",
+    "ozon_api_key": "gAAAAABquSRBwuD6viqh4IX9tpwZ-5F_4IX1CVxu-3jfW78WCjUHt7cqtZBV4dSDYVtYuVxdZko6VPrqBhWiZciafhoie9TVbg==",
+    "ozon_perf_client_id": "",
+    "ozon_perf_client_secret": ""
+  },
+  "audit');audit_probe();//": {
+    "name": "Dummy XSS test",
+    "ozon_client_id": "",
+    "ozon_api_key": "",
+    "ozon_perf_client_id": "",
+    "ozon_perf_client_secret": ""
+  }
+}

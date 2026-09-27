@@ -53,7 +53,7 @@ func TestDay17InMemoryStocksAndSafeFailures(t *testing.T) {
 			} else if err != Error(tc.code) {
 				t.Fatalf("want %s got %v", tc.code, err)
 			}
-			if out.Discovery.Server != "workshop-agent-wb" || len(out.Discovery.Tools) != 6 || out.Discovery.WriteToolsExposed != 0 {
+			if out.Discovery.Server != "workshop-agent-wb" || len(out.Discovery.Tools) != 7 || out.Discovery.WriteToolsExposed != 0 {
 				t.Fatal(out.Discovery)
 			}
 			if e := s.callTool(ctx, "write_anything", NoArgs{}, nil); e != Error("mcp_tool_not_allowed") {

@@ -34,7 +34,7 @@ func TestInMemoryInitializeListAndCleanup(t *testing.T) {
 			t.Fatal(tool)
 		}
 	}
-	if !slices.Equal(names, []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_prices", "wb_get_products", "wb_get_seller", "wb_get_wb_stocks"}) {
+	if !slices.Equal(names, []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_prices", "wb_get_products", "wb_get_seller", "wb_get_seller_stocks", "wb_get_wb_stocks"}) {
 		t.Fatal(names)
 	}
 	if _, e = service.Stocks(context.Background(), "fixture"); e != Error("mcp_closed") {

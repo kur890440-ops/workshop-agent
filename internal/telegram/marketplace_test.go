@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"strings"
-	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -57,85 +56,36 @@ func (f *stockRefreshAPI) WBStocks(ctx context.Context) ([]wildberries.Stock, er
 	return []wildberries.Stock{{NmID: 101, ChrtID: 102, WarehouseID: 103, Quantity: 7}}, f.err
 }
 
-func TestWBStocksRefreshOnRequest(t *testing.T) {
-	for _, mode := range []string{"command", "button", "failure", "workshop_changed", "disabled", "page", "invalid_page"} {
-		t.Run(mode, func(t *testing.T) {
-			h, user, workshop := wbFixture(t)
-			h.bot.Marketplace.Close()
-			api := &stockRefreshAPI{release: make(chan struct{})}
-			if mode == "failure" {
-				api.err = wildberries.Forbidden
-			}
-			svc, err := marketplace.New(h.bot.WS.DB(), api)
-			if err != nil {
-				t.Fatal(err)
-			}
-			h.bot.Marketplace = svc
-			h.bot.Agent.Marketplace = svc
-			var once sync.Once
-			release := func() { once.Do(func() { close(api.release) }) }
-			t.Cleanup(func() { release(); svc.Close(); h.bot.wbWait.Wait() })
-			c, err := svc.Attach(marketplace.Scope{UserID: user, WorkshopID: workshop})
-			if err != nil {
-				t.Fatal(err)
-			}
-			sc := marketplace.Scope{UserID: user, WorkshopID: workshop, ConnectionID: c}
-			if mode == "page" || mode == "invalid_page" {
-				command := "/wb stocks 10"
-				if mode == "invalid_page" {
-					command = "/wb stocks -1"
-				}
-				h.message(t, 900001, command)
-				if api.calls.Load() != 0 {
-					t.Fatal("pagination started WB request")
-				}
-				return
-			}
-			if mode == "button" {
-				h.message(t, 900001, "/wb")
-				h.click(t, 900001, "Остатки WB")
-			} else {
-				h.message(t, 900001, "/wb stocks")
-			}
-			// The API is blocked; command handling must already have returned.
-			if !strings.Contains(h.sent[len(h.sent)-1]["text"].(string), "Обновляю остатки") {
-				t.Fatal(h.sent)
-			}
-			h.message(t, 900001, "/wb stocks")
-			if !strings.Contains(h.sent[len(h.sent)-1]["text"].(string), "уже выполняется") {
-				t.Fatal("duplicate refresh not rejected")
-			}
-			if mode == "workshop_changed" {
-				if _, err = h.bot.WS.CreateOwnedWorkshop(user, "Other"); err != nil {
-					t.Fatal(err)
-				}
-			}
-			if mode == "disabled" {
-				if err = svc.Disable(sc); err != nil {
-					t.Fatal(err)
-				}
-			}
-			before := len(h.sent)
-			release()
-			h.bot.wbWait.Wait()
-			if mode == "workshop_changed" || mode == "disabled" {
-				if len(h.sent) != before {
-					t.Fatal("late data published after scope changed")
-				}
-				return
-			}
-			if api.calls.Load() != 1 {
-				t.Fatal("wrong request count", api.calls.Load())
-			}
-			result := h.sent[len(h.sent)-1]["text"].(string)
-			if mode == "failure" {
-				if !strings.Contains(result, "не завершилось успешно") || strings.Contains(result, "nm=101") {
-					t.Fatal(result)
-				}
-			} else if !strings.Contains(result, "Остатки на складах WB обновлены") || !strings.Contains(result, "nm=101 chrt=102: 7") {
-				t.Fatal(result)
-			}
-		})
+func TestWBStocksViewsDoNotFetchAndSeparateSources(t *testing.T) {
+	h, user, workshop := wbFixture(t)
+	h.bot.Marketplace.Close()
+	api := &stockRefreshAPI{release: make(chan struct{})}
+	svc, e := marketplace.New(h.bot.WS.DB(), api)
+	if e != nil {
+		t.Fatal(e)
+	}
+	h.bot.Marketplace = svc
+	h.bot.Agent.Marketplace = svc
+	t.Cleanup(func() { close(api.release); svc.Close() })
+	if _, e = svc.Attach(marketplace.Scope{UserID: user, WorkshopID: workshop}); e != nil {
+		t.Fatal(e)
+	}
+	for _, cmd := range []string{"/wb seller_stocks", "/wb wb_stocks", "/wb stocks 10"} {
+		h.message(t, 900001, cmd)
+		text := h.sent[len(h.sent)-1]["text"].(string)
+		if !strings.Contains(text, "ОСТАТКИ") {
+			t.Fatal(text)
+		}
+	}
+	h.message(t, 900001, "/wb")
+	h.click(t, 900001, "Остатки продавца")
+	if api.calls.Load() != 0 {
+		t.Fatal("view unexpectedly fetched WB")
+	}
+	h.message(t, 900001, "/wb stocks 10")
+	text := h.sent[len(h.sent)-1]["text"].(string)
+	if !strings.Contains(text, "ОСТАТКИ ПРОДАВЦА") || !strings.Contains(text, "ОСТАТКИ НА СКЛАДАХ WB") || !strings.Contains(text, "Обновлено:") || !strings.Contains(text, "Позиций:") {
+		t.Fatal(text)
 	}
 }
 func TestWBAttachConfirmationAndStaleWorkshopButton(t *testing.T) {
@@ -205,5 +155,43 @@ func TestWBSecretIngressAndAgentBypass(t *testing.T) {
 	h.bot.WS.DB().QueryRow(`SELECT COUNT(*) FROM conversation_messages`).Scan(&n)
 	if n != 0 {
 		t.Fatal("WB command entered chat memory")
+	}
+}
+
+type independentStockReader struct{ sources []wildberries.StockSource }
+
+func (r *independentStockReader) StockSource(ctx context.Context, seller string, source wildberries.StockSource) (wildberries.StockBatch, error) {
+	r.sources = append(r.sources, source)
+	return wildberries.NewStockBatch(source, []wildberries.Stock{{NmID: 1, ChrtID: 2, WarehouseID: 3, Quantity: 7}}, nil), nil
+}
+func TestWBStocksStartsBothSourcesDuringSellerCooldown(t *testing.T) {
+	h, u, w := wbFixture(t)
+	h.bot.Marketplace.Close()
+	api := &stockRefreshAPI{release: make(chan struct{})}
+	svc, e := marketplace.New(h.bot.WS.DB(), api)
+	if e != nil {
+		t.Fatal(e)
+	}
+	h.bot.Marketplace = svc
+	t.Cleanup(svc.Close)
+	if _, e = svc.Attach(marketplace.Scope{UserID: u, WorkshopID: w}); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = h.bot.WS.DB().Exec(`UPDATE marketplace_connections SET seller_id='fixture',checked_at='2026-09-25T00:00:00Z' WHERE id=1`); e != nil {
+		t.Fatal(e)
+	}
+	if _, e = h.bot.WS.DB().Exec(`INSERT INTO marketplace_cooldowns(rate_group,retry_at_ms,source) VALUES('common',9999999999999,'wb_retry')`); e != nil {
+		t.Fatal(e)
+	}
+	reader := &independentStockReader{}
+	svc.SetStockReader(reader)
+	h.message(t, 900001, "/wb stocks")
+	h.bot.wbWait.Wait()
+	if len(reader.sources) != 2 || reader.sources[0] != wildberries.StockSeller || reader.sources[1] != wildberries.StockWB {
+		t.Fatal(reader.sources)
+	}
+	text := h.sent[len(h.sent)-1]["text"].(string)
+	if !strings.Contains(text, "Результат загрузки") || !strings.Contains(text, "Остаток: 7 шт.") {
+		t.Fatal(text)
 	}
 }

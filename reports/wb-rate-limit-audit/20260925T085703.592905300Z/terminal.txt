@@ -1,0 +1,8 @@
+WorkshopAgent v0.18.4
+MCP: OK; in-memory; Tools discovered: 8; sessions closed
+Token type: BASE (local decode; signature not verified)
+common: blocked=true retry_not_before=2026-09-25T12:17:48Z source=wb_retry
+Seller-info HTTP: disabled in this diagnostic
+Probe: BOUNDED_PROBE_ONLY_NOT_A_FULL_IMPORT
+2026-09-25T08:57:03Z diagnostic tool=wb_get_prices /api/v2/list/goods/filter HTTP=200 result=HTTP_RESPONSE
+2026-09-25T08:57:04Z diagnostic tool=wb_get_prices /api/v2/list/goods/filter HTTP=0 result=DIAGNOSTIC_BUDGET

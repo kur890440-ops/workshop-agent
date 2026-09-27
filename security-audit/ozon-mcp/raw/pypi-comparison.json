@@ -1,0 +1,73 @@
+{
+  "url": "https://pypi.org/pypi/ozon-mcp-server/2.5.2/json",
+  "version": "2.5.2",
+  "artifacts": [
+    {
+      "filename": "ozon_mcp_server-2.5.2-py3-none-any.whl",
+      "sha256": "b41627831ee762f192c05db5f36b2d690cd0780078ae08aaaa399ee9da65ad70",
+      "index_sha256": "b41627831ee762f192c05db5f36b2d690cd0780078ae08aaaa399ee9da65ad70",
+      "matches": [
+        "ozon_mcp/__init__.py"
+      ],
+      "mismatches": [
+        "ozon_mcp/app.py",
+        "ozon_mcp/client.py",
+        "ozon_mcp/diagnostics.py",
+        "ozon_mcp/server.py",
+        "ozon_mcp/settings.py",
+        "ozon_mcp/shaping.py",
+        "ozon_mcp/stats.py",
+        "ozon_mcp/toolsets.py",
+        "ozon_mcp/templates/base.html",
+        "ozon_mcp/templates/dashboard.html",
+        "ozon_mcp/templates/diagnostics.html",
+        "ozon_mcp/templates/settings.html",
+        "ozon_mcp/templates/shops.html"
+      ],
+      "normalized_matches": [
+        "ozon_mcp/__init__.py",
+        "ozon_mcp/app.py",
+        "ozon_mcp/client.py",
+        "ozon_mcp/diagnostics.py",
+        "ozon_mcp/server.py",
+        "ozon_mcp/settings.py",
+        "ozon_mcp/shaping.py",
+        "ozon_mcp/stats.py",
+        "ozon_mcp/toolsets.py",
+        "ozon_mcp/templates/base.html",
+        "ozon_mcp/templates/dashboard.html",
+        "ozon_mcp/templates/diagnostics.html",
+        "ozon_mcp/templates/settings.html",
+        "ozon_mcp/templates/shops.html"
+      ],
+      "normalized_mismatches": []
+    },
+    {
+      "filename": "ozon_mcp_server-2.5.2.tar.gz",
+      "sha256": "b01c51b919cbe8f87a4226bbeb185cbb32ebb13097be4fa9877c7bc271fec39d",
+      "index_sha256": "b01c51b919cbe8f87a4226bbeb185cbb32ebb13097be4fa9877c7bc271fec39d",
+      "matches": [],
+      "mismatches": [],
+      "normalized_matches": [
+        "ozon_mcp/__init__.py",
+        "ozon_mcp/app.py",
+        "ozon_mcp/client.py",
+        "ozon_mcp/diagnostics.py",
+        "ozon_mcp/server.py",
+        "ozon_mcp/settings.py",
+        "ozon_mcp/shaping.py",
+        "ozon_mcp/stats.py",
+        "ozon_mcp/toolsets.py",
+        "ozon_mcp/templates/base.html",
+        "ozon_mcp/templates/dashboard.html",
+        "ozon_mcp/templates/diagnostics.html",
+        "ozon_mcp/templates/settings.html",
+        "ozon_mcp/templates/shops.html",
+        "LICENSE",
+        "README.md",
+        "pyproject.toml"
+      ],
+      "normalized_mismatches": []
+    }
+  ]
+}

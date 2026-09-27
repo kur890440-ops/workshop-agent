@@ -23,6 +23,7 @@ type Error string
 func (e Error) Error() string { return "WB: " + string(e) }
 
 const (
+	IdentityMismatch Error = "identity_mismatch"
 	NotConfigured    Error = "not_configured"
 	InvalidInput     Error = "invalid_input"
 	InvalidResponse  Error = "invalid_response"
@@ -43,15 +44,21 @@ const maxPages = 500
 
 // Token is deliberately unexported and cannot be serialized or formatted.
 type Client struct {
-	token     string
-	http      *http.Client
-	mu        sync.Mutex
-	next      map[string]time.Time
-	intervals map[string]time.Duration
-	cooldowns map[string]RateLimitError
-	store     CooldownStore
-	clock     func() time.Time
-	sleep     func(context.Context, time.Duration) error
+	token         string
+	http          *http.Client
+	mu            sync.Mutex
+	next          map[string]time.Time
+	intervals     map[string]time.Duration
+	cooldowns     map[string]RateLimitError
+	store         CooldownStore
+	identityStore IdentityStore
+	sellerCache   SellerCache
+	identityGate  chan struct{}
+	gates         map[string]chan struct{}
+	history       []RequestTrace
+	requestBudget *int // diagnostic-only, startup configuration; nil means normal bounds
+	clock         func() time.Time
+	sleep         func(context.Context, time.Duration) error
 }
 
 func (c *Client) String() string   { return "Wildberries(read-only)" }
@@ -66,6 +73,11 @@ func NewWithProfile(token, profile string) *Client {
 	if profile == "personal" || profile == "service" {
 		c.intervals["common"] = time.Minute
 		c.intervals["analytics"] = 20 * time.Second
+	}
+	c.identityGate = make(chan struct{}, 1)
+	c.gates = map[string]chan struct{}{}
+	for _, g := range []string{"common", "analytics", "content", "marketplace", "prices"} {
+		c.gates[g] = make(chan struct{}, 1)
 	}
 	c.intervals["prices"] = 600 * time.Millisecond
 	return c
@@ -116,15 +128,6 @@ func pause(ctx context.Context, d time.Duration) error {
 func (c *Client) wait(ctx context.Context, group string) error {
 	return c.waitRate(ctx, group)
 }
-func retryDelay(h string, attempt int) time.Duration {
-	if n, err := strconv.ParseInt(h, 10, 32); err == nil && n >= 0 {
-		return time.Duration(n) * time.Second
-	}
-	if t, err := http.ParseTime(h); err == nil && time.Until(t) > 0 {
-		return time.Until(t)
-	}
-	return time.Duration(1<<attempt) * time.Second
-}
 func endpoint(method, host, path string) (string, bool) {
 	switch {
 	case method == "GET" && host == "discounts-prices-api.wildberries.ru" && path == "/api/v2/list/goods/filter":
@@ -154,6 +157,19 @@ func (c *Client) requestQuery(ctx context.Context, method, host, path string, qu
 	if !ok {
 		return InvalidInput
 	}
+	select {
+	case c.gates[group] <- struct{}{}:
+		defer func() { <-c.gates[group] }()
+	case <-ctx.Done():
+		return Cancelled
+	}
+	return c.requestQueryLocked(ctx, method, host, path, query, body, out)
+}
+func (c *Client) requestQueryLocked(ctx context.Context, method, host, path string, query url.Values, body, out any) error {
+	group, ok := endpoint(method, host, path)
+	if !ok {
+		return InvalidInput
+	}
 	u := url.URL{Scheme: "https", Host: host, Path: path}
 	u.RawQuery = query.Encode()
 	if !c.Configured() {
@@ -169,7 +185,23 @@ func (c *Client) requestQuery(ctx context.Context, method, host, path string, qu
 	}
 	// Every endpoint in endpoint() is semantically read-only, including POST.
 	for attempt := 0; attempt < 3; attempt++ {
+		c.mu.Lock()
+		exhausted := c.requestBudget != nil && *c.requestBudget <= 0
+		if c.requestBudget != nil && !exhausted {
+			*c.requestBudget--
+		}
+		c.mu.Unlock()
+		if exhausted {
+			c.record(ctx, c.clock(), method, path, 0, attempt, "DIAGNOSTIC_BUDGET", nil, nil)
+			return PageLimit
+		}
 		if err := c.wait(ctx, group); err != nil {
+			var rate *RateLimitError
+			result := "LOCAL_ERROR"
+			if errors.As(err, &rate) {
+				result = "BLOCKED_LOCALLY"
+			}
+			c.record(ctx, c.clock(), method, path, 0, attempt, result, nil, rate)
 			return err
 		}
 		req, err := http.NewRequestWithContext(ctx, method, u.String(), bytes.NewReader(raw))
@@ -181,87 +213,125 @@ func (c *Client) requestQuery(ctx context.Context, method, host, path string, qu
 		if body != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
+		started := c.clock()
 		res, err := c.http.Do(req)
 		if err != nil {
+			result := "NETWORK_ERROR"
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
+				result = "TIMEOUT"
+			}
+			c.record(ctx, started, method, path, 0, attempt, result, nil, nil)
 			if ctx.Err() != nil {
 				return Cancelled
 			}
-			var timeout net.Error
-			if errors.As(err, &timeout) && timeout.Timeout() {
+			if attempt < 2 {
+				if e := c.sleep(ctx, time.Duration(1<<attempt)*time.Second); e != nil {
+					return e
+				}
+				continue
+			}
+			if result == "TIMEOUT" {
 				return Timeout
 			}
 			return Unavailable
 		}
-		data, readErr := io.ReadAll(io.LimitReader(res.Body, maxBody+1))
-		res.Body.Close()
-		if readErr != nil {
-			return Unavailable
-		}
-		if len(data) > maxBody {
-			return ResponseTooLarge
-		}
-		status := res.StatusCode
-		if status == 409 {
-			c.mu.Lock()
-			c.next[group] = time.Now().Add(10 * c.intervals[group])
-			c.mu.Unlock()
-		}
-		if status >= 300 && status < 400 {
-			return RedirectDenied
-		}
-		if status == 401 {
-			return Unauthorized
-		}
-		if status == 403 {
-			return Forbidden
-		}
-		if status == 429 {
-			delay, source := rateDelay(res.Header, c.clock(), attempt)
-			v := RateLimitError{group, c.clock().Add(delay), source}
-			c.mu.Lock()
-			if c.next[group].After(v.RetryAt) {
-				v.RetryAt = c.next[group]
-			}
-			c.mu.Unlock()
-			if err := c.saveCooldown(v); err != nil {
-				return err
-			}
-			return &v
-		}
-		if status >= 500 {
-			delay := retryDelay(res.Header.Get("Retry-After"), attempt)
-			c.mu.Lock()
-			next := time.Now().Add(delay)
-			if next.After(c.next[group]) {
-				c.next[group] = next
-			}
-			c.mu.Unlock()
-			if attempt == 2 {
-				if status == 429 {
-					return RateLimited
+		retry := false
+		var retryWait time.Duration
+		responseErr := func() (responseErr error) {
+			obs := observation(res.Header, c.clock(), group, pathLabel(path), res.StatusCode)
+			c.observe(obs)
+			var responseRate *RateLimitError
+			defer func() {
+				result := "ERROR"
+				if responseErr == nil {
+					result = "SUCCESS"
 				}
+				if res.StatusCode == 429 {
+					result = "WB_429"
+				}
+				c.record(ctx, started, method, path, res.StatusCode, attempt, result, &obs, responseRate)
+			}()
+			if res.StatusCode == 429 || (obs.Remaining != nil && *obs.Remaining == 0) {
+				delay, source := rateDelay(res.Header, c.clock(), attempt)
+				if source == "local_backoff" && res.StatusCode != 429 {
+					delay = time.Minute
+					if group == "prices" {
+						delay = 6 * time.Second
+					}
+					source = "local_interval"
+				}
+				responseRate = &RateLimitError{Operation: group, RetryAt: c.clock().Add(delay), Source: source}
+				if e := c.saveCooldown(*responseRate); e != nil {
+					res.Body.Close()
+					return e
+				}
+			}
+			if res.StatusCode == 429 {
+				res.Body.Close()
+				return responseRate
+			}
+			data, readErr := io.ReadAll(io.LimitReader(res.Body, maxBody+1))
+			res.Body.Close()
+			if readErr != nil {
 				return Unavailable
 			}
-			// No shortening Retry-After; the operation deadline cancels excessive waits.
-			if err := pause(ctx, delay); err != nil {
-				return err
+			if len(data) > maxBody {
+				return ResponseTooLarge
+			}
+			status := res.StatusCode
+			if status == 409 && group == "marketplace" {
+				if e := c.saveCooldown(RateLimitError{Operation: group, RetryAt: c.clock().Add(10 * c.intervals[group]), Source: "local_interval"}); e != nil {
+					return e
+				}
+			}
+			if status >= 300 && status < 400 {
+				return RedirectDenied
+			}
+			if status == 401 {
+				return Unauthorized
+			}
+			if status == 403 {
+				return Forbidden
+			}
+			if status >= 500 {
+				delay, source := rateDelay(res.Header, c.clock(), attempt)
+				if attempt == 2 {
+					return Unavailable
+				}
+				if delay > 30*time.Second {
+					rate := RateLimitError{Operation: group, RetryAt: c.clock().Add(delay), Source: source}
+					responseRate = &rate
+					if e := c.saveCooldown(rate); e != nil {
+						return e
+					}
+					return &rate
+				}
+				retry, retryWait = true, delay
+				return Unavailable
+			}
+			if status != 200 {
+				return InvalidResponse
+			}
+			if c.ContainsSecret(string(data)) {
+				return InvalidResponse
+			}
+			if err := json.Unmarshal(data, out); err != nil {
+				return InvalidResponse
+			}
+			decoded, err := json.Marshal(out)
+			if err != nil || c.ContainsSecret(string(decoded)) {
+				return InvalidResponse
+			}
+			return nil
+		}()
+		if retry {
+			if e := c.sleep(ctx, retryWait); e != nil {
+				return e
 			}
 			continue
 		}
-		if status != 200 {
-			return InvalidResponse
-		}
-		if c.ContainsSecret(string(data)) {
-			return InvalidResponse
-		}
-		if err := json.Unmarshal(data, out); err != nil {
-			return InvalidResponse
-		}
-		decoded, err := json.Marshal(out)
-		if err != nil || c.ContainsSecret(string(decoded)) {
-			return InvalidResponse
-		}
-		return nil
+		return responseErr
 	}
 	return Unavailable
 }
@@ -303,15 +373,6 @@ type Status struct {
 	ID             int64  `json:"id"`
 	SupplierStatus string `json:"supplierStatus"`
 	WBStatus       string `json:"wbStatus"`
-}
-
-func (c *Client) Seller(ctx context.Context) (Seller, error) {
-	var s Seller
-	err := c.request(ctx, "GET", "common-api.wildberries.ru", "/api/v1/seller-info", nil, &s)
-	if err == nil && (s.ID == "" || len(s.ID) > 128 || len(s.Name) > 500) {
-		err = InvalidResponse
-	}
-	return s, err
 }
 
 type cursor struct {
@@ -372,75 +433,15 @@ func (c *Client) Catalog(ctx context.Context) ([]Card, error) {
 	return all, PageLimit
 }
 func (c *Client) SellerStocks(ctx context.Context, cards []Card) ([]Stock, error) {
-	var warehouses []struct {
-		ID   int64  `json:"id"`
-		Name string `json:"name"`
+	b := c.SellerStockBatch(ctx, cards)
+	if b.Info.Status != "SUCCESS" {
+		return b.Rows, &StockPartialError{Batch: b}
 	}
-	if err := c.request(ctx, "GET", "marketplace-api.wildberries.ru", "/api/v3/warehouses", nil, &warehouses); err != nil {
-		return nil, err
-	}
-	if warehouses == nil || len(warehouses) > 1000 {
-		return nil, InvalidResponse
-	}
-	nm := map[int64]int64{}
-	ids := []int64{}
-	for _, card := range cards {
-		for _, s := range card.Sizes {
-			if s.ID <= 0 || card.ID <= 0 {
-				return nil, InvalidInput
-			}
-			if _, ok := nm[s.ID]; !ok {
-				ids = append(ids, s.ID)
-			}
-			nm[s.ID] = card.ID
-		}
-	}
-	if len(ids) > maxRows {
-		return nil, PageLimit
-	}
-	var all []Stock
-	for _, w := range warehouses {
-		if w.ID <= 0 || len(w.Name) > 500 {
-			return all, InvalidResponse
-		}
-		for start := 0; start < len(ids); start += 1000 {
-			end := min(start+1000, len(ids))
-			chunk := ids[start:end]
-			var r struct {
-				Stocks []struct {
-					ID     int64  `json:"chrtId"`
-					Amount *int64 `json:"amount"`
-				} `json:"stocks"`
-			}
-			if err := c.request(ctx, "POST", "marketplace-api.wildberries.ru", fmt.Sprintf("/api/v3/stocks/%d", w.ID), map[string]any{"chrtIds": chunk}, &r); err != nil {
-				return all, err
-			}
-			expected := map[int64]bool{}
-			for _, id := range chunk {
-				expected[id] = true
-			}
-			if r.Stocks == nil {
-				return all, InvalidResponse
-			}
-			for _, s := range r.Stocks {
-				if !expected[s.ID] || s.Amount == nil || *s.Amount < 0 {
-					return all, InvalidResponse
-				}
-				delete(expected, s.ID)
-				all = append(all, Stock{NmID: nm[s.ID], ChrtID: s.ID, WarehouseID: w.ID, WarehouseName: w.Name, Quantity: *s.Amount})
-			}
-			// A missing requested variant is unknown, never an implicit zero.
-			if len(expected) > 0 {
-				return all, InvalidResponse
-			}
-			if len(all) > maxRows {
-				return all, PageLimit
-			}
-		}
-	}
-	return all, nil
+	return b.Rows, nil
 }
+
 func (c *Client) WBStocks(ctx context.Context) ([]Stock, error) {
+
 	var all []Stock
 	seen := map[string]bool{}
 	for offset := 0; offset < maxRows; offset += 1000 {

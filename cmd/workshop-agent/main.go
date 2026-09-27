@@ -34,6 +34,20 @@ func main() {
 			return
 		}
 	}
+	if len(os.Args) >= 2 && os.Args[1] == "wb-rate-audit" {
+		probe := len(os.Args) == 3 && os.Args[2] == "--probe-prices"
+		if len(os.Args) > 3 || len(os.Args) == 3 && !probe {
+			log.Fatal("Usage: wb-rate-audit [--probe-prices]")
+		}
+		path, e := experiment.RunWBRateAudit(context.Background(), probe)
+		if path != "" {
+			fmt.Println("Report:", path)
+		}
+		if e != nil {
+			log.Fatal("WB diagnostic failed; inspect safe report")
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "mcp-status" {
 		manager, e := mcpmanager.New(context.Background(), wildberries.New(""), nil)
 		if e != nil {
@@ -44,6 +58,22 @@ func main() {
 		}
 		if e = mcpclient.Print(os.Stdout, manager.Client.State()); e != nil {
 			log.Fatal("MCP status output failed")
+		}
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "wb-stock-sources-report" {
+		path, e := experiment.RunStockSources(context.Background())
+		fmt.Println(path)
+		if e != nil {
+			log.Fatal("Stock sources mock report failed: ", e)
+		}
+		return
+	}
+	if len(os.Args) == 2 && os.Args[1] == "day19-mcp-report" {
+		path, e := experiment.RunDay19(context.Background())
+		fmt.Println(path)
+		if e != nil {
+			log.Fatal("Day19 mock report failed: ", e)
 		}
 		return
 	}
@@ -206,6 +236,7 @@ func main() {
 	defer manager.Close()
 	agentSvc.MCP = manager.Client
 	jobs.WB.MCP = manager.Client
+	marketplaceSvc.SetStockReader(manager.Client)
 	agentSvc.Memory.MaxMessages = cfg.ShortTermMaxMessages
 	agentSvc.Memory.MaxTokens = cfg.ShortTermMaxTokens
 	_ = agentSvc

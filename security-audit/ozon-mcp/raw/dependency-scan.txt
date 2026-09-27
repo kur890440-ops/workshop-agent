@@ -1,0 +1,644 @@
+{
+  "command": "python -m pip_audit --format json --output raw/pip-audit.json",
+  "audit_date": "2026-09-27",
+  "exit_code": 1,
+  "python": "3.13.12 (tags/v3.13.12:1cbe481, Feb  3 2026, 18:22:25) [MSC v.1944 64 bit (AMD64)]",
+  "raw_advisory_entries": 10,
+  "unique_ids": [
+    "PYSEC-2026-1796",
+    "PYSEC-2026-196",
+    "PYSEC-2026-2875",
+    "PYSEC-2026-2876",
+    "PYSEC-2026-3721"
+  ],
+  "dependencies": [
+    {
+      "name": "aiosqlite",
+      "version": "0.22.1",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "annotated-doc",
+      "version": "0.0.5",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "annotated-types",
+      "version": "0.8.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "anyio",
+      "version": "4.15.1",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "attrs",
+      "version": "26.1.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "boolean-py",
+      "version": "5.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "cachecontrol",
+      "version": "0.14.4",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "certifi",
+      "version": "2026.7.22",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "cffi",
+      "version": "2.1.1",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "charset-normalizer",
+      "version": "3.5.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "click",
+      "version": "8.5.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "colorama",
+      "version": "0.4.6",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "cryptography",
+      "version": "50.0.1",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "cyclonedx-python-lib",
+      "version": "11.12.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "defusedxml",
+      "version": "0.7.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "fastapi",
+      "version": "0.141.1",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "filelock",
+      "version": "4.0.4",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "h11",
+      "version": "0.16.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "httpcore",
+      "version": "1.0.9",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "httptools",
+      "version": "0.8.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "httpx",
+      "version": "0.28.1",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "httpx-sse",
+      "version": "0.4.3",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "idna",
+      "version": "3.20",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "iniconfig",
+      "version": "2.3.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "jinja2",
+      "version": "3.1.6",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "jsonschema",
+      "version": "4.26.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "jsonschema-specifications",
+      "version": "2025.9.1",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "license-expression",
+      "version": "30.4.4",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "markdown-it-py",
+      "version": "4.2.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "markupsafe",
+      "version": "3.0.3",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "mcp",
+      "version": "1.30.0",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "mdurl",
+      "version": "0.1.2",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "msgpack",
+      "version": "1.2.2",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "ozon-mcp-server",
+      "version": "2.5.2",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "packageurl-python",
+      "version": "0.17.6",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "packaging",
+      "version": "26.3",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pip",
+      "version": "25.3",
+      "vulns": [
+        {
+          "id": "PYSEC-2026-1796",
+          "fix_versions": [
+            "26.0"
+          ],
+          "aliases": [
+            "CVE-2026-1703",
+            "GHSA-6vgw-5pg2-w6jp"
+          ],
+          "description": "When pip is installing and extracting a maliciously crafted wheel archive, files may be extracted outside the installation directory. The path traversal is limited to prefixes of the installation directory, thus isn't able to inject or overwrite executable files in typical situations."
+        },
+        {
+          "id": "PYSEC-2026-2875",
+          "fix_versions": [
+            "26.1"
+          ],
+          "aliases": [
+            "CVE-2026-3219",
+            "GHSA-58qw-9mgm-455v"
+          ],
+          "description": "pip handles concatenated tar and ZIP files as ZIP files regardless of filename or whether a file is both a tar and ZIP file. This behavior could result in confusing installation behavior, such as installing \"incorrect\" files according to the filename of the archive. New behavior only proceeds with installation if the file identifies uniquely as a ZIP or tar archive, not as both."
+        },
+        {
+          "id": "PYSEC-2026-2876",
+          "fix_versions": [
+            "26.1"
+          ],
+          "aliases": [
+            "CVE-2026-6357",
+            "GHSA-jp4c-xjxw-mgf9"
+          ],
+          "description": "pip prior to version 26.1 would run self-update check functionality after installing wheel files which required importing well-known Python modules names. These module imports were intentionally deferred to increase startup time of the pip CLI. The patch changes self-update functionality to run before wheels are installed to prevent newly-installed modules from being imported shortly after the installation of a wheel package. Users should still review package contents prior to installation."
+        },
+        {
+          "id": "PYSEC-2026-196",
+          "fix_versions": [
+            "26.1.2"
+          ],
+          "aliases": [
+            "GHSA-wf93-45jw-7689",
+            "CVE-2026-8643"
+          ],
+          "description": "pip would treat console_scripts and gui_scripts as paths instead of file names without sanitizing the resolved absolute path to the installation directory, leading to entry points being installed outside the installation directory."
+        },
+        {
+          "id": "PYSEC-2026-1796",
+          "fix_versions": [
+            "26.0"
+          ],
+          "aliases": [
+            "CVE-2026-1703",
+            "GHSA-6vgw-5pg2-w6jp"
+          ],
+          "description": "When pip is installing and extracting a maliciously crafted wheel archive, files may be extracted outside the installation directory. The path traversal is limited to prefixes of the installation directory, thus isn't able to inject or overwrite executable files in typical situations."
+        },
+        {
+          "id": "PYSEC-2026-196",
+          "fix_versions": [
+            "26.1.2"
+          ],
+          "aliases": [
+            "GHSA-wf93-45jw-7689",
+            "CVE-2026-8643"
+          ],
+          "description": "pip would treat console_scripts and gui_scripts as paths instead of file names without sanitizing the resolved absolute path to the installation directory, leading to entry points being installed outside the installation directory."
+        },
+        {
+          "id": "PYSEC-2026-2875",
+          "fix_versions": [
+            "26.1"
+          ],
+          "aliases": [
+            "CVE-2026-3219",
+            "GHSA-58qw-9mgm-455v"
+          ],
+          "description": "pip handles concatenated tar and ZIP files as ZIP files regardless of filename or whether a file is both a tar and ZIP file. This behavior could result in confusing installation behavior, such as installing \"incorrect\" files according to the filename of the archive. New behavior only proceeds with installation if the file identifies uniquely as a ZIP or tar archive, not as both."
+        },
+        {
+          "id": "PYSEC-2026-2876",
+          "fix_versions": [
+            "26.1"
+          ],
+          "aliases": [
+            "CVE-2026-6357",
+            "GHSA-jp4c-xjxw-mgf9"
+          ],
+          "description": "pip prior to version 26.1 would run self-update check functionality after installing wheel files which required importing well-known Python modules names. These module imports were intentionally deferred to increase startup time of the pip CLI. The patch changes self-update functionality to run before wheels are installed to prevent newly-installed modules from being imported shortly after the installation of a wheel package. Users should still review package contents prior to installation."
+        },
+        {
+          "id": "PYSEC-2026-3721",
+          "fix_versions": [
+            "26.2"
+          ],
+          "aliases": [
+            "GHSA-qwm4-qh6w-59xr",
+            "CVE-2026-13346"
+          ],
+          "description": "pip would incorrectly handle doubly-encoded package URLs from indexes allowing for files to be installed to arbitrary locations on disk even when installing wheels.     This vulnerability requires downloading or installing a package from a malicious package index to succeed, malicious packages alone are not able to exploit this vulnerability. Note that this vulnerability only materially impacts users running `pip download` with the `--only-binary` option as installing source distributions from an untrusted index is already an unsafe operation that executes code during install time."
+        },
+        {
+          "id": "PYSEC-2026-3721",
+          "fix_versions": [
+            "26.2.0"
+          ],
+          "aliases": [
+            "GHSA-qwm4-qh6w-59xr",
+            "CVE-2026-13346"
+          ],
+          "description": "pip would incorrectly handle doubly-encoded package URLs from indexes allowing for files to be installed to arbitrary locations on disk even when installing wheels.  This vulnerability requires downloading or installing a package from a malicious package index to succeed, malicious packages alone are not able to exploit this vulnerability. Note that this vulnerability only materially impacts users running `pip download` with the `--only-binary` option as installing source distributions from an untrusted index is already an unsafe operation that executes code during install time."
+        }
+      ],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": [
+        "PYSEC-2026-1796",
+        "PYSEC-2026-196",
+        "PYSEC-2026-2875",
+        "PYSEC-2026-2876",
+        "PYSEC-2026-3721"
+      ]
+    },
+    {
+      "name": "pip-api",
+      "version": "0.0.35",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pip-audit",
+      "version": "2.10.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pip-requirements-parser",
+      "version": "32.0.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "platformdirs",
+      "version": "4.12.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pluggy",
+      "version": "1.6.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "py-serializable",
+      "version": "2.1.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pycparser",
+      "version": "3.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pydantic",
+      "version": "2.13.5",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pydantic-core",
+      "version": "2.46.5",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pydantic-settings",
+      "version": "2.15.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pygments",
+      "version": "2.21.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pyjwt",
+      "version": "2.15.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pyparsing",
+      "version": "3.3.3",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pytest",
+      "version": "9.1.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "pytest-asyncio",
+      "version": "1.4.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "python-dotenv",
+      "version": "1.2.3",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "python-multipart",
+      "version": "0.0.32",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pywin32",
+      "version": "312",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "pyyaml",
+      "version": "6.0.3",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "referencing",
+      "version": "0.37.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "requests",
+      "version": "2.34.2",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "rich",
+      "version": "15.0.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "rpds-py",
+      "version": "2026.6.3",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "shellingham",
+      "version": "1.5.4",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "sortedcontainers",
+      "version": "2.4.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "sse-starlette",
+      "version": "3.4.11",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "starlette",
+      "version": "1.7.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "tomli",
+      "version": "2.4.1",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "tomli-w",
+      "version": "1.2.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "typer",
+      "version": "0.27.2",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "typing-extensions",
+      "version": "4.16.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "typing-inspection",
+      "version": "0.4.4",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "urllib3",
+      "version": "2.8.0",
+      "vulns": [],
+      "audit_role": "audit/build/test tooling or audited root package",
+      "unique_advisories": []
+    },
+    {
+      "name": "uvicorn",
+      "version": "0.54.0",
+      "vulns": [],
+      "audit_role": "direct runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "watchfiles",
+      "version": "1.3.0",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    },
+    {
+      "name": "websockets",
+      "version": "17.1",
+      "vulns": [],
+      "audit_role": "transitive runtime",
+      "unique_advisories": []
+    }
+  ]
+}

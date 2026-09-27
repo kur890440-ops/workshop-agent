@@ -30,5 +30,10 @@ func (b *Bot) backgroundSummary(a buttonAction, trace bool) error {
 	if trace {
 		text += fmt.Sprintf("\n\nMCP TRACE\nSource: Telegram «Последняя сводка»\nTool: wb_get_daily_summary\nTransport: in-memory\nSource data: BackgroundJobRun.aggregate_json\nRun ID: %d\nResult: %s / %s\nWB API CALLS: 0", out.RunID, out.Code, out.Status)
 	}
-	return b.sendMessage(a.Key.ChatID, text)
+	for _, part := range background.SplitMorningSummary(text) {
+		if e := b.sendMessage(a.Key.ChatID, part); e != nil {
+			return e
+		}
+	}
+	return nil
 }

@@ -98,13 +98,13 @@ func TestPacingFakeClockAndCancellation(t *testing.T) {
 		now = now.Add(d)
 		return nil
 	}
-	_, _ = c.Seller(context.Background())
-	_, err := c.Seller(context.Background())
+	_, _ = c.Seller(RefreshIdentity(context.Background()))
+	_, err := c.Seller(RefreshIdentity(context.Background()))
 	if err != nil || calls != 2 {
 		t.Fatal(err, calls)
 	}
 	c.sleep = func(ctx context.Context, d time.Duration) error { return Cancelled }
-	_, err = c.Seller(context.Background())
+	_, err = c.Seller(RefreshIdentity(context.Background()))
 	if err != Cancelled || calls != 2 {
 		t.Fatal(err, calls)
 	}
@@ -137,10 +137,10 @@ func TestServerSourceNotLostWhenLocalPacingIsLonger(t *testing.T) {
 	c.intervals["common"] = time.Minute
 	_, err := c.Seller(context.Background())
 	var rate *RateLimitError
-	if !errors.As(err, &rate) || rate.Source != "wb_retry" || time.Until(rate.RetryAt) < 59*time.Second {
+	if !errors.As(err, &rate) || rate.Source != "wb_retry" || time.Until(rate.RetryAt) > 3*time.Second || time.Until(rate.RetryAt) < time.Second {
 		t.Fatal(err, rate)
 	}
-	if c.cooldowns["common"].Source != "wb_retry" {
-		t.Fatal("lost server provenance")
+	if c.cooldowns["common"].Source != "local_interval" {
+		t.Fatal("local pacing must not be mislabeled as a WB header")
 	}
 }

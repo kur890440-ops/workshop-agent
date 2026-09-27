@@ -1,4 +1,128 @@
+# WA-D165 — IMPLEMENTED / VERIFIED
+
+Source0.19.4. Seller summary items in existing aggregate/MCP compute-save, one formatter morning/retrieval, old run snapshot compatibility, UTF16 chunks. Read-only real preview67 rows ->23 positions, one message. go test ./... exit0 (Telegram52.403s). go build -o NUL ./cmd/workshop-agent exit0. git diff --check exit0. Day19 report exit0: reports/day19-mcp-composition/20260927T131952.129608200Z/report.html. Real saved preview: reports/wb-morning-summary/report.html; raw normalized aggregate and tests.txt alongside. Canonical0.19.3 currently running PID72336; do not overwrite live EXE. No live WB/Telegram/production changes.
+
+# WA-D164 — COMPLETE / VERIFIED
+
+Source v0.19.3; presentation only. See ../wb-stock-presentation.md. go test ./... exit0; canonical build exit0; --version WorkshopAgent v0.19.3; git diff --check exit0. Test output reports/wb-stock-presentation/tests.txt. No running application found; canonical EXE updated, not started. No live WB/Telegram or production data changes.
+
+# WA-D163 — COMPLETE / VERIFIED
+
+Implementation source0.19.2; see ../wb-independent-operations.md. All source paths retain local credential binding, no network preflight. Final go test ./... exit0 (marketplace15.962s, Telegram61.189s); git diff --check exit0. Canonical bin/workshop-agent.exe rebuilt successfully as v0.19.2; no running process at build time. --version verified. Bot not started; no live API or production DB changes. Full test output: reports/wb-independent-operations/tests.txt.
+
+# Stock sources — IMPLEMENTED / VERIFIED (WA-D162)
+
+Implementation and offline acceptance complete, source version 0.19.1.
+SELLER and WB independent: source models, MCP tools, partial validation/save,
+source current/history, migration117, separate Telegram views, PARTIAL_SUCCESS pipeline.
+Details: ../wb-stock-sources.md. Historical Day19 strict behavior below is superseded.
+
+Final verification 2026-09-25:
+- go test ./...: exit0 (storage8.949s, Telegram59.981s); full output in report tests.txt.
+- go build -o NUL ./cmd/workshop-agent: exit0, no new executable.
+- git diff --check: exit0 (line-ending warnings only).
+- wb-stock-sources-report: exit0, 34 received /33 valid /1 invalid /33 saved;
+  WB403, previous3 WB rows retained, PARTIAL_SUCCESS.
+  reports/wb-stock-sources/20260925T131810.930154200Z/report.html
+- day18-background-report: exit0, reports/day18-background-jobs/20260925T131827.238539100Z/report.html
+- day19-mcp-report: exit0, reports/day19-mcp-composition/20260925T132211.913015800Z/report.html
+
+Deployment NOT performed: canonical bin/workshop-agent.exe v0.19.0 is running
+(PID64180 at verification), not overwritten/stopped. Migration117 tested only on
+fixtures, not applied to production. Stop app and rebuild canonical binary before use.
+No .env reads, live WB calls, production DB writes or real Telegram messages.
+Official documentation direct fetch returned498; indexed official evidence and
+previous cached HTTP200/403 used, freshness limitation recorded in report.
+No further feature work required; remaining action is controlled deployment.
+# Day19 MCP composition — COMPLETE
+
+WA-D161: [контракты и проверки](../day19-mcp-composition.md).
+Реализованы MCPPipelineRunner, фиксированные prices/stocks/build/save, два local
+MCP tools с one-use grants, атомарный existing snapshot storage, strict errors,
+персистентный result_json и /wb_auto trace. Scheduled08:00 и Run Now используют
+одну цепочку. Новых миграций/таблиц/EXE/процессов нет. Canonical EXE v0.19.0 собран.
+
+Day19 offline report: reports/day19-mcp-composition/20260925T104145.168872300Z/report.html.
+Фактический SUCCESS28ms (1price+3stocks, changes1+1, zero1, low2); FAILED1ms
+на stocks, summary/save SKIPPED. Mock WB, temp SQLite удалена, .env не читался.
+Day18 прежний report тоже exit0: reports/day18-background-jobs/20260925T103927.912052500Z/report.html.
+Финальный go test ./... — exit0 (background4.617s, mcpmanager2.956s,
+Telegram55.669s); canonical build и git diff --check — exit0.
+Задача завершена. Day20 не начинать; live WB/Telegram не проверялись.
+
+
+Основные новые файлы: internal/background/pipeline.go, pipeline_test.go;
+internal/integrations/mcpclient/pipeline.go; internal/integrations/mcpmanager/pipeline.go,
+pipeline_test.go; internal/experiment/day19.go; docs/day19-mcp-composition.md.
+Существующие Day18 tests частичного успеха адаптированы под strict WA-D161,
+остальные regression cases сохранены. Полные критерии и интерфейсы в основном документе.
+
+Previous state follows.
+
 # Marketplace — оперативное состояние
+
+## Дополнительная проверка отсутствия секретов в trace
+
+TestTraceSecretsAndSharedGroupBlock и TestTransportErrorSecretNeverReachesPersistedTrace
+прошли вместе с TestTraceContractAndCompletedResponse (exit0, 0.586s).
+Mock429 на orders/new, затем через10s orders/status той же группы от Telegram:
+HTTP-вызов всего1; второе событие BLOCKED_LOCALLY/request_sent=false/HTTP0/attempt0,
+с тем же deadline. Фиктивные token, Authorization/Bearer и password внедрялись
+в body, headers, metadata и network error; в сериализованных trace/observations
+их нет. Runtime-код не менялся, EXE остаётся0.18.6, пересборка не требовалась.
+Настоящие .env/БД/секреты и WB/Telegram не использовались.
+
+
+## Контекст HTTP429, WA-D160, v0.18.6
+
+Добавлены migration116 и persisted incident snapshots (429+до50 предыдущих
+событий, последние10 инцидентов); реальные host/path/rate_key; caller с фоновым
+job type; /wb history и /wb incident с проверкой управления и пагинацией.
+Целевые marketplace/WB/storage/MCP/background тесты прошли, включая reopen SQLite,
+сохранение cooldown, retention и запрет доступа к чужим данным.
+Завершено: полный go test ./... — exit0 (marketplace20.960s, Telegram69.469s).
+Сборка прежнего bin/workshop-agent.exe v0.18.6 — exit0. Миграция116 применяется
+при следующем обычном запуске; рабочий бот не запускался, новых EXE нет.
+Реальные WB/Telegram, .env и рабочая БД не использовались.
+
+
+## Формат логов WB, WA-D159, v0.18.5
+
+Реализован точный JSON-контракт пользователя: operation, start/finish, headers,
+1-based attempt, result из4 значений. Запись после body/JSON validation, безопасные
+нулевые поля для cache/local block. Целевые тесты marketplace/integrations/background
+прошли. Финальный go test ./... — exit0 (WB10.757s, marketplace8.744s, Telegram57.394s).
+Сборка того же bin/workshop-agent.exe v0.18.5 — exit0. Новых EXE нет.
+Задача завершена; рабочий бот не запускался.
+Реальные WB/Telegram не запускались; .env/рабочая БД не читались.
+
+
+## Текущий аудит rate limits, 2026-09-25
+
+[WA-D158](../wb-rate-limit-audit.md): аудит завершён, migration115/persistent
+identity/central group gates/header observation/structured MCP cooldown/run deadline
+и /wb debug реализованы. Новый EXE не создаётся: прежний bin/workshop-agent.exe v0.18.4.
+
+Полный go test ./... прошёл дважды. Последняя до live-наблюдения полная проверка:
+Telegram65.533s, marketplace13.087s, wildberries10.957s; exit0. Сборка canonical,
+--version и mcp-status прошли: 8tools, in-memory, обе session закрыты.
+Offline Day18: reports/day18-background-jobs/20260925T085721.059554200Z/report.html.
+
+Рабочий бот PID53544 был запущен в начале аудита, затем завершился самостоятельно
+относительно действий агента; агент не посылал Stop-Process/Telegram messages.
+Только после проверки отсутствия процесса обновлён прежний EXE и выполнена1 live
+попытка prices: HTTP200, Remaining0/Limit1, без seller-info. Технический pacing
+записан в существующую marketplace_cooldowns; миграции/бизнес-таблицы не менялись.
+Report: reports/wb-rate-limit-audit/20260925T085703.592905300Z/report.html.
+Сохранённый seller-info cooldown: 2026-09-25T12:17:48.284Z. Токен BASE локально,
+без проверки JWT-подписи. Секреты не выводились и .env не записывался.
+
+Завершено: финальный go test ./... — exit0 (wildberries10.830s,
+marketplace5.986s, Telegram55.071s), включая fallback Remaining0 без Retry/Reset.
+Каноническая сборка повторно прошла после этой правки, v0.18.4. Новых EXE нет.
+HTML/JSON/terminal.txt отчёта дополнены фактическими доказательствами; повторных
+live-вызовов не было. git diff --check — exit0. Бот остановлен, миграция115
+применится при следующем обычном запуске. Задача завершена, следующий этап не начат.
 
 ## Дополнение Day18: summary, 2026-09-24
 
@@ -202,3 +326,7 @@ mock-тесты и руководство. Локальные тесты и от
 
 После сжатия перечитать README/L0–L3/этот файл и ../day16-mcp.md, проверить git
 status. Day 16 завершён; дальнейшая работа — только по новому заданию.
+
+Deployment update 2026-09-25 16:35 MSK: user requested EXE update. No running workshop-agent process found. Built canonical bin/workshop-agent.exe successfully; --version returned WorkshopAgent v0.19.1. Bot not started; production migration remains pending next normal startup. This supersedes the earlier binary-not-updated note.
+
+Deployment update 2026-09-27: user requested EXE update. No running workshop-agent process found. Canonical bin/workshop-agent.exe built successfully; --version returned WorkshopAgent v0.19.4. Bot not started. This supersedes the earlier deployment-pending note.

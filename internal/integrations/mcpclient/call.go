@@ -41,8 +41,6 @@ type Service struct {
 	session       *mcp.ClientSession
 	serverSession *mcp.ServerSession
 	discovery     Discovery
-	seller        string
-	verified      time.Time
 	closed        bool
 }
 
@@ -72,7 +70,7 @@ func NewInMemory(ctx context.Context, server *mcp.Server) (*Service, error) {
 		return nil, Error("mcp_tool_policy_error")
 	}
 	for _, tool := range s.discovery.Tools {
-		if !tool.ReadOnly && tool.Name != "schedule_wb_daily_sync" {
+		if !tool.ReadOnly && tool.Name != "schedule_wb_daily_sync" && tool.Name != "wb_save_market_snapshot" {
 			_ = s.Close()
 			return nil, Error("mcp_tool_policy_error")
 		}
@@ -124,10 +122,10 @@ func (s *Service) Schedule(ctx context.Context, grant string, input, out any) er
 
 // callTool is the only dispatch point. Discovery does not grant execution rights.
 func (s *Service) callTool(ctx context.Context, name string, input NoArgs, out any) error {
-	if (name != StocksTool && name != "wb_get_seller" && name != "wb_get_prices") || !s.readOnly(name) {
+	if (name != SellerStocksTool && name != StocksTool && name != "wb_get_seller" && name != "wb_get_prices") || !s.readOnly(name) {
 		return Error("mcp_tool_not_allowed")
 	}
-	result, err := s.session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: input})
+	result, err := s.session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: input, Meta: mcp.Meta{"wb-call": wb.TraceMetadata(ctx)}})
 	if err != nil {
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
 			return Error("wb_timeout")
@@ -138,11 +136,14 @@ func (s *Service) callTool(ctx context.Context, name string, input NoArgs, out a
 		return Error("mcp_internal_error")
 	}
 	if result.IsError {
+		if rate := wb.DecodeRateError(result.StructuredContent); rate != nil {
+			return rate
+		}
 		for _, content := range result.Content {
 			if text, ok := content.(*mcp.TextContent); ok {
 				code := strings.SplitN(text.Text, ":", 2)[0]
 				switch code {
-				case "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_cancelled", "wb_api_error", "wb_result_limit", "wb_output_limit", "invalid_tool_arguments":
+				case "wb_identity_mismatch", "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_cancelled", "wb_api_error", "wb_result_limit", "wb_output_limit", "invalid_tool_arguments":
 					return Error(code)
 				}
 			}
@@ -176,21 +177,11 @@ func (s *Service) Stocks(ctx context.Context, expectedSeller string) (out Stocks
 		return out, err
 	}
 	out.Discovery = s.discovery
-	if s.seller != expectedSeller || time.Since(s.verified) >= 24*time.Hour {
-		var seller Envelope[wb.Seller]
-		if err = s.callTool(ctx, "wb_get_seller", NoArgs{}, &seller); err != nil {
-			return out, err
-		}
-		if !seller.Complete || seller.Source != "wildberries" || seller.Data.ID != expectedSeller {
-			return out, Error("wb_identity_mismatch")
-		}
-		s.seller, s.verified = expectedSeller, time.Now()
-	}
+	m := wb.TraceMetadata(ctx)
+	m.ExpectedSeller = expectedSeller
+	ctx = wb.WithTrace(ctx, m)
 	err = s.callTool(ctx, StocksTool, NoArgs{}, &out.Value)
 	if err != nil {
-		if err == Error("wb_authentication_error") || err == Error("wb_access_denied") {
-			s.seller = ""
-		}
 		return out, err
 	}
 	if !out.Value.Complete || !out.Value.UntrustedData || out.Value.Source != "wildberries" || out.Value.Data == nil {
@@ -222,7 +213,6 @@ func (s *Service) cleanup() error {
 		s.serverSession = nil
 		s.discovery.ServerClosed = true
 	}
-	s.seller = ""
 	if err != nil && !errors.Is(err, context.Canceled) {
 		return Error("mcp_cleanup_error")
 	}

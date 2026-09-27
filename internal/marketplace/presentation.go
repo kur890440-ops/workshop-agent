@@ -1,6 +1,7 @@
 package marketplace
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -23,6 +24,9 @@ func label(v string) string {
 	return v
 }
 func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
+	if kind == "stocks" || kind == "seller_stocks" || kind == "wb_stocks" {
+		return s.StockSourcesText(sc, kind, offset)
+	}
 	c, err := s.Status(sc)
 	if err != nil {
 		return "", err
@@ -46,7 +50,7 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 		lines = append(lines, "Подключение отключено. Ниже только сохранённые данные.")
 	}
 	if c.SellerID != "" {
-		lines = append(lines, "Кабинет: "+label(c.SellerName)+" · "+label(c.SellerID))
+		lines = append(lines, "Кабинет (cached): "+label(c.SellerName)+" · "+label(c.SellerID)+"\nПоследние данные профиля: "+c.CheckedAt)
 	}
 	loaded := false
 	for _, r := range c.Sync {
@@ -69,13 +73,36 @@ func (s *Service) ReadText(sc Scope, kind string, offset int) (string, error) {
 		if r.RetryAt != "" {
 			if at, e := time.Parse(time.RFC3339Nano, r.RetryAt); e == nil {
 				rate := wb.RateLimitError{Operation: r.RateOperation, RetryAt: at, Source: r.RetrySource}
-				lines = append(lines, rate.Message())
+				if at.After(s.clock()) {
+					lines = append(lines, rate.Message())
+				} else {
+					lines = append(lines, "Срок ожидания из этой прошлой ошибки истёк. Текущий limiter: /wb debug.")
+				}
 			}
 		} else if r.ErrorCode == "rate_limited" {
 			lines = append(lines, "Срок ограничения WB неизвестен.")
 		}
 	}
 	if kind == "status" {
+		// Pipeline steps are independently persisted, including failed/partial runs.
+		var raw string
+		var p struct {
+			Steps []struct {
+				Tool       string `json:"tool_name"`
+				Status     string `json:"status"`
+				StartedAt  string `json:"started_at"`
+				FinishedAt string `json:"finished_at"`
+			}
+		}
+		if s.db.QueryRow(`SELECT result_json FROM background_job_runs WHERE workshop_id=? AND job_type='WB_DAILY_SYNC' ORDER BY id DESC LIMIT 1`, sc.WorkshopID).Scan(&raw) == nil && json.Unmarshal([]byte(raw), &p) == nil {
+			for _, st := range p.Steps {
+				if st.Tool == "wb_get_prices" || st.Tool == "wb_get_seller_stocks" || st.Tool == "wb_get_wb_stocks" {
+					lines = append(lines, fmt.Sprintf("Последняя pipeline-попытка %s: %s; %s — %s", st.Tool, st.Status, st.StartedAt, st.FinishedAt))
+				}
+			}
+		} else {
+			lines = append(lines, "Цены: сохранённой pipeline-попытки нет.")
+		}
 		return strings.Join(lines, "\n"), nil
 	}
 	lines = append(lines, "Источник: сохранённые данные Wildberries.")

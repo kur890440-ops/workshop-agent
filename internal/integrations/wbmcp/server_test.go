@@ -17,7 +17,7 @@ import (
 	wb "workshop-agent/internal/marketplace/wildberries"
 )
 
-var expectedNames = []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_prices", "wb_get_products", "wb_get_seller", "wb_get_wb_stocks"}
+var expectedNames = []string{"wb_get_new_orders", "wb_get_order_statuses", "wb_get_prices", "wb_get_products", "wb_get_seller", "wb_get_seller_stocks", "wb_get_wb_stocks"}
 
 type fakeAPI struct {
 	mu    sync.Mutex
@@ -141,7 +141,7 @@ func TestRegistrySchemasAndNoTokenProtocol(t *testing.T) {
 		t.Fatal("server crashed", e)
 	}
 	specs := Tools()
-	if len(specs) != 6 {
+	if len(specs) != 7 {
 		t.Fatal(len(specs))
 	}
 	for _, s := range specs {
@@ -178,7 +178,7 @@ func TestTypedDispatchReusesWBMethods(t *testing.T) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	slices.Sort(f.calls)
-	if !slices.Equal(f.calls, []string{"Catalog", "NewOrders", "OrderStatuses", "Prices", "Seller", "WBStocks"}) {
+	if !slices.Equal(f.calls, []string{"Catalog", "Catalog", "NewOrders", "OrderStatuses", "Prices", "Seller", "SellerStocks", "WBStocks"}) {
 		t.Fatal(f.calls)
 	}
 }
@@ -253,4 +253,8 @@ func TestOutputLimitAndNoPartialSuccess(t *testing.T) {
 			t.Fatal("partial/raw data exposed")
 		}
 	}
+}
+
+func (f *fakeAPI) SellerStocks(ctx context.Context, _ []wb.Card) ([]wb.Stock, error) {
+	return []wb.Stock{}, f.record(ctx, "SellerStocks")
 }

@@ -9,6 +9,7 @@ import (
 
 	"workshop-agent/internal/integrations/mcpclient"
 	"workshop-agent/internal/marketplace"
+	wb "workshop-agent/internal/marketplace/wildberries"
 )
 
 // MCPStocks invokes the Day16 client through the application's authorization
@@ -63,6 +64,10 @@ func (a *WorkshopAgent) MCPStocks(ctx context.Context, user, workshop int64, tra
 
 // MCPErrorMessage never includes arbitrary remote error strings.
 func MCPErrorMessage(err error) string {
+	var rate *wb.RateLimitError
+	if errors.As(err, &rate) {
+		return rate.Message()
+	}
 	var code mcpclient.Error
 	if !errors.As(err, &code) {
 		return ""

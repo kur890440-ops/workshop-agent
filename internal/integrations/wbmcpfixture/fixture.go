@@ -50,7 +50,7 @@ func (a API) WBStocks(ctx context.Context) ([]wb.Stock, error) {
 	switch a.Mode {
 	case "auth":
 		return nil, wb.Unauthorized
-	case "forbidden":
+	case "stock_sources", "forbidden":
 		return nil, wb.Forbidden
 	case "rate":
 		return nil, wb.RateLimited
@@ -74,9 +74,39 @@ func (a API) WBStocks(ctx context.Context) ([]wb.Stock, error) {
 }
 
 // Unselected methods deliberately fail: the Day17 flow must not dispatch them.
-func (API) Catalog(context.Context) ([]wb.Card, error)                  { return nil, wb.InvalidInput }
-func (API) SellerStocks(context.Context, []wb.Card) ([]wb.Stock, error) { return nil, wb.InvalidInput }
+func (API) Catalog(context.Context) ([]wb.Card, error) {
+	return []wb.Card{{ID: 101, Sizes: []wb.Size{{ID: 201}}}}, nil
+}
+func (API) SellerStocks(context.Context, []wb.Card) ([]wb.Stock, error) {
+	return []wb.Stock{{NmID: 101, ChrtID: 201, WarehouseID: 301, Quantity: 50}}, nil
+}
 func (API) NewOrders(context.Context) ([]wb.Order, error)               { return nil, wb.InvalidInput }
 func (API) OrderStatuses(context.Context, []int64) ([]wb.Status, error) { return nil, wb.InvalidInput }
 
 func Server(mode string) (*mcp.Server, error) { return wbmcp.New(API{Mode: mode}) }
+
+func (a API) SellerStockBatch(ctx context.Context, cards []wb.Card) wb.StockBatch {
+	if a.Mode != "stock_sources" {
+		r, e := a.SellerStocks(ctx, cards)
+		return wb.NewStockBatch(wb.StockSeller, r, e)
+	}
+	rows := []wb.Stock{}
+	for i := int64(1); i <= 33; i++ {
+		rows = append(rows, wb.Stock{NmID: 101, ChrtID: 200 + i, WarehouseID: 301, Quantity: i})
+	}
+	b := wb.NewStockBatch(wb.StockSeller, rows, nil)
+	b.Info.Status = "PARTIAL"
+	b.Info.Received = 34
+	b.Info.Invalid = 1
+	b.Info.Error = "invalid_response"
+	b.Rejections = []wb.StockRejection{{Index: 33, ExternalID: 234, Field: "amount", Expected: "integer", Actual: "schema_mismatch"}}
+	return b
+}
+
+// Offline identity binding: deliberately no Seller call or network.
+func (a API) EnsureSeller(ctx context.Context, expected string) error {
+	if a.Mode == "mismatch" {
+		return wb.IdentityMismatch
+	}
+	return nil
+}

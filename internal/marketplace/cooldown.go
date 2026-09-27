@@ -50,7 +50,10 @@ type identityCache struct {
 }
 
 func (s *Service) identityValid(c Connection) bool {
-	return s.identityCache.connection == c.ID && s.identityCache.workshop == c.WorkshopID && s.identityCache.revision == c.Revision && s.identityCache.seller == c.SellerID && c.Enabled && c.SellerID != "" && s.clock().Before(s.identityCache.until)
+	if api, ok := s.api.(interface{ CachedIdentity(string) bool }); ok {
+		return c.Enabled && api.CachedIdentity(c.SellerID)
+	}
+	return c.Enabled && c.SellerID != ""
 }
 
 type dependencyError struct{ error }

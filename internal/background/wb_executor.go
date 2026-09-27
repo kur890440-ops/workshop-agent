@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 	"workshop-agent/internal/auth"
 	"workshop-agent/internal/integrations/mcpclient"
@@ -19,14 +18,21 @@ type MCP interface {
 	Stocks(context.Context, string) (mcpclient.StocksResult, error)
 }
 type Aggregate struct {
-	ProductsCount int  `json:"products_count"`
-	PriceChanges  int  `json:"price_changes_count"`
-	StockChanges  int  `json:"stock_changes_count"`
-	ZeroStock     int  `json:"zero_stock_count"`
-	LowStock      int  `json:"low_stock_count"`
-	Errors        int  `json:"errors_count"`
-	PricesOK      bool `json:"prices_ok"`
-	StocksOK      bool `json:"stocks_ok"`
+	SellerItems   []SellerStockSummaryItem `json:"seller_items,omitempty"`
+	PriceStatus   string                   `json:"price_status"`
+	SellerSource  wb.StockInfo             `json:"seller_stock"`
+	WBSource      wb.StockInfo             `json:"wb_stock"`
+	SellerZero    int                      `json:"seller_zero_stock_count"`
+	SellerLow     int                      `json:"seller_low_stock_count"`
+	SellerChanges int                      `json:"seller_stock_changes_count"`
+	ProductsCount int                      `json:"products_count"`
+	PriceChanges  int                      `json:"price_changes_count"`
+	StockChanges  int                      `json:"stock_changes_count"`
+	ZeroStock     int                      `json:"zero_stock_count"`
+	LowStock      int                      `json:"low_stock_count"`
+	Errors        int                      `json:"errors_count"`
+	PricesOK      bool                     `json:"prices_ok"`
+	StocksOK      bool                     `json:"stocks_ok"`
 }
 type WBParameters struct {
 	ConnectionID int64 `json:"connection_id"`
@@ -36,9 +42,10 @@ type wbJob struct {
 	ConnectionID int64
 }
 type WBDailySyncExecutor struct {
-	DB  *sql.DB
-	MCP MCP
-	Now func() time.Time
+	DB    *sql.DB
+	MCP   MCP
+	Tools PipelineTools
+	Now   func() time.Time
 }
 
 func (*WBDailySyncExecutor) Permissions() (auth.Permission, auth.Permission) {
@@ -67,62 +74,9 @@ func (*WBDailySyncExecutor) Check(q auth.Querier, j Job) error {
 	return e
 }
 func (s *WBDailySyncExecutor) Execute(ctx context.Context, job Job, run int64, owner string) ExecutionResult {
-	var p WBParameters
-	if strictJSON(job.Parameters, &p) != nil {
-		return ExecutionResult{Status: "failed", ErrorCode: "invalid_parameters", ResultJSON: "{}", AggregateJSON: "{}"}
-	}
-	j := wbJob{job, p.ConnectionID}
-	var revision int64
-	_ = s.DB.QueryRow(`SELECT revision FROM marketplace_connections WHERE id=? AND workshop_id=?`, j.ConnectionID, j.WorkshopID).Scan(&revision)
-	agg := Aggregate{}
-	products := map[int64]bool{}
-	results := map[string]string{}
-	seller, authErr := check(s.DB, j, revision)
-	if authErr != nil || s.MCP == nil {
-		agg.Errors = 2
-		results[mcpclient.PricesTool] = "access_or_configuration"
-		results[mcpclient.StocksTool] = "access_or_configuration"
-	} else {
-		prices, err := s.MCP.Prices(ctx, seller)
-		if err == nil {
-			err = s.savePrices(j, revision, run, owner, prices, &agg, products)
-		}
-		results[mcpclient.PricesTool] = safe(err)
-		if err != nil {
-			agg.Errors++
-		} else {
-			agg.PricesOK = true
-		}
-		if _, err = check(s.DB, j, revision); err == nil {
-			var stocks mcpclient.StocksResult
-			stocks, err = s.MCP.Stocks(ctx, seller)
-			if err == nil {
-				err = s.saveStocks(j, revision, run, owner, stocks.Value, &agg, products)
-			}
-		}
-		results[mcpclient.StocksTool] = safe(err)
-		if err != nil {
-			agg.Errors++
-		} else {
-			agg.StocksOK = true
-		}
-	}
-	agg.ProductsCount = len(products)
-	status := "success"
-	if agg.Errors == 2 {
-		status = "failed"
-	} else if agg.Errors > 0 {
-		status = "partial_success"
-	}
-	raw, _ := json.Marshal(results)
-	araw, _ := json.Marshal(agg)
-
-	code := ""
-	if agg.Errors > 0 {
-		code = "source_failed"
-	}
-	return ExecutionResult{Status: status, ResultJSON: string(raw), AggregateJSON: string(araw), ErrorCode: code, Summary: Summary(job, agg, status), CanNotify: func() bool { _, e := check(s.DB, j, revision); return e == nil }}
+	return s.pipelineExecution(ctx, job, run, owner)
 }
+
 func check(q auth.Querier, j wbJob, revision int64) (string, error) {
 	if e := auth.Require(q, j.CreatedBy, j.WorkshopID, auth.MarketplaceRead); e != nil {
 		return "", e
@@ -140,13 +94,29 @@ func check(q auth.Querier, j wbJob, revision int64) (string, error) {
 	return seller, nil
 }
 func safe(err error) string {
+	var partial *wb.StockPartialError
+	if errors.As(err, &partial) {
+		switch partial.Batch.Info.Error {
+		case "invalid_response":
+			return "invalid_response"
+		case "forbidden":
+			return "wb_access_denied"
+		case "rate_limited":
+			return "WB_RATE_LIMITED"
+		}
+	}
+
 	if err == nil {
 		return ""
+	}
+	var rate *wb.RateLimitError
+	if errors.As(err, &rate) {
+		return "WB_RATE_LIMITED"
 	}
 	var e mcpclient.Error
 	if errors.As(err, &e) {
 		switch e {
-		case "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_api_error", "mcp_connection_error", "mcp_busy":
+		case "wb_identity_mismatch", "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_api_error", "mcp_connection_error", "mcp_busy", "pipeline_local_step_failed", "mcp_invalid_result":
 			return string(e)
 		}
 	}
@@ -154,19 +124,4 @@ func safe(err error) string {
 		return "cancelled"
 	}
 	return "sync_failed"
-}
-func Summary(j Job, a Aggregate, status string) string {
-	stocks := "Остатки: загрузка не выполнена; прежние данные сохранены."
-	if a.StocksOK {
-		stocks = fmt.Sprintf("Остатки: изменилось — %d; нулевых — %d; низких — %d.", a.StockChanges, a.ZeroStock, a.LowStock)
-	}
-	prices := "Цены: загрузка не выполнена; прежние данные сохранены."
-	if a.PricesOK {
-		prices = fmt.Sprintf("Цены: изменилось — %d.", a.PriceChanges)
-	}
-	loc, e := time.LoadLocation(j.Timezone)
-	if e != nil {
-		loc = time.UTC
-	}
-	return fmt.Sprintf("Wildberries · Утренняя синхронизация\nРезультат: %s\nОбновлено товаров: %d\n%s\n%s\nОшибок: %d\nСледующий запуск: %s (%s)\nИсточник: WB через MCP. Остатки цеха не изменены.", status, a.ProductsCount, prices, stocks, a.Errors, time.Unix(j.NextRun, 0).In(loc).Format("02.01.2006 15:04"), j.Timezone)
 }

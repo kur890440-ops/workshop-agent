@@ -1,5 +1,23 @@
 # L3 — этапы реализации и приёмка
 
+[WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.
+
+[WA-D164 — человекочитаемый вывод остатков](../wb-stock-presentation.md): display model, локальное обогащение, страницы15, диагностика отдельно.
+
+[WA-D163 — независимые операции без seller-info preflight](../wb-independent-operations.md). Имеет приоритет над прежними правилами preflight и просмотра `/wb stocks`.
+
+[WA-D162 — независимые SELLER/WB, partial snapshots](../wb-stock-sources.md) заменяет strict-политику WA-D161 и авто-fetch при просмотре остатков.
+
+Day19 WA-D161 принят offline: полный go test ./... exit0, canonical build v0.19.0,
+реальный in-memory MCP success/failure report, rollback/cancellation/security tests.
+[Отчёт](../../reports/day19-mcp-composition/20260925T104145.168872300Z/report.html).
+
+
+Day19: [WA-D161 — strict MCP composition](../day19-mcp-composition.md).
+Один in-memory MCP, атомарные снимки, trace JobRun; заменяет partial pipeline Day18.
+
+Аудит rate limits: [WA-D158](../wb-rate-limit-audit.md) — общий limiter, persistent identity, migration115, безопасная диагностика. Заменяет прежнюю RAM-only/24h identity; единый процесс и MCP сохраняются.
+
 Day18 дополнен [WA-D157: сохранённая сводка через MCP](../day18-summary.md).
 
 Рефакторинг Day16–18 принят offline: полный go test ./... и clean build прошли;
@@ -145,3 +163,43 @@ SHA256: 063F44F77BD2FF37440B47180EA685A1D9A7D39DC676FFDAB25B6CF0D892F025.
 Общий интеграционный допуск остаётся открытым: завершить D1, затем отдельно
 авторизованный V1. В V1 проверить реальные категории/тип/срок токена, нулевые
 остатки, большие/пустые страницы, sid при замене токена и реальные Telegram-кнопки.
+
+## Приёмка WA-D158, 2026-09-25
+
+- Полный go test ./... — exit0, включая identity restart/token rotation,
+  concurrent callers, 429+120s, Remaining0 с/без Reset, MCP error metadata и run deadline.
+- Сборка прежнего bin/workshop-agent.exe v0.18.4 — exit0. mcp-status:8tools,
+  in-memory, session/server closed; отдельные EXE/процессы не добавлены.
+- [Итоговый отчёт](../../reports/wb-rate-limit-audit/20260925T085703.592905300Z/report.html):
+  BASE local decode; seller-info cooldown сохранён;1 real prices HTTP200,
+  Remaining0/Limit1; следующая страница остановлена локально. Это НЕ полный импорт.
+- Live stocks, seller-info refresh и Telegram не запускались. Производственная
+  migration115 не выполнялась; технический pacing prices сохранён в прежней таблице.
+- После обнаружения headers0/1 добавлен fallback6s для prices без срока, проверен
+  offline. Повторного live probe для этой правки не было.
+- Offline Day18: reports/day18-background-jobs/20260925T085721.059554200Z/report.html.
+  Версионированные результаты и текущее состояние — WORKSTATE.
+
+## WA-D159 — формат WB trace, v0.18.5
+
+TestTraceContractAndCompletedResponse проверяет все требуемые JSON-поля,
+закрытые result, завершение после body, ERROR при malformed200 и локальный блок.
+Целевые тесты и полный go test ./... — exit0 (Telegram57.394s).
+Каноническая сборка bin/workshop-agent.exe — exit0, версия0.18.5.
+Реальных WB/Telegram вызовов не было; рабочая БД и .env не читались.
+
+## WA-D160 — история инцидентов, v0.18.6
+
+TestIncidentHistoryPersistsBeyondRingAndRestart подтвердил snapshot51 после
+120 local blocks и новой SQLite-сессии, cooldown24h, retention10, отсутствие
+ложных429 и запрет чужого user/workshop. TestTraceActualEndpointAndCaller
+подтвердил реальный host/path/rate_key/caller. Полный go test ./... — exit0
+(Telegram69.469s). Каноническая сборка — exit0, версия0.18.6.
+Реальные WB/Telegram не вызывались. Рабочая БД и .env не использовались.
+
+Дополнительная проверка WA-D160: TestTraceSecretsAndSharedGroupBlock проверяет
+два разных endpoint общей marketplace-группы: настоящий mock429 и local block
+без второго HTTP. TestTransportErrorSecretNeverReachesPersistedTrace проверяет
+секрет в транспортной ошибке. Проверены сериализованные trace и observations:
+фиктивные credentials из body/header/metadata/error не сохраняются. Целевой прогон
+вместе с TestTraceContractAndCompletedResponse — exit0 (0.586s). Runtime не изменён.

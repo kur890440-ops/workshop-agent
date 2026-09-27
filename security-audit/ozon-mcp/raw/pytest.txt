@@ -1,0 +1,19 @@
+.s................................................                       [100%]
+============================== warnings summary ===============================
+.venv\Lib\site-packages\fastapi\testclient.py:1
+  C:\TEMP\WorkshopAgent\security-audit\ozon-mcp\.venv\Lib\site-packages\fastapi\testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+tests/test_stats.py::test_empty_summary
+tests/test_stats.py::test_record_and_summary
+tests/test_stats.py::test_filter_by_shop
+tests/test_stats.py::test_filter_by_shop
+tests/test_stats.py::test_recent_order
+tests/test_web.py::test_dashboard
+tests/test_web.py::test_stats_api
+tests/test_web.py::test_stats_api_with_shop_filter
+  C:\TEMP\WorkshopAgent\security-audit\ozon-mcp\source\ozon_mcp\stats.py:217: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    today = datetime.utcnow().strftime("%Y-%m-%d")
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+49 passed, 1 skipped, 9 warnings in 9.02s

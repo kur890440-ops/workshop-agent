@@ -1,0 +1,332 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><title>WB rate-limit audit — 2026-09-25</title><style>body{font:16px system-ui;color:#192e43;max-width:1200px;margin:36px auto;padding:0 24px}h1,h2{color:#16547b}table{border-collapse:collapse;width:100%;font-size:14px}td,th{padding:9px;border:1px solid #d7e1e8;text-align:left;overflow-wrap:anywhere}th{background:#e8f0f6}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f4f6f9;padding:18px}p{line-height:1.55}.result{padding:18px;background:#e4f5eb;border-left:5px solid #278255}details{margin-top:20px}</style></head><body><h1>WB rate-limit audit</h1><p>25 сентября 2026 · Workshop Agent v0.18.4 · один EXE / процесс / MCP in-memory</p><div class="result"><strong>Prices: реальный HTTP 200.</strong> Выполнен один запрос через wb_get_prices. Seller-info не вызывался; сохранённый запрет — до 25 сентября 12:17:48.284 UTC / 15:17:48.284 Москва. Общего запрета всех методов WB нет.</div><h2>Причина повторов и изменение поведения</h2><p>До изменения legacy sync и MCP имели два независимых identity cache в памяти, сроком 24 часа. Рестарт и ошибки вызывали новые проверки seller-info; явная проверка выполняла запрос при каждом разрешённом запуске. Startup, WB menu и MCP ListTools уже не вызывали WB HTTP. Полных исторических trace не было — точное число запросов неизвестно.</p><p>Теперь подтверждённая identity привязана к версии токена и сохраняется в SQLite. Один client, общий cache, один gate на identity и на каждую группу квот. После миграции старый профиль без привязки к токену требует одной проверки после cooldown. Далее обычные Prices/Stocks используют cache.</p><h2>Token и реальные headers</h2><p><strong>BASE</strong> — локальное декодирование acc/for/t, без проверки подписи. Prices вернул Remaining=0, Limit=1; числовой Retry/Reset не распознан. Это не доказывает период текущей квоты. Для нулевого остатка без срока добавлен консервативный fallback полного документированного периода: prices 6 секунд. Изменение проверено на заглушке; повторный live-запрос не выполнялся.</p><h2>Реальный AFTER trace</h2><table><thead><tr><th>UTC</th><th>Caller</th><th>MCP tool</th><th>Endpoint</th><th>HTTP</th><th>Result</th><th>Remaining</th><th>Limit</th></tr></thead><tbody><tr><td>2026-09-25T08:57:03.6329822Z</td><td>diagnostic</td><td>wb_get_prices</td><td>/api/v2/list/goods/filter</td><td>200</td><td>HTTP_RESPONSE</td><td>0</td><td>1</td></tr><tr><td>2026-09-25T08:57:04.2357275Z</td><td>diagnostic</td><td>wb_get_prices</td><td>/api/v2/list/goods/filter</td><td>0</td><td>DIAGNOSTIC_BUDGET</td><td>None</td><td>None</td></tr></tbody></table><p>HTTP=0 — запроса не было. DIAGNOSTIC_BUDGET остановил следующую страницу. Полная синхронизация и доступность stocks этим тестом не подтверждены. BEFORE: известны только сохранённые состояния check=rate_limited и зависимые загрузки blocked by seller-info; выдавать их за реальные HTTP429 от orders/stocks нельзя.</p><h2>Проверки и поставка</h2><pre>{
+  &quot;go_test_all&quot;: &quot;PASS, exit 0; final wildberries 10.830s, marketplace 5.986s, telegram 55.071s&quot;,
+  &quot;canonical_build&quot;: &quot;PASS: go build -o bin/workshop-agent.exe ./cmd/workshop-agent&quot;,
+  &quot;version&quot;: &quot;0.18.4&quot;,
+  &quot;mcp&quot;: &quot;PASS: in-memory; 8 tools; both sessions closed&quot;,
+  &quot;day18_mock_report&quot;: &quot;reports/day18-background-jobs/20260925T085721.059554200Z/report.html&quot;,
+  &quot;real_http_attempts&quot;: 1,
+  &quot;real_seller_info_attempts&quot;: 0,
+  &quot;live_probe_scope&quot;: &quot;prices first page only; not a complete import&quot;,
+  &quot;last_change&quot;: &quot;After observing Remaining=0/Limit=1 without numeric Retry/Reset, added documented-period fallback (prices 6s); validated offline without another WB request.&quot;,
+  &quot;production_migration&quot;: &quot;NOT RUN; only technical cooldown updated by diagnostic; business tables unchanged&quot;,
+  &quot;bot_started&quot;: false
+}</pre><h2>Все callers, endpoint map, частоты, квоты, решения и before/after</h2><details><summary>Полный аудит и ссылки на официальные источники</summary><pre># WB rate-limit audit — 2026-09-25
+
+@PROJECT:WORKSHOP_AGENT @NO_COMPRESS @PRESERVE
+
+## Аудит до изменений
+
+| Caller | MCP tool | WB method | HTTP endpoint | Причина / частота |
+|---|---|---|---|---|
+| Startup, MCP initialize/ListTools, /wb status/menu | нет | нет | нет | HTTP не вызывается |
+| /wb check, «Проверить WB» | legacy direct flow | Seller | GET common-api /api/v1/seller-info | Каждое явное действие, если preflight cooldown разрешает |
+| /wb sync, кнопки обновления/остатков | legacy direct flow | Seller | тот же | При пустом RAM identity cache, после restart/24 часов/revision/error |
+| /wb_stocks [trace] | wb_get_seller → wb_get_wb_stocks | Seller → WBStocks | seller-info → POST seller-analytics /api/analytics/v1/stocks-report/wb-warehouses | Отдельный MCP RAM identity cache, после restart/24 часов/ошибки |
+| Scheduler / Run Now, WB_DAILY_SYNC | wb_get_seller → wb_get_prices → wb_get_wb_stocks | Seller, Prices, WBStocks | seller-info; GET discounts-prices /api/v2/list/goods/filter; POST stocks-report/wb-warehouses | Один run на локальную дату; страницы запросов отдельно |
+| /wb sync catalog; MCP wb_get_products | wb_get_products либо legacy direct | Catalog | POST content-api /content/v2/get/cards/list | Cursor pagination, interval 600 ms |
+| /wb sync seller_stocks | legacy direct | SellerStocks | GET marketplace-api /api/v3/warehouses; POST /api/v3/stocks/{warehouse} | Склады и пачки SKU |
+| /wb sync orders; MCP tools | wb_get_new_orders / wb_get_order_statuses либо legacy direct | NewOrders, OrderStatuses | GET marketplace-api /api/v3/orders/new; POST /api/v3/orders/status | Новые заказы и пачки статусов |
+| /wb_auto summary | wb_get_daily_summary | нет | нет | Только SQLite |
+| Offline reports/tests | те же MCP handlers | fixture API | только mocks | Реальные WB/Telegram не вызываются |
+
+Выявлено: два RAM identity cache с TTL 24h; persistent seller_id/name есть, но
+не привязаны к версии токена. Один WB client уже переиспользуется production
+legacy/MCP путями. HTTP retry только в клиенте (5xx до 3 попыток), 429 без retry.
+Marketplace.Start имеет отдельный preflight cooldown по common/analytics.
+Другого heartbeat/reconnect HTTP нет. Каждое нажатие check принудительно запрашивает
+seller-info. Прежние logs не фиксировали все HTTP attempts, точное число неизвестно.
+
+Проблемы: нет заголовков успешных ответов/remaining, нет bounded trace; MCP теряет
+retry timestamp; rate slot освобождён до HTTP response, долгий ответ может позволить
+другому caller отправить запрос до получения нового 429. Source server-header может
+ошибочно подписывать срок, увеличенный локальным pacing. 409 penalty применён ко всем
+группам, хотя относится к конкретным marketplace methods.
+
+## Сверка документации
+
+Официальные индексированные страницы WB: api-information (включая JWT acc/for/t,
+Retry/Reset в секундах, seller-info 1/min burst10), work-with-products (prices
+10/6s, interval600ms, burst5), analytics (wb-warehouses 3/min,20s,burst1,
+PERSONAL/SERVICE), orders-fbs (shared marketplace limits).
+Прямое открытие страниц 2026-09-25 возвращает HTTP498; индекс помечен 5 месяцев.
+Утверждать, что индекс гарантированно отражает сегодняшние правила, нельзя.
+Ответные заголовки WB приоритетны и не сокращаются до индексированных лимитов.
+Суточный срок seller-info не следует из доступной таблицы — требуется trace
+реального ответа, а не вывод о типе токена по длине cooldown.
+
+Официальный GET /ping предназначен для ручной проверки подключения/токена,
+не для heartbeat доступности; максимум3/30s, автоматизацию WB запрещает.
+Нового автоматического ping не добавлять; текущего heartbeat в приложении нет.
+
+## WA-D158 — общий rate limiter и persistent identity
+
+Дата решения: 2026-09-25. Заменяет RAM-only/24h identity из WA-D145 и соответствующую
+часть WA-D150. Остальные ограничения изоляции и единый MCP WA-D154–156 сохраняются.
+
+- Один WB Client остаётся владельцем rate policy. Удалён отдельный preflight в
+  Marketplace.Start. Telegram, Scheduler и MCP не делают собственных HTTP retries.
+- Seller profile хранится в существующей marketplace_connections: workshop_id,
+  seller_id/name, checked_at и identity_fingerprint (SHA-256 неизменяемого токена).
+  Это техническая привязка к версии секрета, не сам токен; fingerprint не выводится
+  в Telegram, trace, отчёт или LLM. Успешный профиль не имеет произвольного TTL.
+- При смене токена нужен новый ответ seller-info; sid обязан совпасть с привязкой.
+  Для старой БД после migration115 fingerprint пуст: один повтор идентификации
+  после cooldown необходим, автоматически приписывать старый sid новому токену нельзя.
+- /wb check остаётся явным refresh identity и подчиняется тому же limiter.
+  Обычные sync и MCP tools используют общий кэш. Startup, меню, ListTools,
+  /wb debug и сохранённая сводка не отправляют WB HTTP.
+- Identity gate объединяет параллельные проверки. Каждый rate group имеет отдельный
+  gate до получения HTTP response; поздний 429 известен до следующего запроса группы.
+- Все response сохраняют безопасные numeric Remaining/Retry/Reset/Limit. При 429
+  Retry (секунды от получения ответа, НЕ Unix timestamp) / Retry-After имеют приоритет;
+  Reset используется при отсутствии валидного Retry. Без headers — локальный backoff.
+  Нулевая квота на HTTP200 также ставит cooldown. Без валидного срока headers используется консервативный полный документированный период группы: prices6s, остальные60s; source=local_interval, не выдуманный срок WB.
+- marketplace_cooldowns переиспользуется, более поздний deadline не сокращается.
+  Если локальный интервал длиннее server Retry, его source остаётся local_interval;
+  фактические server seconds отдельно видны в observations/trace.
+- 429 не повторяется внутри операции; будущие callers немедленно получают
+  BLOCKED_LOCALLY. Короткий pacing &lt;=30s допустим в фоновой работе, долгие ожидания
+  возвращаются как controlled error. Сетевые ошибки/5xx: максимум3 HTTP попытки
+  (с pacing их может быть меньше). 401/403/прочие4xx/redirects не повторяются.
+- 409 penalty ограничен marketplace group: выбран консервативный cost10 ввиду
+  разных официальных RU/EN указаний5/10. Не переносится на prices/content/analytics.
+- MCP возвращает IsError + structured code=WB_RATE_LIMITED, rate_key, endpoint,
+  retry_not_before, source, blocked_locally. SDK клиент восстанавливает тип ошибки.
+  WB_DAILY_SYNC сохраняет failed/partial_success, WB_RATE_LIMITED и максимальный
+  retry_not_before среди частей; расписание остаётся. Повторной петли jobs нет.
+- Trace: последние100 событий глобально в wb_request_trace, безопасные поля request,
+  caller/tool/workshop, HTTP status, duration, попытка, headers. CACHED и
+  BLOCKED_LOCALLY имеют HTTP=0. /wb debug требует MarketplaceManage, история
+  фильтруется по мастерской. Полных URL/query/body/Authorization/credentials нет.
+
+Группы применяются ко всему единственному настроенному кабинету, а не отдельно
+к Telegram user/tool. Это намеренно консервативно и защищает общие квоты категорий.
+Другие приложения с тем же кабинетом находятся вне этого процесса; их частоту
+этот limiter не координирует. Она может объяснять новые429, но пока не подтверждена.
+
+## Политика методов и официальные источники
+
+| Группа/метод | Документированный лимит / интервал / burst | Реализовано |
+|---|---|---|
+| seller-info | 1/min; 60s; burst10 на продавца, отдельная BASE-строка не найдена | 60s без использования burst; persistent identity |
+| prices | 10/6s; 600ms; burst5, общая Prices/Discounts группа | 600ms; response headers приоритетны |
+| wb-warehouses | 3/min; 20s; burst1; данные раз в30min | 20s; headers; тип токена локально только диагностируется |
+| content | 100/min; 600ms; burst5, выбранный cards/list | 600ms, cursor pagination |
+| marketplace | PERSONAL/SERVICE300/min; BASE/TEST150/min; burst20/10 | 400ms для всех, общая группа, без burst |
+
+Ссылки, сверка 2026-09-25 (ограничение свежести индекса описано выше):
+- https://dev.wildberries.ru/docs/openapi/api-information
+- https://dev.wildberries.ru/en/openapi/work-with-products
+- https://dev.wildberries.ru/openapi//analytics
+- https://dev.wildberries.ru/release-notes?id=272
+- https://dev.wildberries.ru/knowledge-base/articles/019d49a1-28ca-7735-bf2f-98210695abc7/limity-zaprosov-wb-api
+- https://dev.wildberries.ru/knowledge-base/articles/019d49a1-1540-76f6-befe-726633dc11be/dekodirovanie-i-proverka-tokenov-wb-api
+
+BASE определён локально по acc/for/t, JWT signature не проверялась. Это не доказательство
+прав на конкретный метод. Индекс WB указывает PERSONAL/SERVICE для wb-warehouses;
+текущую применимость к BASE нужно уточнять у WB. Не вводим новый жёсткий запрет
+на основе устаревшего индекса. В live-диагностике проверяется только prices.
+
+## Фактический before / after
+
+BEFORE: explicit /wb check → Seller HTTP (если allowed); первый legacy sync после
+restart/24h → Seller HTTP; первый MCP Stocks/Prices после restart/24h → ещё один
+Seller HTTP. Daily job мог инициировать этот MCP preflight. Меню/startup уже были
+без HTTP. Частота реальных отправок не восстанавливается из статуса последнего sync.
+
+AFTER: первый verified seller → SQLite; следующий caller/restart → CACHED;
+MCP Prices/Stocks проверяют привязку через общий cache и выполняют только нужный
+endpoint. При cache miss — единственный seller-info flight с общим cooldown.
+Explicit refresh идёт через тот же gate. Никакого heartbeat не добавлено:
+health — конфигурация, кэш и последние реальные ответы API. /ping не используется.
+
+До изменений полноценного request trace не было. Пример BEFORE можно показать
+только как известный статус: check failed/rate_limited; orders/wb_stocks blocked
+by seller-info. Это НЕ доказательство HTTP-вызова orders/stocks и не выдуманный лог.
+Пример AFTER из offline-теста: telegram_wb_sync Seller → WB_429 HTTP429 Retry120;
+через10s wb_daily_sync Seller → BLOCKED_LOCALLY HTTP0; после121s → HTTP200.
+Живые события записаны отдельно в audit.json отчёта, без смешения с mock.
+
+## Диагностика и данные
+
+Migration115: marketplace_connections.identity_fingerprint; wb_rate_observations;
+wb_request_trace; background_job_runs.retry_not_before. Существующие cooldown и
+бизнес-данные сохраняются. Миграцию выполняет обычный startup, не диагностическая команда.
+
+- Telegram: /wb debug — owner/manage-only локальный экран.
+- bin/workshop-agent.exe wb-rate-audit — read-only локальный отчёт.
+- bin/workshop-agent.exe wb-rate-audit --probe-prices — только при остановленном боте:
+  тот же in-memory MCP, существующий wb_get_prices, максимум ОДНА HTTP попытка,
+  без seller-info, фоновых заданий, Telegram, миграций или полного импорта.
+  Если нужна следующая страница, controlled result_limit означает ограничение
+  диагностического бюджета, не успешную полную синхронизацию.
+  Новые технические cooldown сохраняются в существующей marketplace_cooldowns,
+  чтобы последующий запуск не потерял реальный429. Бизнес-таблицы не меняются.
+  Read-only команда не меняет БД. .env читается только в памяти, не выводится/не записывается.
+
+## Реальная диагностика 2026-09-25
+
+Read-only отчёт 08:53:44 UTC подтвердил BASE и сохранённый common cooldown
+до 2026-09-25T12:17:48.284Z (15:17:48.284 Москва). Рабочий процесс к live-пробе
+уже завершился; агент его не останавливал и рабочий бот не запускал.
+
+В 08:57:03 UTC существующий wb_get_prices через MCP получил HTTP200 за138ms.
+Ровно1 HTTP; следующий page locally stopped: DIAGNOSTIC_BUDGET / HTTP0.
+Headers: Remaining=0, Limit=1, Retry/Reset не распознаны как числовые значения.
+Это основание для добавленного fallback полного периода при Remaining0.
+Фактический Limit1 отличается от индексированной таблицы10/6s: точный текущий
+период BASE по этому единственному ответу установить нельзя. Полный импорт
+и работоспособность stocks этим probe НЕ подтверждены. Общего запрета всех WB API
+нет: prices доступен. Seller-info не вызывался, его deadline не сбрасывался.
+
+Raw-safe evidence: reports/wb-rate-limit-audit/20260925T085703.592905300Z/audit.json.
+Итоговый report.html и команды приёмки указаны в WORKSTATE.
+
+## Проверяемые сценарии
+
+- TestRate120SharedCallersAndExpiry: 429 +120s, локальный запрет через10s, запрос после121s.
+- TestServerCooldownSurvivesNewClientAndNoEarlyRequest: длинный cooldown после нового клиента.
+- TestPersistentIdentityRestartAndTokenRotation: SQLite cache, menu/debug/restart безHTTP;
+  изменённый токен не использует чужую привязку.
+- TestConcurrentSellerSingleFlightAndGroup429 / TestGroupGateWaitsFor429BeforeNextHTTP:
+  параллельные проверки и разные методы одной группы не обходят пришедший429.
+- TestRemainingZeroOnSuccessfulResponse: HTTP200/Remaining0/Reset120.
+- TestMCPUsesPersistentIdentityAndStructuredCooldown: настоящий MCP in-memory,
+  shared identity, deadline/source/caller/workshop без потерь.
+- TestRateLimitedRunPersistsDeadlineAndSchedule: partial_success, deadline, расписание сохранено.
+- TestDiagnosticBudgetBoundsPagesAndRetries: один HTTP, никакой массовой live-выгрузки.
+- Существующие тесты проверяют 401/403/4xx/5xx, secrets, redirects/hosts,
+  пагинацию, SQLite/migrations, permissions, изоляцию и partial snapshots.
+
+Состояние итоговых команд и артефактов — docs/marketplace/WORKSTATE.md и L3.
+</pre></details><h2>Сохранённые cooldown и безопасные диагностические данные</h2><p>Снимок на момент пробы. Старые истёкшие сроки не означают текущую блокировку. Новые HTTP429 в этой пробе отсутствуют. /wb debug показывает актуальные локальные сроки без запросов WB.</p><details><summary>audit.json — без токена, Authorization и тел ответов</summary><pre>{
+  &quot;at&quot;: &quot;2026-09-25T08:57:03.5929053Z&quot;,
+  &quot;live_prices_probe&quot;: true,
+  &quot;workshop_id&quot;: 6,
+  &quot;enabled&quot;: true,
+  &quot;saved_profile_present&quot;: true,
+  &quot;saved_profile_fetched&quot;: &quot;2026-09-23T12:11:31.8540973Z&quot;,
+  &quot;before&quot;: {
+    &quot;token_type&quot;: &quot;BASE&quot;,
+    &quot;identity_cached&quot;: false,
+    &quot;identity_fetched_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;rates&quot;: [
+      {
+        &quot;rate_key&quot;: &quot;common&quot;,
+        &quot;endpoint&quot;: &quot;/api/v1/seller-info&quot;,
+        &quot;blocked&quot;: true,
+        &quot;retry_not_before&quot;: &quot;2026-09-25T15:17:48.284+03:00&quot;,
+        &quot;source&quot;: &quot;wb_retry&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;prices&quot;,
+        &quot;endpoint&quot;: &quot;/api/v2/list/goods/filter&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+        &quot;source&quot;: &quot;&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;analytics&quot;,
+        &quot;endpoint&quot;: &quot;/api/analytics/v1/stocks-report/wb-warehouses&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;2026-09-24T15:18:07.474+03:00&quot;,
+        &quot;source&quot;: &quot;local_interval&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;content&quot;,
+        &quot;endpoint&quot;: &quot;/content/v2/get/cards/list&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+        &quot;source&quot;: &quot;&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;marketplace&quot;,
+        &quot;endpoint&quot;: &quot;/api/v3/*&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+        &quot;source&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;after&quot;: {
+    &quot;token_type&quot;: &quot;BASE&quot;,
+    &quot;identity_cached&quot;: false,
+    &quot;identity_fetched_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;rates&quot;: [
+      {
+        &quot;rate_key&quot;: &quot;common&quot;,
+        &quot;endpoint&quot;: &quot;/api/v1/seller-info&quot;,
+        &quot;blocked&quot;: true,
+        &quot;retry_not_before&quot;: &quot;2026-09-25T15:17:48.284+03:00&quot;,
+        &quot;source&quot;: &quot;wb_retry&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;prices&quot;,
+        &quot;endpoint&quot;: &quot;/api/v2/list/goods/filter&quot;,
+        &quot;blocked&quot;: true,
+        &quot;retry_not_before&quot;: &quot;2026-09-25T11:57:04.821+03:00&quot;,
+        &quot;source&quot;: &quot;local_interval&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;analytics&quot;,
+        &quot;endpoint&quot;: &quot;/api/analytics/v1/stocks-report/wb-warehouses&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;2026-09-24T15:18:07.474+03:00&quot;,
+        &quot;source&quot;: &quot;local_interval&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;content&quot;,
+        &quot;endpoint&quot;: &quot;/content/v2/get/cards/list&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+        &quot;source&quot;: &quot;&quot;
+      },
+      {
+        &quot;rate_key&quot;: &quot;marketplace&quot;,
+        &quot;endpoint&quot;: &quot;/api/v3/*&quot;,
+        &quot;blocked&quot;: false,
+        &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+        &quot;source&quot;: &quot;&quot;
+      }
+    ]
+  },
+  &quot;history&quot;: [
+    {
+      &quot;timestamp&quot;: &quot;2026-09-25T08:57:03.6329822Z&quot;,
+      &quot;workshop_id&quot;: 6,
+      &quot;caller&quot;: &quot;diagnostic&quot;,
+      &quot;mcp_tool&quot;: &quot;wb_get_prices&quot;,
+      &quot;http_method&quot;: &quot;GET&quot;,
+      &quot;wb_method&quot;: &quot;Prices&quot;,
+      &quot;endpoint&quot;: &quot;/api/v2/list/goods/filter&quot;,
+      &quot;http_status&quot;: 200,
+      &quot;duration_ms&quot;: 138,
+      &quot;retry_attempt&quot;: 0,
+      &quot;result&quot;: &quot;HTTP_RESPONSE&quot;,
+      &quot;rate&quot;: {
+        &quot;rate_key&quot;: &quot;prices&quot;,
+        &quot;received_at&quot;: &quot;2026-09-25T11:57:03.7716943+03:00&quot;,
+        &quot;endpoint&quot;: &quot;/api/v2/list/goods/filter&quot;,
+        &quot;http_status&quot;: 200,
+        &quot;remaining&quot;: 0,
+        &quot;retry_seconds&quot;: null,
+        &quot;reset_seconds&quot;: null,
+        &quot;limit&quot;: 1
+      }
+    },
+    {
+      &quot;timestamp&quot;: &quot;2026-09-25T08:57:04.2357275Z&quot;,
+      &quot;workshop_id&quot;: 6,
+      &quot;caller&quot;: &quot;diagnostic&quot;,
+      &quot;mcp_tool&quot;: &quot;wb_get_prices&quot;,
+      &quot;http_method&quot;: &quot;GET&quot;,
+      &quot;wb_method&quot;: &quot;Prices&quot;,
+      &quot;endpoint&quot;: &quot;/api/v2/list/goods/filter&quot;,
+      &quot;http_status&quot;: 0,
+      &quot;duration_ms&quot;: 0,
+      &quot;retry_attempt&quot;: 0,
+      &quot;result&quot;: &quot;DIAGNOSTIC_BUDGET&quot;
+    }
+  ],
+  &quot;probe_result&quot;: &quot;BOUNDED_PROBE_ONLY_NOT_A_FULL_IMPORT&quot;
+}</pre></details></body></html>

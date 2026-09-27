@@ -1,0 +1,6659 @@
+[
+  {
+    "name": "ozon_list_shops",
+    "title": null,
+    "description": "Registered Ozon shops (магазины): shop_id + name. Use shop_id in all other tools.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 951,
+    "methods": []
+  },
+  {
+    "name": "ozon_actions_list",
+    "title": null,
+    "description": "[P0] Ozon promotions available now and which goods may be pulled in (акции). Goods in promos can sell below cost.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 996,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "actions_list",
+        "line": 57,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/v1/actions",
+            "line": 59
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_actions_candidates",
+    "title": null,
+    "description": "[P0] Candidate goods Ozon PLANS to pull into a promotion; pre-emptive check against selling at a loss (кандидаты в акцию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer",
+          "description": "action id from ozon_actions_list"
+        }
+      },
+      "required": [
+        "action_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 998,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "actions_candidates",
+        "line": 61,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/candidates",
+            "line": 66
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_actions_products",
+    "title": null,
+    "description": "[P0] Goods already participating in a promotion, sold at the promo price (товары в акции).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer",
+          "description": "action id"
+        }
+      },
+      "required": [
+        "action_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1000,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "actions_products",
+        "line": 68,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/products",
+            "line": 73
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_actions_activate",
+    "title": null,
+    "description": "[P0] Add goods to a promotion at a given promo price (вступить в акцию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "product_id": {
+                "type": "integer"
+              },
+              "action_price": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      },
+      "required": [
+        "action_id",
+        "products"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1002,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "actions_products_activate",
+        "line": 75,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/products/activate",
+            "line": 79
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_actions_deactivate",
+    "title": null,
+    "description": "[P0] Remove goods from a promotion, e.g. loss-making ones (выйти из акции).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "action_id",
+        "product_ids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1004,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "actions_products_deactivate",
+        "line": 84,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/products/deactivate",
+            "line": 86
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_actions",
+    "title": null,
+    "description": "Seller's own promotions, as opposed to Ozon's (собственные акции).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "description": "status filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1008,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_actions_list",
+        "line": 92,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/list",
+            "line": 97
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_action_create",
+    "title": null,
+    "description": "Create the seller's own discount promotion (создать акцию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "date_start": {
+          "type": "string",
+          "description": "RFC3339"
+        },
+        "date_end": {
+          "type": "string"
+        },
+        "min_action_percent": {
+          "type": "integer",
+          "description": "min discount %"
+        }
+      },
+      "required": [
+        "title",
+        "date_start",
+        "date_end",
+        "min_action_percent"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1010,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_action_create_discount",
+        "line": 99,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/create/discount",
+            "line": 102
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_action_toggle",
+    "title": null,
+    "description": "Enable/disable the seller's own promotion (включить акцию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "is_turn_on": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "action_id",
+        "is_turn_on"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1014,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_action_toggle",
+        "line": 107,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/change-activity",
+            "line": 109
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_action_products",
+    "title": null,
+    "description": "Goods in the seller's own promotion (товары акции).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [
+        "action_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1016,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_action_products",
+        "line": 112,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/products/list",
+            "line": 117
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_action_products_add",
+    "title": null,
+    "description": "Add goods to the seller's own promotion (добавить товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "products": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "[{product_id, action_price}, ...]"
+        }
+      },
+      "required": [
+        "action_id",
+        "products"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1018,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_action_products_add",
+        "line": 119,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/products/add",
+            "line": 121
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_seller_action_products_delete",
+    "title": null,
+    "description": "Remove goods from the seller's own promotion (убрать товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "action_id",
+        "product_ids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1020,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "seller_action_products_delete",
+        "line": 124,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/seller-actions/products/delete",
+            "line": 126
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_list",
+    "title": null,
+    "description": "Pricing strategies: auto price management against competitors (ценовые стратегии).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1024,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_list",
+        "line": 130,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/list",
+            "line": 132
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_create",
+    "title": null,
+    "description": "Create a pricing strategy. competitors: [{competitor_id, coefficient}], coefficient 0.5-1.2 of the competitor price (создать стратегию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "name",
+        "competitors"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1026,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_create",
+        "line": 134,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/create",
+            "line": 139
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_info",
+    "title": null,
+    "description": "Pricing strategy details (детали стратегии).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "strategy_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "strategy_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1028,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_info",
+        "line": 142,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/info",
+            "line": 144
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_update",
+    "title": null,
+    "description": "Update a pricing strategy (обновить стратегию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "strategy_id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "competitors": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "strategy_id",
+        "name",
+        "competitors"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1030,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_update",
+        "line": 146,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/update",
+            "line": 148
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_delete",
+    "title": null,
+    "description": "Delete a pricing strategy (удалить стратегию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "strategy_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "strategy_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1032,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_delete",
+        "line": 151,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/delete",
+            "line": 153
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_status",
+    "title": null,
+    "description": "Enable/disable a pricing strategy (статус стратегии).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "strategy_id": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "strategy_id",
+        "enabled"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1034,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_status",
+        "line": 155,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/status",
+            "line": 157
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_strategy_products",
+    "title": null,
+    "description": "Strategy goods: action=list | add | delete (товары стратегии).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "description": "list | add | delete"
+        },
+        "strategy_id": {
+          "type": "string",
+          "description": "for list/add"
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "for add/delete"
+        }
+      },
+      "required": [
+        "action"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1036,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_products_add",
+        "line": 160,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/products/add",
+            "line": 162
+          }
+        ]
+      },
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_products_delete",
+        "line": 165,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/products/delete",
+            "line": 167
+          }
+        ]
+      },
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_strategy_products_list",
+        "line": 169,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/products/list",
+            "line": 171
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_competitors",
+    "title": null,
+    "description": "Competitors from other marketplaces, input for pricing strategies (конкуренты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1043,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_competitors_list",
+        "line": 173,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/competitors/list",
+            "line": 175
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_pricing_competitor_prices",
+    "title": null,
+    "description": "Competitor price for goods in strategies (цены конкурентов).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1045,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "pricing_competitor_price",
+        "line": 177,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/pricing-strategy/product/info",
+            "line": 179
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_set_prices",
+    "title": null,
+    "description": "[P0] Set prices. Use min_price to block promos below cost (установить цены).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "prices": {
+          "type": "array",
+          "description": "[{offer_id, price, old_price, min_price, auto_action_enabled}]",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "prices"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1049,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_import_prices",
+        "line": 182,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/import/prices",
+            "line": 194
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_get_prices",
+    "title": null,
+    "description": "[P0] Current prices, discounts, min price and price index. price_index over 1.15 risks quarantine (цены, индекс цен).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "offer_id filter"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "product_id filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1051,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_prices",
+        "line": 202,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v5/product/info/prices",
+            "line": 216
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_get_prices_v4",
+    "title": null,
+    "description": "Prices via v4 API, includes purchase_price/cost (цены v4, себестоимость).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "offer_id filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1057,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_prices_v4",
+        "line": 196,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v5/product/info/prices",
+            "line": 216
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_min_price_timer_status",
+    "title": null,
+    "description": "[P0] Min price timer status, 30 days. Expired means goods are exposed to promos below cost (таймер минимальной цены).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1062,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "action_timer_status",
+        "line": 218,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/action/timer/status",
+            "line": 220
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_min_price_timer_renew",
+    "title": null,
+    "description": "[P0] Renew the min price timer for 30 days (продлить таймер).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1064,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "action_timer_update",
+        "line": 224,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/action/timer/update",
+            "line": 226
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_transactions",
+    "title": null,
+    "description": "[P0] Financial operations: commissions, logistics, storage, returns (транзакции, расходы). Built from daily accruals — Ozon retired the period endpoint; max 31 days per call.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "YYYY-MM-DDT00:00:00Z"
+        },
+        "date_to": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "default": 50
+        },
+        "operation_type": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "type filter"
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1068,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_transaction_list",
+        "line": 237,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/accrual/by-day",
+            "line": 438
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_totals",
+    "title": null,
+    "description": "[P0] Period totals by accrual category and service type_id (итоги финансов). Recomputed from daily accruals — Ozon retired the totals endpoint; max 31 days per call.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1074,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_transaction_totals",
+        "line": 270,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/accrual/types",
+            "line": 390
+          },
+          {
+            "method": "POST",
+            "path": "/v1/finance/accrual/by-day",
+            "line": 438
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_realization",
+    "title": null,
+    "description": "Monthly realization report, v2 (отчёт о реализации).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "month": {
+          "type": "integer",
+          "description": "1-12"
+        },
+        "year": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "month",
+        "year"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1076,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_realization",
+        "line": 374,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/finance/realization",
+            "line": 376
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_mutual_settlement",
+    "title": null,
+    "description": "Monthly mutual settlement report (взаиморасчёты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM"
+        }
+      },
+      "required": [
+        "date"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1078,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_mutual_settlement",
+        "line": 378,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/mutual-settlement",
+            "line": 380
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_accruals",
+    "title": null,
+    "description": "Daily accruals (начисления).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        }
+      },
+      "required": [
+        "date"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1080,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_accrual_by_day",
+        "line": 429,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/accrual/by-day",
+            "line": 438
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_balance",
+    "title": null,
+    "description": "[P0] Seller balance for a period: opening/closing, accruals, payouts (Beta). No dates = last 30 days (баланс).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "date_to": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1082,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_balance",
+        "line": 562,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/balance",
+            "line": 572
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_cash_flow",
+    "title": null,
+    "description": "Cash flow (движение средств).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1085,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_cash_flow",
+        "line": 444,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/cash-flow-statement/list",
+            "line": 448
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_rating_summary",
+    "title": null,
+    "description": "[P0] Seller rating; drives search position, promo access and storage cost (рейтинг продавца).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1089,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "rating_summary",
+        "line": 455,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/rating/summary",
+            "line": 457
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_rating_history",
+    "title": null,
+    "description": "Seller rating history (история рейтинга).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1091,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "rating_history",
+        "line": 459,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/rating/history",
+            "line": 461
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_reviews",
+    "title": null,
+    "description": "[P0] Product reviews; negatives cut conversion (отзывы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "sku": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "SKU filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1095,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "review_list",
+        "line": 467,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/review/list",
+            "line": 477
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_review_reply",
+    "title": null,
+    "description": "Reply to a review (ответить на отзыв).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "review_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "review_id",
+        "text"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1100,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "review_comment_create",
+        "line": 479,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/review/comment/create",
+            "line": 481
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_review_comments",
+    "title": null,
+    "description": "Review comments. Ozon has no edit-reply method: delete and create again (комментарии к отзыву).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "review_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 20
+        }
+      },
+      "required": [
+        "review_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1102,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "review_comment_list",
+        "line": 483,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/review/comment/list",
+            "line": 485
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_review_reply_delete",
+    "title": null,
+    "description": "Delete a review reply (удалить ответ).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "review_id": {
+          "type": "string"
+        },
+        "comment_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "review_id",
+        "comment_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1104,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "review_comment_delete",
+        "line": 491,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/review/comment/delete",
+            "line": 493
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaigns",
+    "title": null,
+    "description": "[P0] Ad campaigns: budgets in micro-rubles (1000000 = 1₽), statuses. adv_object_type: SKU | SEARCH_PROMO | BANNER. state: CAMPAIGN_STATE_RUNNING | _STOPPED | _INACTIVE (реклама, кампании).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "filter"
+        },
+        "adv_object_type": {
+          "type": "string",
+          "description": "type filter"
+        },
+        "state": {
+          "type": "string",
+          "description": "status filter"
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1108,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaigns_list",
+        "line": 1215,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/api/client/campaign",
+            "line": 1232
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_statistics",
+    "title": null,
+    "description": "[P0] Campaign statistics, async Ozon report, up to ~2 min. Limits: ≤10 campaigns, ≤62 days, one report at a time (статистика рекламы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaigns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "campaign ids"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "date_to": {
+          "type": "string"
+        },
+        "group_by": {
+          "type": "string",
+          "default": "DATE"
+        }
+      },
+      "required": [
+        "campaigns",
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1115,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "statistics",
+        "line": 1348,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/statistics/json",
+            "line": 1357
+          },
+          {
+            "method": "GET",
+            "path": "f'/api/client/statistics/{uuid}",
+            "line": 1367
+          },
+          {
+            "method": "POST",
+            "path": "/api/client/token",
+            "line": 1183
+          },
+          {
+            "method": "GET",
+            "path": "/api/client/statistics/report",
+            "line": 1370
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_stop",
+    "title": null,
+    "description": "[P0] Emergency stop of an ad campaign (остановить рекламу).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1121,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_deactivate",
+        "line": 1281,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/api/client/campaign/{campaign_id}/deactivate",
+            "line": 1283
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_objects",
+    "title": null,
+    "description": "Goods and bids inside an ad campaign (товары и ставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1124,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_objects",
+        "line": 1322,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "f'/api/client/campaign/{campaign_id}/objects",
+            "line": 1324
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_create",
+    "title": null,
+    "description": "Create a CPC Trafarety campaign, the only type creatable via API. placement: PLACEMENT_SEARCH_AND_CATEGORY | PLACEMENT_TOP_PROMOTION. strategy: MAX_CLICKS | TOP_MAX_CLICKS | TARGET_BIDS | TOP_PROMOTION | NO_AUTO_STRATEGY. Min budget 2000₽ per SKU; add goods via ozon_ad_products_add (создать кампанию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "placement": {
+          "type": "string",
+          "default": "PLACEMENT_SEARCH_AND_CATEGORY"
+        },
+        "strategy": {
+          "type": "string",
+          "default": "MAX_CLICKS"
+        },
+        "daily_budget_rub": {
+          "type": "number",
+          "description": "daily budget, RUB"
+        },
+        "weekly_budget_rub": {
+          "type": "number",
+          "description": "weekly budget, RUB"
+        }
+      },
+      "required": [
+        "title"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1127,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_create",
+        "line": 1234,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/campaign/cpc/v2/product",
+            "line": 1257
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_activate",
+    "title": null,
+    "description": "Start an ad campaign (запустить кампанию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1136,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_activate",
+        "line": 1277,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/api/client/campaign/{campaign_id}/activate",
+            "line": 1279
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_bids",
+    "title": null,
+    "description": "[P0] Update goods bids in a campaign. bids: [{sku, bid}], bid in MICRO-RUBLES as a string (10000000 = 10₽) (ставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "bids": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "campaign_id",
+        "bids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1139,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_products_update",
+        "line": 1297,
+        "endpoints": [
+          {
+            "method": "PUT",
+            "path": "f'/api/client/campaign/{campaign_id}/products",
+            "line": 1299
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_budget",
+    "title": null,
+    "description": "Campaign budget, taken from the campaign list; Ozon has no separate endpoint (бюджет кампании).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1142,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaigns_list",
+        "line": 1215,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/api/client/campaign",
+            "line": 1232
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_budget_update",
+    "title": null,
+    "description": "Change campaign budget or period (PATCH). Budgets in RUBLES (изменить бюджет).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "daily_budget_rub": {
+          "type": "number"
+        },
+        "weekly_budget_rub": {
+          "type": "number"
+        },
+        "from_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "to_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1145,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_update",
+        "line": 1259,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/token",
+            "line": 1183
+          },
+          {
+            "method": "PATCH",
+            "path": "f'/api/client/campaign/{campaign_id}",
+            "line": 1273
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_campaign_products",
+    "title": null,
+    "description": "Goods and bids in a campaign (товары кампании).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "required": [
+        "campaign_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1154,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_products_list",
+        "line": 1285,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "f'/api/client/campaign/{campaign_id}/v2/products",
+            "line": 1287
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_products_add",
+    "title": null,
+    "description": "Add goods to a CPC campaign, max 500. bids: [{sku, bid}] in micro-rubles; without bid the competitive bid applies (добавить товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "bids": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "campaign_id",
+        "bids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1157,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_products_add",
+        "line": 1290,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/api/client/campaign/{campaign_id}/products",
+            "line": 1295
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_products_delete",
+    "title": null,
+    "description": "Remove goods from a campaign (убрать товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "campaign_id",
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1160,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "campaign_products_delete",
+        "line": 1301,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/api/client/campaign/{campaign_id}/products/delete",
+            "line": 1303
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_bids_competitive",
+    "title": null,
+    "description": "Competitive bids by SKU in a campaign, max 200 (конкурентные ставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaign_id": {
+          "type": "integer"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "campaign_id",
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1163,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "bids_competitive",
+        "line": 1306,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "f'/api/client/campaign/{campaign_id}/products/bids/competitive",
+            "line": 1308
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_min_bids",
+    "title": null,
+    "description": "Minimum bids by SKU. payment_type: CPC | CPO | CPC_TOP (минимальные ставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "payment_type": {
+          "type": "string",
+          "default": "CPC"
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1166,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "min_sku_bids",
+        "line": 1311,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/min/sku",
+            "line": 1313
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_search_promo_products",
+    "title": null,
+    "description": "[P0] Goods in pay-per-order top promotion (CPO): bid %, visibility. Bids fixed since 02.2025 (оплата за заказ).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1169,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "search_promo_products",
+        "line": 1329,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/campaign/search_promo/v2/products",
+            "line": 1331
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_search_promo_enable",
+    "title": null,
+    "description": "Enable pay-per-order promotion for goods, max 1000 SKU (включить продвижение).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1172,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "search_promo_enable",
+        "line": 1334,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/search_promo/product/enable",
+            "line": 1336
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_search_promo_disable",
+    "title": null,
+    "description": "[P0] Disable pay-per-order promotion, max 1000 SKU; use when ДРР is high (отключить продвижение).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1175,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "search_promo_disable",
+        "line": 1338,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/search_promo/product/disable",
+            "line": 1340
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_search_promo_bids",
+    "title": null,
+    "description": "Fixed CPO bids by SKU, max 200 (ставки CPO).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1178,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "search_promo_cpo_bids",
+        "line": 1342,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/api/client/search_promo/get_cpo_min_bids",
+            "line": 1344
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_statistics_daily",
+    "title": null,
+    "description": "Daily ad statistics (ежедневная статистика).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaigns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "campaigns",
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1184,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "statistics_daily",
+        "line": 1381,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/api/client/statistics/daily/json",
+            "line": 1386
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_statistics_expenses",
+    "title": null,
+    "description": "Ad campaign spend (расходы на рекламу).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaigns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "campaigns",
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1187,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "statistics_expenses",
+        "line": 1388,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/api/client/statistics/expense/json",
+            "line": 1393
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_statistics_products",
+    "title": null,
+    "description": "[P0] CPC campaign stats per product: spend, CTR, CPC, orders, ДРР. Synchronous (статистика по товарам).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "campaigns": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "campaigns",
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1181,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "statistics_products",
+        "line": 1395,
+        "endpoints": [
+          {
+            "method": "GET",
+            "path": "/api/client/statistics/campaign/product/json",
+            "line": 1397
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_ad_balance",
+    "title": null,
+    "description": "Ad account balance; no official method, see spend in ozon_ad_statistics_expenses (баланс рекламы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1190,
+    "methods": [
+      {
+        "class": "OzonPerformanceClient",
+        "name": "balance",
+        "line": 1403,
+        "endpoints": []
+      }
+    ]
+  },
+  {
+    "name": "ozon_analytics",
+    "title": null,
+    "description": "Analytics by SKU. Funnel metrics (session_view, hits_view, position_category) are deprecated by Ozon; trade metrics work: revenue, ordered_units, delivered_units, returns, cancellations. For search positions use ozon_product_queries (аналитика).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        },
+        "metrics": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "revenue, ordered_units, delivered_units, returns, cancellations"
+        },
+        "dimensions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "sku, day, week, month"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to",
+        "metrics",
+        "dimensions"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1195,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "analytics_data",
+        "line": 496,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/data",
+            "line": 513
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_stock_on_warehouses",
+    "title": null,
+    "description": "Stock and turnover at Ozon warehouses, via turnover/stocks — the old endpoint was removed (остатки на складах).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1201,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "analytics_stock_on_warehouses",
+        "line": 530,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/turnover/stocks",
+            "line": 528
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_analytics_stocks",
+    "title": null,
+    "description": "Stock analytics for specific goods: availability, scarcity, liquidity, 1-100 SKU (аналитика остатков).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "SKUs, 1-100"
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1206,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "analytics_stocks",
+        "line": 518,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/stocks",
+            "line": 520
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_queries",
+    "title": null,
+    "description": "[P0] Search queries and positions of my goods in Ozon search (Premium). Visibility drives sales (поисковые запросы, позиции).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "details": {
+          "type": "boolean",
+          "default": false,
+          "description": "true = per-query detail"
+        }
+      },
+      "required": [
+        "date_from",
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1431,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_queries_details",
+        "line": 548,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/product-queries/details",
+            "line": 553
+          }
+        ]
+      },
+      {
+        "class": "OzonSellerClient",
+        "name": "product_queries",
+        "line": 536,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/product-queries",
+            "line": 544
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_search_queries_top",
+    "title": null,
+    "description": "Popular Ozon search queries, input for card SEO (топ запросов).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1435,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "search_queries_top",
+        "line": 558,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/search-queries/top",
+            "line": 560
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_supply_orders",
+    "title": null,
+    "description": "FBO supply orders (v3), returns order_ids; details via ozon_supply_order_get (заявки на поставку).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "states": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "status codes 1-8, default all"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1437,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "supply_orders_list",
+        "line": 891,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/supply-order/list",
+            "line": 897
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_supply_order_get",
+    "title": null,
+    "description": "FBO supply order details, 1-50 (детали поставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "order_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "order_ids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1439,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "supply_orders_get",
+        "line": 902,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/supply-order/get",
+            "line": 904
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_supply_order_counters",
+    "title": null,
+    "description": "Supply order counters by status (счётчики поставок).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1441,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "supply_order_status_counter",
+        "line": 906,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/supply-order/status/counter",
+            "line": 908
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_supply_order_timeslots",
+    "title": null,
+    "description": "Available FBO supply timeslots (таймслоты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "supply_order_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "supply_order_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1443,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "supply_order_timeslots",
+        "line": 910,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/supply-order/timeslot/get",
+            "line": 912
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_list",
+    "title": null,
+    "description": "All goods. visibility: ALL, VISIBLE, QUARANTINE, ARCHIVED and others (список товаров).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "default": "ALL",
+          "description": "ALL, VISIBLE, QUARANTINE, ARCHIVED..."
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1210,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_list",
+        "line": 593,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/product/list",
+            "line": 598
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_info",
+    "title": null,
+    "description": "Extended product info (информация о товарах).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1215,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_list",
+        "line": 603,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/product/info/list",
+            "line": 605
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_attributes",
+    "title": null,
+    "description": "Product attributes including BRAND (атрибуты, бренд).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "offer_id filter"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "id filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1217,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_attributes",
+        "line": 609,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/product/info/attributes",
+            "line": 622
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_stocks",
+    "title": null,
+    "description": "Product stock at FBO/FBS warehouses (остатки товаров).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1223,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_stocks",
+        "line": 624,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/product/info/stocks",
+            "line": 637
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_certificates",
+    "title": null,
+    "description": "Product certificates; an expired one blocks the card (сертификаты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1229,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_certificate_list",
+        "line": 639,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/certificate/list",
+            "line": 643
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_import",
+    "title": null,
+    "description": "Create/update goods, bulk import (импорт товаров).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "goods to import"
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1233,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_import",
+        "line": 648,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/product/import",
+            "line": 650
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_import_info",
+    "title": null,
+    "description": "Product import task status (статус импорта).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "task_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "task_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1235,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_import_info",
+        "line": 652,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/import/info",
+            "line": 654
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_update_offer_id",
+    "title": null,
+    "description": "Update product offer IDs (артикулы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "update_offer_id": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "update_offer_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1237,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_update_offer_id",
+        "line": 656,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/update/offer-id",
+            "line": 658
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_update_images",
+    "title": null,
+    "description": "Update product images (изображения).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "integer"
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "product_id",
+        "images"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1239,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_update_images",
+        "line": 660,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/pictures/import",
+            "line": 662
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_description",
+    "title": null,
+    "description": "Product description by offer_id (описание товара).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "offer_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1241,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_description",
+        "line": 664,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/info/description",
+            "line": 666
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_update_stocks",
+    "title": null,
+    "description": "Update FBS stock (обновить остатки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "stocks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "offer_id/product_id, stock, warehouse_id"
+        }
+      },
+      "required": [
+        "stocks"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1243,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_update_stocks",
+        "line": 668,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/products/stocks",
+            "line": 670
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_unarchive",
+    "title": null,
+    "description": "Restore goods from archive (вернуть из архива).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1245,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_unarchive",
+        "line": 672,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/unarchive",
+            "line": 674
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_delete",
+    "title": null,
+    "description": "Delete goods without SKU from archive, by offer_id (удалить товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "offer_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "offer_ids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1247,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_delete",
+        "line": 676,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/products/delete",
+            "line": 678
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_limits",
+    "title": null,
+    "description": "Product creation limits (лимиты товаров).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1256,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_limit",
+        "line": 680,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/product/info/limit",
+            "line": 682
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_rating_by_sku",
+    "title": null,
+    "description": "Content rating of goods (рейтинг контента).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1258,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_rating_by_sku",
+        "line": 684,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/rating-by-sku",
+            "line": 686
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_discounted",
+    "title": null,
+    "description": "Markdown info for discounted SKUs (уценённые товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "discounted_skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "discounted_skus"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1260,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_info_discounted",
+        "line": 688,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/info/discounted",
+            "line": 690
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_attributes_update",
+    "title": null,
+    "description": "Update product characteristics without a full card re-upload (обновить характеристики).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "[{offer_id, attributes: [{id, values}]}]"
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1249,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_attributes_update",
+        "line": 574,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/attributes/update",
+            "line": 576
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_import_by_sku",
+    "title": null,
+    "description": "Create a copy product from an existing Ozon SKU (копия товара).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "[{sku, name, offer_id, price, old_price, vat, currency_code}]"
+        }
+      },
+      "required": [
+        "items"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1251,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_import_by_sku",
+        "line": 578,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/import-by-sku",
+            "line": 580
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_stocks_by_warehouse",
+    "title": null,
+    "description": "FBS stock per warehouse (v2; v1 is switched off 2026-04-07) (остатки по складам).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "skus": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          },
+          "description": "filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1253,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_stocks_by_warehouse",
+        "line": 582,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/product/info/stocks-by-warehouse/fbs",
+            "line": 590
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_orders_fbs",
+    "title": null,
+    "description": "FBS orders with financial data. Cursor pagination: if has_next=true, repeat with cursor from the response (заказы FBS).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "since": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "status": {
+          "type": "string",
+          "description": "awaiting_packaging, awaiting_deliver, delivering, etc."
+        },
+        "cursor": {
+          "type": "string",
+          "description": "next-page cursor from previous response"
+        }
+      },
+      "required": [
+        "since",
+        "to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1264,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_list",
+        "line": 707,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/posting/fbs/list",
+            "line": 735
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_get",
+    "title": null,
+    "description": "FBS posting details (детали отправления).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1271,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_get",
+        "line": 737,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/posting/fbs/get",
+            "line": 739
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_ship",
+    "title": null,
+    "description": "Assemble an FBS order (v4). packages: [{products: [{product_id, quantity}]}] (собрать заказ).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        },
+        "packages": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "required": [
+        "posting_number",
+        "packages"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1273,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_ship",
+        "line": 741,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/posting/fbs/ship",
+            "line": 743
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_orders_fbs_unfulfilled",
+    "title": null,
+    "description": "Unfulfilled FBS orders awaiting packaging: statuses awaiting_packaging and awaiting_deliver, last 30 days. Cursor pagination when has_next=true (несобранные заказы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "cursor": {
+          "type": "string",
+          "description": "next-page cursor from previous response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1275,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_unfulfilled",
+        "line": 749,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v4/posting/fbs/list",
+            "line": 783
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_label",
+    "title": null,
+    "description": "FBS posting labels, PDF base64 (этикетки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_numbers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "posting_numbers"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1280,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_package_label",
+        "line": 785,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/package-label",
+            "line": 787
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_cancel",
+    "title": null,
+    "description": "Cancel an FBS posting (отменить отправление).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        },
+        "cancel_reason_id": {
+          "type": "integer"
+        },
+        "cancel_reason_message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number",
+        "cancel_reason_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1282,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_cancel",
+        "line": 866,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/cancel",
+            "line": 868
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_cancel_reasons",
+    "title": null,
+    "description": "FBS cancellation reasons (причины отмены).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1284,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_cancel_reasons",
+        "line": 870,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/cancel-reason/list",
+            "line": 872
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_act_create",
+    "title": null,
+    "description": "Create an FBS handover act (акт приёма-передачи). DEPRECATED: Ozon switches this endpoint off on 2026-09-07 — use ozon_carriage_create plus ozon_carriage_approve.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "containers_count": {
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1286,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_act_create",
+        "line": 789,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/act/create",
+            "line": 794
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_finance_accrual_types",
+    "title": null,
+    "description": "Accrual type reference: what each type_id in the finance tools means (справочник начислений).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1288,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "finance_accrual_types",
+        "line": 382,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/accrual/types",
+            "line": 390
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_carriage_delivery_list",
+    "title": null,
+    "description": "Delivery methods and their carriages (методы доставки, отгрузки). Source of delivery_method_id for ozon_carriage_create.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1290,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "carriage_delivery_list",
+        "line": 820,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/carriage/delivery/list",
+            "line": 826
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_action_auto_add_products",
+    "title": null,
+    "description": "[P0] Goods Ozon will add to a promotion by itself on a given date (автодобавление в акцию).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer",
+          "description": "from ozon_actions_list"
+        },
+        "auto_add_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "action_id",
+        "auto_add_date"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1293,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "action_auto_add_products",
+        "line": 828,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/auto-add/products/list",
+            "line": 831
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_action_auto_add_candidates",
+    "title": null,
+    "description": "[P0] Candidates for automatic addition to a promotion (кандидаты на автодобавление).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "auto_add_date": {
+          "type": "string",
+          "description": "YYYY-MM-DD"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "offset": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "action_id",
+        "auto_add_date"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1297,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "action_auto_add_candidates",
+        "line": 836,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/auto-add/products/candidates",
+            "line": 839
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_action_auto_add_delete",
+    "title": null,
+    "description": "[P0] Remove goods from automatic addition to a promotion (убрать из автодобавления).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action_id": {
+          "type": "integer"
+        },
+        "product_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "action_id",
+        "product_ids"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1301,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "action_auto_add_delete",
+        "line": 844,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/auto-add/products/delete",
+            "line": 846
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_carriage_create",
+    "title": null,
+    "description": "Create an FBS carriage — the replacement for the handover act (создать отгрузку). delivery_method_id is required here on purpose: Ozon accepts an empty body and would pick postings itself, creating a real carriage.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "delivery_method_id": {
+          "type": "integer",
+          "description": "from ozon_delivery_methods"
+        },
+        "departure_date": {
+          "type": "string",
+          "description": "RFC3339"
+        },
+        "containers_count": {
+          "type": "integer",
+          "default": 1
+        }
+      },
+      "required": [
+        "delivery_method_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1304,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "carriage_create",
+        "line": 796,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/carriage/create",
+            "line": 818
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_carriage_approve",
+    "title": null,
+    "description": "Approve a carriage, status new to formed (подтвердить отгрузку).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "carriage_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "carriage_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1309,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "carriage_approve",
+        "line": 850,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/carriage/approve",
+            "line": 852
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_act_status",
+    "title": null,
+    "description": "Handover act generation status (статус акта).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1311,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_act_check_status",
+        "line": 854,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/act/check-status",
+            "line": 856
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_act_pdf",
+    "title": null,
+    "description": "Download the handover act PDF (PDF акта).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1313,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_act_get_pdf",
+        "line": 858,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/act/get-pdf",
+            "line": 860
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_digital_act",
+    "title": null,
+    "description": "Act status; digital acts were removed by Ozon 2026-03-22, the regular act is used (цифровой акт).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1315,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_digital_act_create",
+        "line": 862,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/act/check-status",
+            "line": 856
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_country_list",
+    "title": null,
+    "description": "Countries for an FBS posting (страны).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1317,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_product_country_list",
+        "line": 874,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/product/country/list",
+            "line": 876
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_country_set",
+    "title": null,
+    "description": "Set the product country in a posting (указать страну).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "integer"
+        },
+        "country_iso": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number",
+        "product_id",
+        "country_iso"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1319,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_product_country_set",
+        "line": 878,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbs/product/country/set",
+            "line": 880
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbs_restrictions",
+    "title": null,
+    "description": "FBS posting restrictions (ограничения отправлений).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "posting_number"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1321,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbs_restrictions",
+        "line": 882,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/posting/fbs/restrictions",
+            "line": 884
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_order_fbo_get",
+    "title": null,
+    "description": "FBO posting details (детали FBO).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1323,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbo_get",
+        "line": 886,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/posting/fbo/get",
+            "line": 888
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_orders_fbo",
+    "title": null,
+    "description": "FBO orders (заказы FBO).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "since": {
+          "type": "string",
+          "description": "YYYY-MM-DDT00:00:00Z"
+        },
+        "to": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      },
+      "required": [
+        "since",
+        "to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1327,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "posting_fbo_list",
+        "line": 693,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/posting/fbo/list",
+            "line": 700
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_fbo",
+    "title": null,
+    "description": "Unified FBO+FBS returns list (/v1/returns/list; old returns/company/* switched off) (возвраты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "object",
+          "description": "filter"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1334,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_list",
+        "line": 918,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/returns/list",
+            "line": 923
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_fbs",
+    "title": null,
+    "description": "rFBS buyer return claims that need a seller decision (заявки на возврат).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1336,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_rfbs_list",
+        "line": 925,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/returns/rfbs/list",
+            "line": 930
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_fbs_get",
+    "title": null,
+    "description": "rFBS return claim details (детали заявки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "return_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "return_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1342,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_rfbs_get",
+        "line": 932,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/returns/rfbs/get",
+            "line": 934
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_fbs_approve",
+    "title": null,
+    "description": "Approve an rFBS claim (verify) (одобрить возврат).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "return_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "return_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1338,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_rfbs_action",
+        "line": 936,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/v2/returns/rfbs/{action}",
+            "line": 946
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_fbs_reject",
+    "title": null,
+    "description": "Reject an rFBS claim; comment required (отклонить возврат).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "return_id": {
+          "type": "integer"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "return_id",
+        "reason"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1340,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_rfbs_action",
+        "line": 936,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/v2/returns/rfbs/{action}",
+            "line": 946
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_rfbs_action",
+    "title": null,
+    "description": "rFBS claim action: receive-return (confirm goods received), return-money (refund), compensate (compensation without return) (действие по возврату).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "action": {
+          "type": "string",
+          "description": "receive-return | return-money | compensate"
+        },
+        "return_id": {
+          "type": "integer"
+        },
+        "comment": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "action",
+        "return_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1344,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "returns_rfbs_action",
+        "line": 936,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "f'/v2/returns/rfbs/{action}",
+            "line": 946
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_returns_report",
+    "title": null,
+    "description": "Create a returns report (отчёт по возвратам).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "filter": {
+          "type": "object",
+          "description": "date_from, date_to etc."
+        }
+      },
+      "required": [
+        "filter"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1347,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_returns_create",
+        "line": 948,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/report/returns/create",
+            "line": 950
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_questions",
+    "title": null,
+    "description": "Buyer questions (вопросы покупателей).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        },
+        "last_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1351,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "question_list",
+        "line": 953,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/question/list",
+            "line": 958
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_question_reply",
+    "title": null,
+    "description": "Reply to a buyer question; needs the product sku (ответить на вопрос).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "question_id": {
+          "type": "string"
+        },
+        "sku": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "question_id",
+        "sku",
+        "text"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1353,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "question_reply",
+        "line": 960,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/question/answer/create",
+            "line": 962
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_list",
+    "title": null,
+    "description": "Buyer chats (v3). unread_only=true for unread ones (чаты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "unread_only": {
+          "type": "boolean",
+          "default": false
+        },
+        "page_size": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1357,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_list",
+        "line": 973,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/chat/list",
+            "line": 982
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_history",
+    "title": null,
+    "description": "Chat message history (история чата).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "chat_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1362,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_history",
+        "line": 984,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/chat/history",
+            "line": 989
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_send",
+    "title": null,
+    "description": "Send a chat message (написать в чат).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "chat_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "chat_id",
+        "text"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1364,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_send_message",
+        "line": 991,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/chat/send/message",
+            "line": 993
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_send_file",
+    "title": null,
+    "description": "Send a file to a chat (отправить файл).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "chat_id": {
+          "type": "string"
+        },
+        "file_url": {
+          "type": "string"
+        },
+        "file_name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "chat_id",
+        "file_url",
+        "file_name"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1366,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_send_file",
+        "line": 995,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/chat/send/file",
+            "line": 997
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_updates",
+    "title": null,
+    "description": "Chat updates (обновления чатов).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1368,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_updates",
+        "line": 999,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v3/chat/list",
+            "line": 982
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_start",
+    "title": null,
+    "description": "Start a chat about a posting (начать чат).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "posting_number"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1370,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_start",
+        "line": 1003,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/chat/start",
+            "line": 1005
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_chat_read",
+    "title": null,
+    "description": "Mark a chat as read (пометить прочитанным).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "chat_id": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "chat_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1372,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "chat_read",
+        "line": 1007,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/chat/read",
+            "line": 1012
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_cancellation_list",
+    "title": null,
+    "description": "Buyer cancellation claims (v2). state: ALL | ON_APPROVAL | APPROVED | REJECTED (заявки на отмену).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "posting_number": {
+          "type": "string",
+          "description": "filter"
+        },
+        "state": {
+          "type": "string",
+          "default": "ON_APPROVAL"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1376,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "conditional_cancellation_list",
+        "line": 1015,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/conditional-cancellation/list",
+            "line": 1027
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_cancellation_approve",
+    "title": null,
+    "description": "Approve a cancellation claim (одобрить отмену).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "cancellation_id": {
+          "type": "integer"
+        },
+        "comment": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cancellation_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1382,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "conditional_cancellation_approve",
+        "line": 1029,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/conditional-cancellation/approve",
+            "line": 1034
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_cancellation_reject",
+    "title": null,
+    "description": "Reject a cancellation claim (отклонить отмену).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "cancellation_id": {
+          "type": "integer"
+        },
+        "comment": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "cancellation_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1384,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "conditional_cancellation_reject",
+        "line": 1036,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/conditional-cancellation/reject",
+            "line": 1038
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_warehouse_list",
+    "title": null,
+    "description": "Seller FBS warehouses (склады).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "view": {
+          "type": "string",
+          "enum": [
+            "compact",
+            "full"
+          ],
+          "description": "compact (default) trims heavy fields; full returns the raw API response"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1388,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "warehouse_list",
+        "line": 1041,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/warehouse/list",
+            "line": 1043
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_delivery_methods",
+    "title": null,
+    "description": "Delivery methods (методы доставки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1390,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "delivery_method_list",
+        "line": 1045,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/delivery-method/list",
+            "line": 1047
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_list",
+    "title": null,
+    "description": "Generated reports (список отчётов).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "report_type": {
+          "type": "string"
+        },
+        "page": {
+          "type": "integer",
+          "default": 1
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1394,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_list",
+        "line": 1050,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/report/list",
+            "line": 1055
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_info",
+    "title": null,
+    "description": "Report status and download link (статус отчёта).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1396,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_info",
+        "line": 1057,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/report/info",
+            "line": 1059
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_products_create",
+    "title": null,
+    "description": "Create a products report (отчёт по товарам).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "visibility": {
+          "type": "string",
+          "default": "ALL"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1398,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_products_create",
+        "line": 1061,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/report/products/create",
+            "line": 1063
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_stocks_create",
+    "title": null,
+    "description": "Create a stock report (отчёт по остаткам).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1400,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_stocks_create",
+        "line": 1065,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/analytics/turnover/stocks",
+            "line": 528
+          },
+          {
+            "method": "POST",
+            "path": "/v1/report/warehouse/stock",
+            "line": 1072
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_finance_create",
+    "title": null,
+    "description": "Create a financial report (финансовый отчёт).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "date_from": {
+          "type": "string"
+        },
+        "date_to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "date_from",
+        "date_to"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1402,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_finance_create",
+        "line": 1075,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/finance/cash-flow-statement/list",
+            "line": 448
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_report_discounted_create",
+    "title": null,
+    "description": "Report on discounted goods (отчёт по уценке).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1404,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "report_discounted_create",
+        "line": 1079,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/report/discounted/create",
+            "line": 1081
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_brand_certificates",
+    "title": null,
+    "description": "Brand certificates (сертификаты бренда).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1408,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "brand_company_certification_list",
+        "line": 1084,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/brand/company-certification/list",
+            "line": 1086
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_category_tree",
+    "title": null,
+    "description": "Ozon category tree (дерево категорий). Whole tree is 9 800 nodes: pass search to find a category, or depth to go deeper than top level.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "search": {
+          "type": "string",
+          "description": "category name substring, case-insensitive (название категории)"
+        },
+        "depth": {
+          "type": "integer",
+          "default": 1,
+          "description": "1 = top level only, 3 = whole tree"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1412,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "description_category_tree",
+        "line": 1089,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/description-category/tree",
+            "line": 1091
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_category_attributes",
+    "title": null,
+    "description": "Category attributes (атрибуты категории).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "description_category_id": {
+          "type": "integer"
+        },
+        "type_id": {
+          "type": "integer",
+          "default": 0
+        }
+      },
+      "required": [
+        "description_category_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1417,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "description_category_attribute",
+        "line": 1093,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/description-category/attribute",
+            "line": 1095
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_category_attribute_values",
+    "title": null,
+    "description": "Category attribute values (значения атрибута).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "description_category_id": {
+          "type": "integer"
+        },
+        "attribute_id": {
+          "type": "integer"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 100
+        }
+      },
+      "required": [
+        "description_category_id",
+        "attribute_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1419,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "description_category_attribute_values",
+        "line": 1097,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/description-category/attribute/values",
+            "line": 1099
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_category_attribute_search",
+    "title": null,
+    "description": "Search attribute values (поиск значений).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "description_category_id": {
+          "type": "integer"
+        },
+        "attribute_id": {
+          "type": "integer"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "description_category_id",
+        "attribute_id",
+        "value"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1421,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "description_category_attribute_values_search",
+        "line": 1101,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/description-category/attribute/values/search",
+            "line": 1103
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_notifications",
+    "title": null,
+    "description": "Push notification subscriptions (webhooks). Ozon has no notification list endpoint (уведомления, вебхуки).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1425,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "notification_list",
+        "line": 1106,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/notification/list",
+            "line": 1108
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_notification_push_types",
+    "title": null,
+    "description": "Push event types reference: new messages, posting statuses (типы событий).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1427,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "notification_push_types",
+        "line": 1110,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/notification/push-type/list",
+            "line": 1112
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_discount_tasks",
+    "title": null,
+    "description": "Buyer 'want a discount' requests. status: NEW | SEEN | APPROVED | PARTLY_APPROVED | DECLINED | AUTO_DECLINED (заявки на скидку).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "default": "NEW"
+        },
+        "limit": {
+          "type": "integer",
+          "default": 50,
+          "description": "5/10/15/20/30/50"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1447,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "discount_task_list",
+        "line": 1119,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v2/actions/discounts-task/list",
+            "line": 1124
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_discount_approve",
+    "title": null,
+    "description": "Approve discount requests (одобрить скидку).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "[{id, approved_price, seller_comment, approved_quantity_min, approved_quantity_max}]"
+        }
+      },
+      "required": [
+        "tasks"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1450,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "discount_task_approve",
+        "line": 1126,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/discounts-task/approve",
+            "line": 1132
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_discount_decline",
+    "title": null,
+    "description": "Decline discount requests (отклонить скидку).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "tasks": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          },
+          "description": "[{id, seller_comment}]"
+        }
+      },
+      "required": [
+        "tasks"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1452,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "discount_task_decline",
+        "line": 1134,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/actions/discounts-task/decline",
+            "line": 1136
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_company_info",
+    "title": null,
+    "description": "Seller company info (информация о компании).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1456,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "company_info",
+        "line": 1139,
+        "endpoints": []
+      }
+    ]
+  },
+  {
+    "name": "ozon_company_tariffs",
+    "title": null,
+    "description": "Company tariffs (тарифы).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1458,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "company_tariffs",
+        "line": 1142,
+        "endpoints": []
+      }
+    ]
+  },
+  {
+    "name": "ozon_certificate_list",
+    "title": null,
+    "description": "All certificates (сертификаты).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1462,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "certificate_list",
+        "line": 1146,
+        "endpoints": []
+      }
+    ]
+  },
+  {
+    "name": "ozon_certificate_info",
+    "title": null,
+    "description": "Certificate details (детали сертификата).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "certificate_id": {
+          "type": "integer"
+        }
+      },
+      "required": [
+        "certificate_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1464,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "certificate_info",
+        "line": 1149,
+        "endpoints": []
+      }
+    ]
+  },
+  {
+    "name": "ozon_product_archive",
+    "title": null,
+    "description": "Move goods to archive (архивировать товары).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        },
+        "product_id": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        }
+      },
+      "required": [
+        "product_id"
+      ]
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 1468,
+    "methods": [
+      {
+        "class": "OzonSellerClient",
+        "name": "product_archive",
+        "line": 1153,
+        "endpoints": [
+          {
+            "method": "POST",
+            "path": "/v1/product/archive",
+            "line": 1155
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "ozon_diagnostics",
+    "title": null,
+    "description": "[P0] Full self-diagnostics: Ozon host availability, light real requests across 12 Seller API categories, Performance API key check. Run FIRST when a tool misbehaves — separates a key problem from a category or Ozon API change (диагностика).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "shop_id": {
+          "type": "string"
+        }
+      }
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 989,
+    "methods": []
+  },
+  {
+    "name": "ozon_degradations",
+    "title": null,
+    "description": "[P0] Tool degradations: which MCP tools used to work and now fail steadily, signalling an Ozon API change. No parameters (деградации).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    },
+    "outputSchema": null,
+    "icons": null,
+    "annotations": null,
+    "meta": null,
+    "execution": null,
+    "dispatch_line": 956,
+    "methods": []
+  }
+]

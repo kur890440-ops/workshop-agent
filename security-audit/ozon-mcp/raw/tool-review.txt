@@ -1,0 +1,156 @@
+ozon_list_shops | Registered Ozon shops (магазины): shop_id + name. Use shop_id in all other tools. | 
+ozon_actions_list | [P0] Ozon promotions available now and which goods may be pulled in (акции). Goods in promos can sell below cost. | actions_list:GET /v1/actions
+ozon_actions_candidates | [P0] Candidate goods Ozon PLANS to pull into a promotion; pre-emptive check against selling at a loss (кандидаты в акцию). | actions_candidates:POST /v1/actions/candidates
+ozon_actions_products | [P0] Goods already participating in a promotion, sold at the promo price (товары в акции). | actions_products:POST /v1/actions/products
+ozon_actions_activate | [P0] Add goods to a promotion at a given promo price (вступить в акцию). | actions_products_activate:POST /v1/actions/products/activate
+ozon_actions_deactivate | [P0] Remove goods from a promotion, e.g. loss-making ones (выйти из акции). | actions_products_deactivate:POST /v1/actions/products/deactivate
+ozon_seller_actions | Seller's own promotions, as opposed to Ozon's (собственные акции). | seller_actions_list:POST /v1/seller-actions/list
+ozon_seller_action_create | Create the seller's own discount promotion (создать акцию). | seller_action_create_discount:POST /v1/seller-actions/create/discount
+ozon_seller_action_toggle | Enable/disable the seller's own promotion (включить акцию). | seller_action_toggle:POST /v1/seller-actions/change-activity
+ozon_seller_action_products | Goods in the seller's own promotion (товары акции). | seller_action_products:POST /v1/seller-actions/products/list
+ozon_seller_action_products_add | Add goods to the seller's own promotion (добавить товары). | seller_action_products_add:POST /v1/seller-actions/products/add
+ozon_seller_action_products_delete | Remove goods from the seller's own promotion (убрать товары). | seller_action_products_delete:POST /v1/seller-actions/products/delete
+ozon_pricing_strategy_list | Pricing strategies: auto price management against competitors (ценовые стратегии). | pricing_strategy_list:POST /v1/pricing-strategy/list
+ozon_pricing_strategy_create | Create a pricing strategy. competitors: [{competitor_id, coefficient}], coefficient 0.5-1.2 of the competitor price (создать страт | pricing_strategy_create:POST /v1/pricing-strategy/create
+ozon_pricing_strategy_info | Pricing strategy details (детали стратегии). | pricing_strategy_info:POST /v1/pricing-strategy/info
+ozon_pricing_strategy_update | Update a pricing strategy (обновить стратегию). | pricing_strategy_update:POST /v1/pricing-strategy/update
+ozon_pricing_strategy_delete | Delete a pricing strategy (удалить стратегию). | pricing_strategy_delete:POST /v1/pricing-strategy/delete
+ozon_pricing_strategy_status | Enable/disable a pricing strategy (статус стратегии). | pricing_strategy_status:POST /v1/pricing-strategy/status
+ozon_pricing_strategy_products | Strategy goods: action=list | add | delete (товары стратегии). | pricing_strategy_products_add:POST /v1/pricing-strategy/products/add; pricing_strategy_products_delete:POST /v1/pricing-strategy/products/delete; pricing_strategy_products_list:POST /v1/pricing-strategy/products/list
+ozon_pricing_competitors | Competitors from other marketplaces, input for pricing strategies (конкуренты). | pricing_competitors_list:POST /v1/pricing-strategy/competitors/list
+ozon_pricing_competitor_prices | Competitor price for goods in strategies (цены конкурентов). | pricing_competitor_price:POST /v1/pricing-strategy/product/info
+ozon_set_prices | [P0] Set prices. Use min_price to block promos below cost (установить цены). | product_import_prices:POST /v1/product/import/prices
+ozon_get_prices | [P0] Current prices, discounts, min price and price index. price_index over 1.15 risks quarantine (цены, индекс цен). | product_info_prices:POST /v5/product/info/prices
+ozon_get_prices_v4 | Prices via v4 API, includes purchase_price/cost (цены v4, себестоимость). | product_info_prices_v4:POST /v5/product/info/prices
+ozon_min_price_timer_status | [P0] Min price timer status, 30 days. Expired means goods are exposed to promos below cost (таймер минимальной цены). | action_timer_status:POST /v1/product/action/timer/status
+ozon_min_price_timer_renew | [P0] Renew the min price timer for 30 days (продлить таймер). | action_timer_update:POST /v1/product/action/timer/update
+ozon_finance_transactions | [P0] Financial operations: commissions, logistics, storage, returns (транзакции, расходы). Built from daily accruals — Ozon retire | finance_transaction_list:POST /v1/finance/accrual/by-day
+ozon_finance_totals | [P0] Period totals by accrual category and service type_id (итоги финансов). Recomputed from daily accruals — Ozon retired the tot | finance_transaction_totals:POST /v1/finance/accrual/types,POST /v1/finance/accrual/by-day
+ozon_finance_realization | Monthly realization report, v2 (отчёт о реализации). | finance_realization:POST /v2/finance/realization
+ozon_finance_mutual_settlement | Monthly mutual settlement report (взаиморасчёты). | finance_mutual_settlement:POST /v1/finance/mutual-settlement
+ozon_finance_accruals | Daily accruals (начисления). | finance_accrual_by_day:POST /v1/finance/accrual/by-day
+ozon_finance_balance | [P0] Seller balance for a period: opening/closing, accruals, payouts (Beta). No dates = last 30 days (баланс). | finance_balance:POST /v1/finance/balance
+ozon_finance_cash_flow | Cash flow (движение средств). | finance_cash_flow:POST /v1/finance/cash-flow-statement/list
+ozon_rating_summary | [P0] Seller rating; drives search position, promo access and storage cost (рейтинг продавца). | rating_summary:POST /v1/rating/summary
+ozon_rating_history | Seller rating history (история рейтинга). | rating_history:POST /v1/rating/history
+ozon_reviews | [P0] Product reviews; negatives cut conversion (отзывы). | review_list:POST /v1/review/list
+ozon_review_reply | Reply to a review (ответить на отзыв). | review_comment_create:POST /v1/review/comment/create
+ozon_review_comments | Review comments. Ozon has no edit-reply method: delete and create again (комментарии к отзыву). | review_comment_list:POST /v1/review/comment/list
+ozon_review_reply_delete | Delete a review reply (удалить ответ). | review_comment_delete:POST /v1/review/comment/delete
+ozon_ad_campaigns | [P0] Ad campaigns: budgets in micro-rubles (1000000 = 1₽), statuses. adv_object_type: SKU | SEARCH_PROMO | BANNER. state: CAMPAIGN | campaigns_list:GET /api/client/campaign
+ozon_ad_statistics | [P0] Campaign statistics, async Ozon report, up to ~2 min. Limits: ≤10 campaigns, ≤62 days, one report at a time (статистика рекла | statistics:POST /api/client/statistics/json,GET f'/api/client/statistics/{uuid},POST /api/client/token,GET /api/client/statistics/report
+ozon_ad_campaign_stop | [P0] Emergency stop of an ad campaign (остановить рекламу). | campaign_deactivate:POST f'/api/client/campaign/{campaign_id}/deactivate
+ozon_ad_campaign_objects | Goods and bids inside an ad campaign (товары и ставки). | campaign_objects:GET f'/api/client/campaign/{campaign_id}/objects
+ozon_ad_campaign_create | Create a CPC Trafarety campaign, the only type creatable via API. placement: PLACEMENT_SEARCH_AND_CATEGORY | PLACEMENT_TOP_PROMOTI | campaign_create:POST /api/client/campaign/cpc/v2/product
+ozon_ad_campaign_activate | Start an ad campaign (запустить кампанию). | campaign_activate:POST f'/api/client/campaign/{campaign_id}/activate
+ozon_ad_campaign_bids | [P0] Update goods bids in a campaign. bids: [{sku, bid}], bid in MICRO-RUBLES as a string (10000000 = 10₽) (ставки). | campaign_products_update:PUT f'/api/client/campaign/{campaign_id}/products
+ozon_ad_campaign_budget | Campaign budget, taken from the campaign list; Ozon has no separate endpoint (бюджет кампании). | campaigns_list:GET /api/client/campaign
+ozon_ad_campaign_budget_update | Change campaign budget or period (PATCH). Budgets in RUBLES (изменить бюджет). | campaign_update:POST /api/client/token,PATCH f'/api/client/campaign/{campaign_id}
+ozon_ad_campaign_products | Goods and bids in a campaign (товары кампании). | campaign_products_list:GET f'/api/client/campaign/{campaign_id}/v2/products
+ozon_ad_products_add | Add goods to a CPC campaign, max 500. bids: [{sku, bid}] in micro-rubles; without bid the competitive bid applies (добавить товары | campaign_products_add:POST f'/api/client/campaign/{campaign_id}/products
+ozon_ad_products_delete | Remove goods from a campaign (убрать товары). | campaign_products_delete:POST f'/api/client/campaign/{campaign_id}/products/delete
+ozon_ad_bids_competitive | Competitive bids by SKU in a campaign, max 200 (конкурентные ставки). | bids_competitive:GET f'/api/client/campaign/{campaign_id}/products/bids/competitive
+ozon_ad_min_bids | Minimum bids by SKU. payment_type: CPC | CPO | CPC_TOP (минимальные ставки). | min_sku_bids:POST /api/client/min/sku
+ozon_search_promo_products | [P0] Goods in pay-per-order top promotion (CPO): bid %, visibility. Bids fixed since 02.2025 (оплата за заказ). | search_promo_products:POST /api/client/campaign/search_promo/v2/products
+ozon_search_promo_enable | Enable pay-per-order promotion for goods, max 1000 SKU (включить продвижение). | search_promo_enable:POST /api/client/search_promo/product/enable
+ozon_search_promo_disable | [P0] Disable pay-per-order promotion, max 1000 SKU; use when ДРР is high (отключить продвижение). | search_promo_disable:POST /api/client/search_promo/product/disable
+ozon_search_promo_bids | Fixed CPO bids by SKU, max 200 (ставки CPO). | search_promo_cpo_bids:POST /api/client/search_promo/get_cpo_min_bids
+ozon_ad_statistics_daily | Daily ad statistics (ежедневная статистика). | statistics_daily:GET /api/client/statistics/daily/json
+ozon_ad_statistics_expenses | Ad campaign spend (расходы на рекламу). | statistics_expenses:GET /api/client/statistics/expense/json
+ozon_ad_statistics_products | [P0] CPC campaign stats per product: spend, CTR, CPC, orders, ДРР. Synchronous (статистика по товарам). | statistics_products:GET /api/client/statistics/campaign/product/json
+ozon_ad_balance | Ad account balance; no official method, see spend in ozon_ad_statistics_expenses (баланс рекламы). | balance:
+ozon_analytics | Analytics by SKU. Funnel metrics (session_view, hits_view, position_category) are deprecated by Ozon; trade metrics work: revenue, | analytics_data:POST /v1/analytics/data
+ozon_stock_on_warehouses | Stock and turnover at Ozon warehouses, via turnover/stocks — the old endpoint was removed (остатки на складах). | analytics_stock_on_warehouses:POST /v1/analytics/turnover/stocks
+ozon_analytics_stocks | Stock analytics for specific goods: availability, scarcity, liquidity, 1-100 SKU (аналитика остатков). | analytics_stocks:POST /v1/analytics/stocks
+ozon_product_queries | [P0] Search queries and positions of my goods in Ozon search (Premium). Visibility drives sales (поисковые запросы, позиции). | product_queries_details:POST /v1/analytics/product-queries/details; product_queries:POST /v1/analytics/product-queries
+ozon_search_queries_top | Popular Ozon search queries, input for card SEO (топ запросов). | search_queries_top:POST /v1/search-queries/top
+ozon_supply_orders | FBO supply orders (v3), returns order_ids; details via ozon_supply_order_get (заявки на поставку). | supply_orders_list:POST /v3/supply-order/list
+ozon_supply_order_get | FBO supply order details, 1-50 (детали поставки). | supply_orders_get:POST /v3/supply-order/get
+ozon_supply_order_counters | Supply order counters by status (счётчики поставок). | supply_order_status_counter:POST /v1/supply-order/status/counter
+ozon_supply_order_timeslots | Available FBO supply timeslots (таймслоты). | supply_order_timeslots:POST /v1/supply-order/timeslot/get
+ozon_product_list | All goods. visibility: ALL, VISIBLE, QUARANTINE, ARCHIVED and others (список товаров). | product_list:POST /v3/product/list
+ozon_product_info | Extended product info (информация о товарах). | product_info_list:POST /v3/product/info/list
+ozon_product_attributes | Product attributes including BRAND (атрибуты, бренд). | product_info_attributes:POST /v4/product/info/attributes
+ozon_product_stocks | Product stock at FBO/FBS warehouses (остатки товаров). | product_info_stocks:POST /v4/product/info/stocks
+ozon_product_certificates | Product certificates; an expired one blocks the card (сертификаты). | product_certificate_list:POST /v1/product/certificate/list
+ozon_product_import | Create/update goods, bulk import (импорт товаров). | product_import:POST /v3/product/import
+ozon_product_import_info | Product import task status (статус импорта). | product_import_info:POST /v1/product/import/info
+ozon_product_update_offer_id | Update product offer IDs (артикулы). | product_update_offer_id:POST /v1/product/update/offer-id
+ozon_product_update_images | Update product images (изображения). | product_update_images:POST /v1/product/pictures/import
+ozon_product_description | Product description by offer_id (описание товара). | product_info_description:POST /v1/product/info/description
+ozon_product_update_stocks | Update FBS stock (обновить остатки). | product_update_stocks:POST /v2/products/stocks
+ozon_product_unarchive | Restore goods from archive (вернуть из архива). | product_unarchive:POST /v1/product/unarchive
+ozon_product_delete | Delete goods without SKU from archive, by offer_id (удалить товары). | product_delete:POST /v2/products/delete
+ozon_product_limits | Product creation limits (лимиты товаров). | product_info_limit:POST /v4/product/info/limit
+ozon_product_rating_by_sku | Content rating of goods (рейтинг контента). | product_rating_by_sku:POST /v1/product/rating-by-sku
+ozon_product_discounted | Markdown info for discounted SKUs (уценённые товары). | product_info_discounted:POST /v1/product/info/discounted
+ozon_product_attributes_update | Update product characteristics without a full card re-upload (обновить характеристики). | product_attributes_update:POST /v1/product/attributes/update
+ozon_product_import_by_sku | Create a copy product from an existing Ozon SKU (копия товара). | product_import_by_sku:POST /v1/product/import-by-sku
+ozon_product_stocks_by_warehouse | FBS stock per warehouse (v2; v1 is switched off 2026-04-07) (остатки по складам). | product_stocks_by_warehouse:POST /v2/product/info/stocks-by-warehouse/fbs
+ozon_orders_fbs | FBS orders with financial data. Cursor pagination: if has_next=true, repeat with cursor from the response (заказы FBS). | posting_fbs_list:POST /v4/posting/fbs/list
+ozon_order_fbs_get | FBS posting details (детали отправления). | posting_fbs_get:POST /v3/posting/fbs/get
+ozon_order_fbs_ship | Assemble an FBS order (v4). packages: [{products: [{product_id, quantity}]}] (собрать заказ). | posting_fbs_ship:POST /v4/posting/fbs/ship
+ozon_orders_fbs_unfulfilled | Unfulfilled FBS orders awaiting packaging: statuses awaiting_packaging and awaiting_deliver, last 30 days. Cursor pagination when  | posting_fbs_unfulfilled:POST /v4/posting/fbs/list
+ozon_order_fbs_label | FBS posting labels, PDF base64 (этикетки). | posting_fbs_package_label:POST /v2/posting/fbs/package-label
+ozon_order_fbs_cancel | Cancel an FBS posting (отменить отправление). | posting_fbs_cancel:POST /v2/posting/fbs/cancel
+ozon_order_fbs_cancel_reasons | FBS cancellation reasons (причины отмены). | posting_fbs_cancel_reasons:POST /v2/posting/fbs/cancel-reason/list
+ozon_order_fbs_act_create | Create an FBS handover act (акт приёма-передачи). DEPRECATED: Ozon switches this endpoint off on 2026-09-07 — use ozon_carriage_cr | posting_fbs_act_create:POST /v2/posting/fbs/act/create
+ozon_finance_accrual_types | Accrual type reference: what each type_id in the finance tools means (справочник начислений). | finance_accrual_types:POST /v1/finance/accrual/types
+ozon_carriage_delivery_list | Delivery methods and their carriages (методы доставки, отгрузки). Source of delivery_method_id for ozon_carriage_create. | carriage_delivery_list:POST /v2/carriage/delivery/list
+ozon_action_auto_add_products | [P0] Goods Ozon will add to a promotion by itself on a given date (автодобавление в акцию). | action_auto_add_products:POST /v1/actions/auto-add/products/list
+ozon_action_auto_add_candidates | [P0] Candidates for automatic addition to a promotion (кандидаты на автодобавление). | action_auto_add_candidates:POST /v1/actions/auto-add/products/candidates
+ozon_action_auto_add_delete | [P0] Remove goods from automatic addition to a promotion (убрать из автодобавления). | action_auto_add_delete:POST /v1/actions/auto-add/products/delete
+ozon_carriage_create | Create an FBS carriage — the replacement for the handover act (создать отгрузку). delivery_method_id is required here on purpose:  | carriage_create:POST /v1/carriage/create
+ozon_carriage_approve | Approve a carriage, status new to formed (подтвердить отгрузку). | carriage_approve:POST /v1/carriage/approve
+ozon_order_fbs_act_status | Handover act generation status (статус акта). | posting_fbs_act_check_status:POST /v2/posting/fbs/act/check-status
+ozon_order_fbs_act_pdf | Download the handover act PDF (PDF акта). | posting_fbs_act_get_pdf:POST /v2/posting/fbs/act/get-pdf
+ozon_order_fbs_digital_act | Act status; digital acts were removed by Ozon 2026-03-22, the regular act is used (цифровой акт). | posting_fbs_digital_act_create:POST /v2/posting/fbs/act/check-status
+ozon_order_fbs_country_list | Countries for an FBS posting (страны). | posting_fbs_product_country_list:POST /v2/posting/fbs/product/country/list
+ozon_order_fbs_country_set | Set the product country in a posting (указать страну). | posting_fbs_product_country_set:POST /v2/posting/fbs/product/country/set
+ozon_order_fbs_restrictions | FBS posting restrictions (ограничения отправлений). | posting_fbs_restrictions:POST /v1/posting/fbs/restrictions
+ozon_order_fbo_get | FBO posting details (детали FBO). | posting_fbo_get:POST /v2/posting/fbo/get
+ozon_orders_fbo | FBO orders (заказы FBO). | posting_fbo_list:POST /v3/posting/fbo/list
+ozon_returns_fbo | Unified FBO+FBS returns list (/v1/returns/list; old returns/company/* switched off) (возвраты). | returns_list:POST /v1/returns/list
+ozon_returns_fbs | rFBS buyer return claims that need a seller decision (заявки на возврат). | returns_rfbs_list:POST /v2/returns/rfbs/list
+ozon_returns_fbs_get | rFBS return claim details (детали заявки). | returns_rfbs_get:POST /v2/returns/rfbs/get
+ozon_returns_fbs_approve | Approve an rFBS claim (verify) (одобрить возврат). | returns_rfbs_action:POST f'/v2/returns/rfbs/{action}
+ozon_returns_fbs_reject | Reject an rFBS claim; comment required (отклонить возврат). | returns_rfbs_action:POST f'/v2/returns/rfbs/{action}
+ozon_returns_rfbs_action | rFBS claim action: receive-return (confirm goods received), return-money (refund), compensate (compensation without return) (дейст | returns_rfbs_action:POST f'/v2/returns/rfbs/{action}
+ozon_returns_report | Create a returns report (отчёт по возвратам). | report_returns_create:POST /v2/report/returns/create
+ozon_questions | Buyer questions (вопросы покупателей). | question_list:POST /v1/question/list
+ozon_question_reply | Reply to a buyer question; needs the product sku (ответить на вопрос). | question_reply:POST /v1/question/answer/create
+ozon_chat_list | Buyer chats (v3). unread_only=true for unread ones (чаты). | chat_list:POST /v3/chat/list
+ozon_chat_history | Chat message history (история чата). | chat_history:POST /v3/chat/history
+ozon_chat_send | Send a chat message (написать в чат). | chat_send_message:POST /v1/chat/send/message
+ozon_chat_send_file | Send a file to a chat (отправить файл). | chat_send_file:POST /v1/chat/send/file
+ozon_chat_updates | Chat updates (обновления чатов). | chat_updates:POST /v3/chat/list
+ozon_chat_start | Start a chat about a posting (начать чат). | chat_start:POST /v1/chat/start
+ozon_chat_read | Mark a chat as read (пометить прочитанным). | chat_read:POST /v2/chat/read
+ozon_cancellation_list | Buyer cancellation claims (v2). state: ALL | ON_APPROVAL | APPROVED | REJECTED (заявки на отмену). | conditional_cancellation_list:POST /v2/conditional-cancellation/list
+ozon_cancellation_approve | Approve a cancellation claim (одобрить отмену). | conditional_cancellation_approve:POST /v2/conditional-cancellation/approve
+ozon_cancellation_reject | Reject a cancellation claim (отклонить отмену). | conditional_cancellation_reject:POST /v2/conditional-cancellation/reject
+ozon_warehouse_list | Seller FBS warehouses (склады). | warehouse_list:POST /v2/warehouse/list
+ozon_delivery_methods | Delivery methods (методы доставки). | delivery_method_list:POST /v2/delivery-method/list
+ozon_report_list | Generated reports (список отчётов). | report_list:POST /v1/report/list
+ozon_report_info | Report status and download link (статус отчёта). | report_info:POST /v1/report/info
+ozon_report_products_create | Create a products report (отчёт по товарам). | report_products_create:POST /v1/report/products/create
+ozon_report_stocks_create | Create a stock report (отчёт по остаткам). | report_stocks_create:POST /v1/analytics/turnover/stocks,POST /v1/report/warehouse/stock
+ozon_report_finance_create | Create a financial report (финансовый отчёт). | report_finance_create:POST /v1/finance/cash-flow-statement/list
+ozon_report_discounted_create | Report on discounted goods (отчёт по уценке). | report_discounted_create:POST /v1/report/discounted/create
+ozon_brand_certificates | Brand certificates (сертификаты бренда). | brand_company_certification_list:POST /v1/brand/company-certification/list
+ozon_category_tree | Ozon category tree (дерево категорий). Whole tree is 9 800 nodes: pass search to find a category, or depth to go deeper than top l | description_category_tree:POST /v1/description-category/tree
+ozon_category_attributes | Category attributes (атрибуты категории). | description_category_attribute:POST /v1/description-category/attribute
+ozon_category_attribute_values | Category attribute values (значения атрибута). | description_category_attribute_values:POST /v1/description-category/attribute/values
+ozon_category_attribute_search | Search attribute values (поиск значений). | description_category_attribute_values_search:POST /v1/description-category/attribute/values/search
+ozon_notifications | Push notification subscriptions (webhooks). Ozon has no notification list endpoint (уведомления, вебхуки). | notification_list:POST /v1/notification/list
+ozon_notification_push_types | Push event types reference: new messages, posting statuses (типы событий). | notification_push_types:POST /v1/notification/push-type/list
+ozon_discount_tasks | Buyer 'want a discount' requests. status: NEW | SEEN | APPROVED | PARTLY_APPROVED | DECLINED | AUTO_DECLINED (заявки на скидку). | discount_task_list:POST /v2/actions/discounts-task/list
+ozon_discount_approve | Approve discount requests (одобрить скидку). | discount_task_approve:POST /v1/actions/discounts-task/approve
+ozon_discount_decline | Decline discount requests (отклонить скидку). | discount_task_decline:POST /v1/actions/discounts-task/decline
+ozon_company_info | Seller company info (информация о компании). | company_info:
+ozon_company_tariffs | Company tariffs (тарифы). | company_tariffs:
+ozon_certificate_list | All certificates (сертификаты). | certificate_list:
+ozon_certificate_info | Certificate details (детали сертификата). | certificate_info:
+ozon_product_archive | Move goods to archive (архивировать товары). | product_archive:POST /v1/product/archive
+ozon_diagnostics | [P0] Full self-diagnostics: Ozon host availability, light real requests across 12 Seller API categories, Performance API key check | 
+ozon_degradations | [P0] Tool degradations: which MCP tools used to work and now fail steadily, signalling an Ozon API change. No parameters (деградац | 

@@ -11,9 +11,10 @@ import (
 
 // RateLimitError contains only closed operation/source names and a timestamp.
 type RateLimitError struct {
-	Operation string
-	RetryAt   time.Time
-	Source    string
+	Operation      string
+	RetryAt        time.Time
+	Source         string
+	BlockedLocally bool
 }
 
 func (e *RateLimitError) Error() string { return "WB: rate_limited" }
@@ -147,6 +148,7 @@ func (c *Client) waitRate(ctx context.Context, group string) error {
 		if saved.RetryAt.After(c.clock()) {
 			// Server cooldowns are reported immediately; local page pacing may wait.
 			if saved.Source != "local_interval" || saved.RetryAt.Sub(c.clock()) > 30*time.Second {
+				saved.BlockedLocally = true
 				return &saved
 			}
 		}
@@ -161,7 +163,7 @@ func (c *Client) waitRate(ctx context.Context, group string) error {
 			c.next[group] = next
 			c.mu.Unlock()
 			if c.intervals[group] > 0 {
-				if err := c.saveCooldown(RateLimitError{group, next, "local_interval"}); err != nil {
+				if err := c.saveCooldown(RateLimitError{Operation: group, RetryAt: next, Source: "local_interval"}); err != nil {
 					return err
 				}
 			}
@@ -169,7 +171,7 @@ func (c *Client) waitRate(ctx context.Context, group string) error {
 		}
 		c.mu.Unlock()
 		if d > 30*time.Second {
-			return &RateLimitError{group, until, "local_interval"}
+			return &RateLimitError{Operation: group, RetryAt: until, Source: "local_interval", BlockedLocally: true}
 		}
 		if err := c.sleep(ctx, d); err != nil {
 			return err

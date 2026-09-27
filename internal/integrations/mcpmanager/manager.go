@@ -41,9 +41,10 @@ type scope struct {
 	tool           string
 }
 type Manager struct {
-	Client *mcpclient.Service
-	mu     sync.Mutex
-	grants map[string]scope
+	Client         *mcpclient.Service
+	mu             sync.Mutex
+	grants         map[string]scope
+	pipelineGrants map[string]pipelineGrant
 }
 
 func New(ctx context.Context, api wbmcp.API, jobs *background.Service) (*Manager, error) {
@@ -51,7 +52,7 @@ func New(ctx context.Context, api wbmcp.API, jobs *background.Service) (*Manager
 	if err != nil {
 		return nil, err
 	}
-	m := &Manager{grants: map[string]scope{}}
+	m := &Manager{grants: map[string]scope{}, pipelineGrants: map[string]pipelineGrant{}}
 	// A single server registers both modules. This local mutation is explicitly
 	// separate from WB read tools and never appears in the executor's allowlist.
 	mcp.AddTool(server, &mcp.Tool{Name: ScheduleTool, Description: "Создать ежедневную синхронизацию WB в активной мастерской. Локальная запись расписания; WB API не вызывается.", Annotations: &mcp.ToolAnnotations{ReadOnlyHint: false}},
@@ -73,9 +74,13 @@ func New(ctx context.Context, api wbmcp.API, jobs *background.Service) (*Manager
 			return nil, out, nil
 		})
 	m.registerSummary(server, jobs)
+	m.registerPipeline(server, jobs)
 	m.Client, err = mcpclient.NewInMemory(ctx, server)
 	if err != nil {
 		return nil, err
+	}
+	if jobs != nil {
+		jobs.WB.Tools = m
 	}
 	return m, nil
 }

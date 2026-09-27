@@ -7,6 +7,7 @@ import (
 )
 
 type ExecutionResult struct {
+	RetryNotBefore                                        string
 	Status, ResultJSON, AggregateJSON, ErrorCode, Summary string
 	CanNotify                                             func() bool
 }

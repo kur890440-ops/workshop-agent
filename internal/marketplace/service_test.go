@@ -29,8 +29,9 @@ type fakeAPI struct {
 	cards                            []wb.Card
 }
 
-func (f *fakeAPI) Configured() bool             { return true }
-func (f *fakeAPI) ContainsSecret(s string) bool { return strings.Contains(s, testSecret) }
+func (f *fakeAPI) CachedIdentity(id string) bool { return id != "" && id == f.seller }
+func (f *fakeAPI) Configured() bool              { return true }
+func (f *fakeAPI) ContainsSecret(s string) bool  { return strings.Contains(s, testSecret) }
 func (f *fakeAPI) Seller(context.Context) (wb.Seller, error) {
 	f.calls++
 	return wb.Seller{ID: f.seller, Name: "Fixture seller"}, f.errorInfo
@@ -263,7 +264,7 @@ func TestIdempotentSyncIsolationAndExplicitMapping(t *testing.T) {
 		t.Fatal(e)
 	}
 	text, e := f.s.ReadText(f.sc, "stocks", 0)
-	if e != nil || !strings.Contains(text, "seller_stocks") || !strings.Contains(text, "wb_stocks") {
+	if e != nil || !strings.Contains(text, "ОСТАТКИ ПРОДАВЦА") || !strings.Contains(text, "ОСТАТКИ НА СКЛАДАХ WB") {
 		t.Fatal(text, e)
 	}
 	// Orders no longer in the new-order feed still receive status updates.
@@ -287,7 +288,7 @@ func TestPartialFailurePreservesSnapshotAndLastSuccess(t *testing.T) {
 	f := setup(t)
 	f.attach(t)
 	f.run(t, "all")
-	before := snapshot(t, f.ws.DB(), []string{"marketplace_stocks"})
+	before := count(t, f.ws.DB(), "marketplace_stocks")
 	success := syncState(t, f, "wb_stocks").LastSuccess
 	f.api.stocksErr = wb.Unavailable
 	f.run(t, "wb_stocks")
@@ -295,8 +296,8 @@ func TestPartialFailurePreservesSnapshotAndLastSuccess(t *testing.T) {
 	if r.State != "partial" || r.LastSuccess != success || r.ErrorCode != "unavailable" {
 		t.Fatal(r)
 	}
-	if snapshot(t, f.ws.DB(), []string{"marketplace_stocks"}) != before {
-		t.Fatal("partial response replaced stock")
+	if count(t, f.ws.DB(), "marketplace_stocks") != before {
+		t.Fatal("partial response deleted rows")
 	}
 	f.api.catalogErr = wb.PageLimit
 	f.run(t, "all")

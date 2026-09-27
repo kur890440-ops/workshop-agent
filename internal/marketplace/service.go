@@ -48,7 +48,14 @@ type SyncState struct {
 	Rows                                                       int
 	BlockedBy, RetryAt, RetrySource, RateOperation             string
 }
+type StockReader interface {
+	StockSource(context.Context, string, wb.StockSource) (wb.StockBatch, error)
+}
+
+func (s *Service) SetStockReader(r StockReader) { s.stockReader = r }
+
 type Service struct {
+	stockReader   StockReader
 	db            *sql.DB
 	api           API
 	mu            sync.Mutex
@@ -72,6 +79,9 @@ func New(db *sql.DB, api API) (*Service, error) {
 	s := &Service{db: db, api: api, clock: time.Now}
 	if c, ok := api.(interface{ SetCooldownStore(wb.CooldownStore) }); ok {
 		c.SetCooldownStore(cooldownDB{db})
+	}
+	if c, ok := api.(interface{ SetIdentityStore(wb.IdentityStore) }); ok {
+		c.SetIdentityStore(cooldownDB{db})
 	}
 	_, err := db.Exec(`UPDATE marketplace_sync SET state='cancelled',error_code='interrupted',finished_at=CURRENT_TIMESTAMP WHERE state='running'`)
 	if err != nil {
@@ -230,7 +240,7 @@ func (s *Service) check(scope Scope, revision int64) error {
 }
 func validKind(kind string) bool {
 	switch kind {
-	case "check", "all", "catalog", "seller_stocks", "wb_stocks", "orders":
+	case "check", "stocks", "all", "catalog", "seller_stocks", "wb_stocks", "orders":
 		return true
 	}
 	return false
@@ -257,23 +267,6 @@ func (s *Service) Start(scope Scope, kind string) (<-chan struct{}, error) {
 		return nil, ErrBusy
 	}
 	needIdentity := kind == "check" || !s.identityValid(c)
-	// Refuse known cooldowns before starting another job/notification.
-	groups := []string{}
-	if needIdentity {
-		groups = append(groups, "common")
-	}
-	if kind == "wb_stocks" || kind == "all" {
-		groups = append(groups, "analytics")
-	}
-	for _, group := range groups {
-		v, e := (cooldownDB{s.db}).LoadCooldown(group)
-		if e != nil {
-			return nil, e
-		}
-		if v.RetryAt.After(s.clock()) {
-			return nil, &v
-		}
-	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	j := &job{scope: scope, revision: c.Revision, cancel: cancel, done: make(chan struct{})}
 	s.job = j
@@ -282,12 +275,21 @@ func (s *Service) Start(scope Scope, kind string) (<-chan struct{}, error) {
 		defer s.wg.Done()
 		defer cancel()
 		defer func() { s.mu.Lock(); s.job = nil; close(j.done); s.mu.Unlock() }()
+		ctx = wb.WithTrace(ctx, wb.CallMetadata{WorkshopID: scope.WorkshopID, Caller: "telegram_wb_sync"})
+		if kind == "check" {
+			ctx = wb.WithTrace(ctx, wb.CallMetadata{WorkshopID: scope.WorkshopID, Caller: "manual_seller_info_refresh"})
+			ctx = wb.RefreshIdentity(ctx)
+		}
 		ctx = wb.WithGuard(ctx, func() error { return s.check(scope, j.revision) })
 		kinds := []string{kind}
+		if kind == "stocks" {
+			kinds = []string{"seller_stocks", "wb_stocks"}
+		}
 		if kind == "all" {
 			kinds = []string{"catalog", "seller_stocks", "wb_stocks", "orders"}
 		}
-		// Identity is checked on every job. Local token rotation cannot silently switch seller.
+		// Initialize only an absent/rotated credential binding. Cached profiles never expire
+		// because of an endpoint error or process restart.
 		var err error
 		if needIdentity {
 			err = s.identity(ctx, j)
@@ -313,13 +315,23 @@ func (s *Service) Start(scope Scope, kind string) (<-chan struct{}, error) {
 	return j.done, nil
 }
 func safeCode(err error) string {
+	var partial *wb.StockPartialError
+	if errors.As(err, &partial) {
+		switch partial.Batch.Info.Error {
+		case "forbidden", "rate_limited", "authentication_failed", "invalid_response":
+			return partial.Batch.Info.Error
+		default:
+			return "source_error"
+		}
+	}
+
 	if err == nil {
 		return ""
 	}
 	var w wb.Error
 	if errors.As(err, &w) {
 		switch w {
-		case wb.NotConfigured, wb.InvalidInput, wb.InvalidResponse, wb.Unauthorized, wb.Forbidden, wb.RateLimited, wb.Unavailable, wb.Timeout, wb.Cancelled, wb.ResponseTooLarge, wb.PageLimit, wb.RedirectDenied:
+		case wb.IdentityMismatch, wb.NotConfigured, wb.InvalidInput, wb.InvalidResponse, wb.Unauthorized, wb.Forbidden, wb.RateLimited, wb.Unavailable, wb.Timeout, wb.Cancelled, wb.ResponseTooLarge, wb.PageLimit, wb.RedirectDenied:
 			return string(w)
 		}
 	}
@@ -383,7 +395,7 @@ func (s *Service) finish(j *job, kind string, count int, runErr error, save func
 			state = "cancelled"
 		}
 	}
-	if runErr == nil && save != nil {
+	if save != nil && (runErr == nil || j != nil && (kind == "seller_stocks" || kind == "wb_stocks")) {
 		if err = save(tx, stamp); err != nil {
 			return ErrStorage
 		}

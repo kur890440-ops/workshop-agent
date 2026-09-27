@@ -1,0 +1,19 @@
+{
+  "pid": 74228,
+  "bind_override": "127.0.0.1",
+  "port": 60858,
+  "health_status": 200,
+  "auth_enabled": false,
+  "tcp_connections": [
+    "TCP    127.0.0.1:60858        0.0.0.0:0              LISTENING       74228",
+    "TCP    127.0.0.1:60860        127.0.0.1:60861        ESTABLISHED     74228",
+    "TCP    127.0.0.1:60861        127.0.0.1:60860        ESTABLISHED     74228",
+    "TCP    127.0.0.1:60862        127.0.0.1:60858        TIME_WAIT       0"
+  ],
+  "external_network": "child socket guard rejects non-loopback TCP; no browser loaded, so CDN not requested",
+  "files": [
+    "web-runtime\\stats.db"
+  ],
+  "process_exited": true,
+  "port_closed_after_exit": true
+}

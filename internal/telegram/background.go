@@ -25,7 +25,18 @@ func (b *Bot) Send(ctx context.Context, user, workshop int64, text string) error
 	if e := b.WS.DB().QueryRow(`SELECT telegram_user_id FROM users WHERE id=?`, user).Scan(&chat); e != nil || chat <= 0 {
 		return auth.ErrDenied
 	}
-	return b.api("sendMessage", map[string]any{"chat_id": chat, "text": text}, nil)
+	for _, part := range background.SplitMorningSummary(text) {
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+		if e := auth.Require(b.WS.DB(), user, workshop, auth.MarketplaceRead); e != nil {
+			return e
+		}
+		if e := b.api("sendMessage", map[string]any{"chat_id": chat, "text": part}, nil); e != nil {
+			return e
+		}
+	}
+	return nil
 }
 func (b *Bot) backgroundMessage(key sessionKey, text string) (bool, error) {
 	f := strings.Fields(text)

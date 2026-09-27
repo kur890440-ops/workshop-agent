@@ -69,6 +69,7 @@ func (s *Service) MCPRead(ctx context.Context, scope Scope, call func(context.Co
 	if err = s.check(scope, c.Revision); err != nil {
 		return err
 	}
+	ctx = wb.WithTrace(ctx, wb.CallMetadata{WorkshopID: scope.WorkshopID, Caller: "telegram_wb_stocks"})
 	err = call(ctx, c)
 	if denied := s.check(scope, c.Revision); denied != nil {
 		return denied

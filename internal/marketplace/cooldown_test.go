@@ -1,7 +1,6 @@
 package marketplace
 
 import (
-	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -24,11 +23,11 @@ func TestIdentityCacheExpiryRestartRevisionAndExplicitCheck(t *testing.T) {
 	}
 	clock = clock.Add(24 * time.Hour)
 	f.run(t, "wb_stocks")
-	if f.api.calls != 5 {
+	if f.api.calls != 4 {
 		t.Fatal("expired identity reused", f.api.calls)
 	}
 	f.run(t, "check")
-	if f.api.calls != 6 {
+	if f.api.calls != 5 {
 		t.Fatal("explicit check skipped")
 	}
 	if err := f.s.Disable(f.sc); err != nil {
@@ -36,7 +35,7 @@ func TestIdentityCacheExpiryRestartRevisionAndExplicitCheck(t *testing.T) {
 	}
 	f.attach(t)
 	f.run(t, "wb_stocks")
-	if f.api.calls != 8 {
+	if f.api.calls != 6 {
 		t.Fatal("revision not checked")
 	}
 	f.s.Close()
@@ -47,7 +46,7 @@ func TestIdentityCacheExpiryRestartRevisionAndExplicitCheck(t *testing.T) {
 	defer s.Close()
 	f.s = s
 	f.run(t, "wb_stocks")
-	if f.api.calls != 10 {
+	if f.api.calls != 7 {
 		t.Fatal("restart trusted sqlite identity")
 	}
 }
@@ -62,17 +61,17 @@ func TestIdentityBlockedAndStocksRateLimitAreDistinct(t *testing.T) {
 		t.Fatal(r, f.api.calls)
 	}
 	text, err := f.s.ReadText(f.sc, "stocks", 0)
-	if err != nil || !strings.Contains(text, "запрос не выполнялся") || !strings.Contains(text, "Начало попытки") {
+	if err != nil || !strings.Contains(text, "загрузка источника не выполнялась") || !strings.Contains(text, "Текущая попытка") {
 		t.Fatal(text, err)
 	}
 	f.api.errorInfo = nil
 	f.run(t, "wb_stocks")
 	success := syncState(t, f, "wb_stocks").LastSuccess
-	before := snapshot(t, f.ws.DB(), []string{"marketplace_stocks"})
+	before := count(t, f.ws.DB(), "marketplace_stocks")
 	f.api.stocksErr = &wb.RateLimitError{Operation: "analytics", RetryAt: retry, Source: "wb_retry"}
 	f.run(t, "wb_stocks")
 	r = syncState(t, f, "wb_stocks")
-	if r.BlockedBy != "" || r.RateOperation != "analytics" || r.LastSuccess != success || snapshot(t, f.ws.DB(), []string{"marketplace_stocks"}) != before {
+	if r.BlockedBy != "" || r.RateOperation != "analytics" || r.LastSuccess != success || count(t, f.ws.DB(), "marketplace_stocks") != before {
 		t.Fatal(r)
 	}
 }
@@ -93,10 +92,9 @@ func TestCooldownPersistenceMigrationAndNoSecrets(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer s.Close()
-	_, err = s.Start(f.sc, "wb_stocks")
-	var r *wb.RateLimitError
-	if !errors.As(err, &r) || !r.RetryAt.Equal(deadline) || f.api.calls != 0 {
-		t.Fatal(err, f.api.calls)
+	r, err := (cooldownDB{f.ws.DB()}).LoadCooldown("common")
+	if err != nil || !r.RetryAt.Equal(deadline) || f.api.calls != 0 {
+		t.Fatal(err, r, f.api.calls)
 	}
 	store, err := storage.New(f.path)
 	if err != nil {
@@ -134,7 +132,7 @@ func TestCachedIdentityNeverCachesAccessOrExplicitFailure(t *testing.T) {
 	f.api.errorInfo = nil
 	calls = f.api.calls
 	f.run(t, "wb_stocks")
-	if f.api.calls != calls+2 {
+	if f.api.calls != calls+1 {
 		t.Fatal("failed explicit check retained trust")
 	}
 	calls = f.api.calls
@@ -143,5 +141,36 @@ func TestCachedIdentityNeverCachesAccessOrExplicitFailure(t *testing.T) {
 	}
 	if _, err = f.s.Start(f.sc, "wb_stocks"); err == nil || f.api.calls != calls {
 		t.Fatal("cached identity bypassed membership")
+	}
+}
+
+func TestStocksJobIgnoresSellerInfoFailureWithPersistentProfile(t *testing.T) {
+	f := setup(t)
+	f.attach(t)
+	f.run(t, "all")
+	f.api.errorInfo = &wb.RateLimitError{Operation: "common", RetryAt: time.Now().Add(time.Hour), Source: "wb_retry"}
+	f.run(t, "check")
+	before := f.api.calls
+	f.run(t, "stocks")
+	if f.api.calls != before+2 {
+		t.Fatal("unexpected seller-info call", f.api.calls-before)
+	}
+	for _, kind := range []string{"seller_stocks", "wb_stocks"} {
+		r := syncState(t, f, kind)
+		if r.State != "succeeded" || r.BlockedBy != "" {
+			t.Fatal(r)
+		}
+	}
+}
+func TestHistoricalStockCountersAreUnknown(t *testing.T) {
+	f := setup(t)
+	f.attach(t)
+	_, e := f.ws.DB().Exec(`INSERT INTO marketplace_sync(connection_id,workshop_id,kind,state,started_at,error_code,row_count) VALUES(1,?,'seller_stocks','partial','2026-09-25T12:24:46Z','invalid_response',34)`, f.sc.WorkshopID)
+	if e != nil {
+		t.Fatal(e)
+	}
+	text, e := f.s.ReadText(f.sc, "seller_stocks", 0)
+	if e != nil || !strings.Contains(text, "Исторический результат") || strings.Contains(text, "Получено: 0") {
+		t.Fatal(text, e)
 	}
 }

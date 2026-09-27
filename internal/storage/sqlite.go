@@ -61,7 +61,13 @@ func (s *Store) Migrate() error {
 	var pacingDone int
 	var backgroundDone int
 	var genericDone int
+	var rateDone int
+	var incidentDone int
+	var stockSourcesDone int
 	if legacy > 0 {
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=117`).Scan(&stockSourcesDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=116`).Scan(&incidentDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=115`).Scan(&rateDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=114`).Scan(&genericDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=113`).Scan(&backgroundDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=108`).Scan(&taskOnlyDone)
@@ -71,7 +77,7 @@ func (s *Store) Migrate() error {
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=112`).Scan(&pacingDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0) && s.Path != "" && s.Path != ":memory:" {
+		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0 || rateDone == 0 || incidentDone == 0 || stockSourcesDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
@@ -136,6 +142,16 @@ func (s *Store) Migrate() error {
 	if err := migrateGenericBackground(tx); err != nil {
 		return fmt.Errorf("generic background migration: %w", err)
 	}
+	if err := migrateWBRateAudit(tx); err != nil {
+		return fmt.Errorf("WB rate audit migration: %w", err)
+	}
+	if err := migrateWBIncidents(tx); err != nil {
+		return fmt.Errorf("WB incidents migration: %w", err)
+	}
+	if err := migrateStockSources(tx); err != nil {
+		return err
+	}
+
 	return tx.Commit()
 }
 

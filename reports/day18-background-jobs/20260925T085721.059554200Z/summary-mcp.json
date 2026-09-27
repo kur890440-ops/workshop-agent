@@ -1,0 +1,22 @@
+{
+  "code": "OK",
+  "job_id": 1,
+  "run_id": 2,
+  "status": "success",
+  "captured_at": "2026-09-27T06:00:00Z",
+  "next_run_at": "2026-09-28T05:00:00Z",
+  "job_status": "active",
+  "timezone": "Europe/Moscow",
+  "aggregate": {
+    "products_count": 3,
+    "price_changes_count": 1,
+    "stock_changes_count": 1,
+    "zero_stock_count": 1,
+    "low_stock_count": 2,
+    "errors_count": 0,
+    "prices_ok": true,
+    "stocks_ok": true
+  },
+  "error_categories": [],
+  "summary": "Wildberries · Последняя сводка\nСтатус: success\nПроверено товаров: 3\nЦены: изменилось — 1\nОстатки: изменилось — 1; нет в наличии — 1; низкий остаток — 2\nОшибок: 0\nПоследний сбор: 27.09.2026 09:00 (Europe/Moscow)\nСледующий запуск: 28.09.2026 08:00 (Europe/Moscow)"
+}

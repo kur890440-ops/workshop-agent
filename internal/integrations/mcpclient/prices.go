@@ -8,6 +8,20 @@ import (
 
 const PricesTool = "wb_get_prices"
 
+// DiagnosticPrices probes the registered read tool without an identity refresh.
+// Only the local operator CLI uses this; it does not import or return seller data.
+// The caller must apply the client's one-request budget before connecting.
+func (s *Service) DiagnosticPrices(ctx context.Context, workshop int64) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if err := s.connect(ctx); err != nil {
+		return err
+	}
+	ctx = wb.WithTrace(ctx, wb.CallMetadata{WorkshopID: workshop, Caller: "diagnostic"})
+	var discarded Envelope[[]wb.Price]
+	return s.callTool(ctx, PricesTool, NoArgs{}, &discarded)
+}
+
 // Prices reuses the same SDK session, dispatcher, identity and error boundary.
 func (s *Service) Prices(ctx context.Context, sellerID string) (out Envelope[[]wb.Price], err error) {
 	if sellerID == "" {
@@ -31,21 +45,10 @@ func (s *Service) Prices(ctx context.Context, sellerID string) (out Envelope[[]w
 	if !found {
 		return out, Error("mcp_tool_policy_error")
 	}
-	if s.seller != sellerID || time.Since(s.verified) >= 24*time.Hour {
-		var seller Envelope[wb.Seller]
-		if err = s.callTool(ctx, "wb_get_seller", NoArgs{}, &seller); err != nil {
-			return out, err
-		}
-		if !seller.Complete || seller.Data.ID != sellerID || seller.Source != "wildberries" {
-			return out, Error("wb_identity_mismatch")
-		}
-		s.seller = sellerID
-		s.verified = time.Now()
-	}
+	m := wb.TraceMetadata(ctx)
+	m.ExpectedSeller = sellerID
+	ctx = wb.WithTrace(ctx, m)
 	if err = s.callTool(ctx, PricesTool, NoArgs{}, &out); err != nil {
-		if err == Error("wb_authentication_error") || err == Error("wb_access_denied") {
-			s.seller = ""
-		}
 		return out, err
 	}
 	if !out.Complete || !out.UntrustedData || out.Source != "wildberries" || out.Data == nil {

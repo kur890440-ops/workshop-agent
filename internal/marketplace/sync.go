@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"sort"
+	"workshop-agent/internal/storage"
 
 	"workshop-agent/internal/auth"
 	wb "workshop-agent/internal/marketplace/wildberries"
@@ -21,7 +22,25 @@ func (s *Service) sync(ctx context.Context, j *job, kind string) {
 		save = func(tx *sql.Tx, stamp string) error { return saveCards(tx, j.scope, cards, stamp) }
 	case "seller_stocks", "wb_stocks":
 		var stocks []wb.Stock
-		if kind == "wb_stocks" {
+		var batch wb.StockBatch
+		if s.stockReader != nil {
+			source := wb.StockSeller
+			if kind == "wb_stocks" {
+				source = wb.StockWB
+			}
+			c, e := connection(s.db, j.scope, true)
+			if e != nil {
+				err = e
+			} else {
+				b, e := s.stockReader.StockSource(ctx, c.SellerID, source)
+				batch = b
+				stocks = b.Rows
+				err = e
+				if b.Info.Status != "SUCCESS" {
+					err = &wb.StockPartialError{Batch: b, Cause: e}
+				}
+			}
+		} else if kind == "wb_stocks" {
 			stocks, err = s.api.WBStocks(ctx)
 		} else {
 			var cards []wb.Card
@@ -31,7 +50,17 @@ func (s *Service) sync(ctx context.Context, j *job, kind string) {
 			}
 		}
 		count = len(stocks)
-		save = func(tx *sql.Tx, stamp string) error { return saveStocks(tx, j.scope, kind, stocks, stamp) }
+		source := wb.StockSeller
+		if kind == "wb_stocks" {
+			source = wb.StockWB
+		}
+		if batch.Info.Source == "" {
+			batch = wb.NewStockBatch(source, stocks, err)
+		}
+		save = func(tx *sql.Tx, stamp string) error {
+			_, e := storage.SaveStockBatch(tx, j.scope.WorkshopID, j.scope.ConnectionID, 0, batch)
+			return e
+		}
 	case "orders":
 		var orders []wb.Order
 		orders, err = s.loadOrders(ctx, j.scope)

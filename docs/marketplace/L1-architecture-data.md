@@ -1,5 +1,20 @@
 # L1 — модули, сущности и размещение данных
 
+[WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.
+
+[WA-D164 — человекочитаемый вывод остатков](../wb-stock-presentation.md): display model, локальное обогащение, страницы15, диагностика отдельно.
+
+[WA-D163 — независимые операции без seller-info preflight](../wb-independent-operations.md). Имеет приоритет над прежними правилами preflight и просмотра `/wb stocks`.
+
+[WA-D162 — независимые SELLER/WB, partial snapshots](../wb-stock-sources.md) заменяет strict-политику WA-D161 и авто-fetch при просмотре остатков.
+
+Day19: [WA-D161 — strict MCP composition](../day19-mcp-composition.md).
+Один in-memory MCP, атомарные снимки, trace JobRun; заменяет partial pipeline Day18.
+
+[WA-D160](../wb-rate-limit-audit.md): persistent история429, migration116, точные caller/endpoint, owner-only history/incident.
+
+Аудит rate limits: [WA-D158](../wb-rate-limit-audit.md) — общий limiter, persistent identity, migration115, безопасная диагностика. Заменяет прежнюю RAM-only/24h identity; единый процесс и MCP сохраняются.
+
 Day18 дополнен [WA-D157: сохранённая сводка через MCP](../day18-summary.md).
 
 Актуальное уточнение Day16–18: [WA-D154–156, один процесс и in-memory MCP](../day18-refactor.md).

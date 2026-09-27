@@ -59,7 +59,7 @@ func TestSchedulingToolScopeSchemasAndExecution(t *testing.T) {
 	defer manager.Close()
 	jobs.WB.MCP = manager.Client
 	state := manager.Client.State()
-	if state.Transport != "in-memory" || len(state.Tools) != 8 || state.WriteToolsExposed != 0 || state.LocalMutationTools != 1 {
+	if state.Transport != "in-memory" || len(state.Tools) != 11 || state.WriteToolsExposed != 0 || state.LocalMutationTools != 2 {
 		t.Fatal(state)
 	}
 	found := false

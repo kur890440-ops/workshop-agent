@@ -4,10 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"reflect"
 	"sort"
 	"time"
 	"workshop-agent/internal/auth"
+	wb "workshop-agent/internal/marketplace/wildberries"
 )
 
 type DailySummary struct {
@@ -79,7 +80,16 @@ func (s *Service) DailySummary(user, workshop int64) (out DailySummary, err erro
 		return out, ErrInput
 	}
 	var categories map[string]string
-	if len(results) > 65536 || json.Unmarshal([]byte(results), &categories) != nil {
+	var pipeline PipelineResult
+	if len(results) > 1<<20 {
+		return out, ErrInput
+	}
+	if json.Unmarshal([]byte(results), &pipeline) == nil && pipeline.Name == MarketPipeline {
+		if (pipeline.Status != "SUCCESS" && pipeline.Status != "PARTIAL_SUCCESS") || pipeline.Aggregate == nil || !reflect.DeepEqual(*pipeline.Aggregate, aggregate) || pipeline.SaveResult == nil || !pipeline.SaveResult.Saved {
+			return out, ErrInput
+		}
+		categories = map[string]string{}
+	} else if json.Unmarshal([]byte(results), &categories) != nil {
 		return out, ErrInput
 	}
 	seen := map[string]bool{}
@@ -89,7 +99,7 @@ func (s *Service) DailySummary(user, workshop int64) (out DailySummary, err erro
 		}
 		// Never echo arbitrary persisted error text or payload fields.
 		switch category {
-		case "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_api_error", "mcp_connection_error", "mcp_busy", "cancelled", "sync_failed", "access_or_configuration":
+		case "WB_RATE_LIMITED", "wb_identity_mismatch", "wb_configuration_error", "wb_authentication_error", "wb_access_denied", "wb_rate_limit", "wb_timeout", "wb_api_error", "mcp_connection_error", "mcp_busy", "cancelled", "sync_failed", "access_or_configuration":
 		default:
 			category = "source_failed"
 		}
@@ -99,23 +109,46 @@ func (s *Service) DailySummary(user, workshop int64) (out DailySummary, err erro
 		}
 	}
 	sort.Strings(out.ErrorCategories)
+	// Old aggregates predate seller_items. Reconstruct from THIS run's immutable
+	// SELLER snapshots only, never from today's current inventory.
+	if _, exists := fields["seller_items"]; !exists && aggregate.SellerSource.Source == wb.StockSeller && aggregate.SellerSource.Valid > 0 {
+		var params WBParameters
+		if json.Unmarshal([]byte(j.Parameters), &params) != nil {
+			return out, ErrInput
+		}
+		rows, e := tx.Query(`SELECT data_json FROM wb_daily_snapshots WHERE run_id=? AND workshop_id=? AND connection_id=? AND source_tool='wb_get_seller_stocks' ORDER BY item_key`, out.RunID, workshop, params.ConnectionID)
+		if e != nil {
+			return out, e
+		}
+		batch := wb.StockBatch{Info: aggregate.SellerSource}
+		for rows.Next() {
+			var data string
+			var row wb.Stock
+			if rows.Scan(&data) != nil || json.Unmarshal([]byte(data), &row) != nil {
+				rows.Close()
+				return out, ErrInput
+			}
+			batch.Rows = append(batch.Rows, row)
+		}
+		e = rows.Err()
+		rows.Close()
+		if e != nil {
+			return out, e
+		}
+		if len(batch.Rows) > 0 {
+			var threshold int64
+			if e = tx.QueryRow(`SELECT wb_low_stock_threshold FROM workshop_settings WHERE workshop_id=?`, workshop).Scan(&threshold); e != nil {
+				return out, e
+			}
+			aggregate.SellerItems, e = buildSellerItems(tx, workshop, params.ConnectionID, threshold, batch)
+			if e != nil {
+				return out, e
+			}
+		}
+	}
 	out.Code = "OK"
 	out.Aggregate = &aggregate
 	out.CapturedAt = time.Unix(captured, 0).UTC().Format(time.RFC3339)
-	loc, e := time.LoadLocation(j.Timezone)
-	if e != nil {
-		return out, ErrInput
-	}
-	next := "расписание не активно"
-	if j.Status == "active" {
-		next = time.Unix(j.NextRun, 0).In(loc).Format("02.01.2006 15:04") + " (" + j.Timezone + ")"
-	}
-	out.Summary = fmt.Sprintf("Wildberries · Последняя сводка\nСтатус: %s\nПроверено товаров: %d\nЦены: изменилось — %d\nОстатки: изменилось — %d; нет в наличии — %d; низкий остаток — %d\nОшибок: %d\nПоследний сбор: %s (%s)\nСледующий запуск: %s", out.Status, aggregate.ProductsCount, aggregate.PriceChanges, aggregate.StockChanges, aggregate.ZeroStock, aggregate.LowStock, aggregate.Errors, time.Unix(captured, 0).In(loc).Format("02.01.2006 15:04"), j.Timezone, next)
-	if out.Status == "partial_success" {
-		out.Summary += "\nДанные неполные; не все источники обновлены."
-	}
-	if len(out.ErrorCategories) > 0 {
-		out.Summary += fmt.Sprintf("\nКатегории ошибок: %v", out.ErrorCategories)
-	}
+	out.Summary = Summary(j, aggregate, out.Status)
 	return out, nil
 }

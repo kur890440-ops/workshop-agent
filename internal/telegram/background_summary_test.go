@@ -30,17 +30,17 @@ func TestTelegramLastSummaryUsesMCP(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if _, e = h.bot.WS.DB().Exec(`INSERT INTO background_job_runs(job_id,workshop_id,job_type,local_date,status,started_at,finished_at,lease_owner,lease_until,aggregate_json) VALUES(?,?,'WB_DAILY_SYNC','2026-09-24','success',100,101,'fixture',0,'{"products_count":37,"price_changes_count":0,"stock_changes_count":0,"zero_stock_count":0,"low_stock_count":0,"errors_count":0,"prices_ok":true,"stocks_ok":true}')`, j.ID, w); e != nil {
+	if _, e = h.bot.WS.DB().Exec(`INSERT INTO background_job_runs(job_id,workshop_id,job_type,local_date,status,started_at,finished_at,lease_owner,lease_until,aggregate_json) VALUES(?,?,'WB_DAILY_SYNC','2026-09-24','success',100,101,'fixture',0,'{"products_count":37,"price_changes_count":0,"stock_changes_count":0,"zero_stock_count":0,"low_stock_count":0,"errors_count":0,"prices_ok":true,"stocks_ok":true,"seller_stock":{"source":"SELLER","status":"SUCCESS"},"seller_items":[{"nm_id":1,"chrt_id":0,"product_name":"Тестовый товар","total_quantity":20}]}')`, j.ID, w); e != nil {
 		t.Fatal(e)
 	}
 	h.message(t, 900001, "/wb_auto summary trace")
 	text := h.sent[len(h.sent)-1]["text"].(string)
-	if !strings.Contains(text, "Проверено товаров: 37") || !strings.Contains(text, "wb_get_daily_summary") || !strings.Contains(text, "WB API CALLS: 0") {
+	if !strings.Contains(text, "Тестовый товар — 20 шт.") || !strings.Contains(text, "wb_get_daily_summary") || !strings.Contains(text, "WB API CALLS: 0") {
 		t.Fatal(text)
 	}
 	h.message(t, 900001, "/wb")
 	h.click(t, 900001, "Последняя сводка")
-	if !strings.Contains(h.sent[len(h.sent)-1]["text"].(string), "Проверено товаров: 37") {
+	if !strings.Contains(h.sent[len(h.sent)-1]["text"].(string), "Тестовый товар — 20 шт.") {
 		t.Fatal(h.sent)
 	}
 	// Closing the real MCP session must break this flow despite available SQL data.

@@ -68,6 +68,7 @@ func fixture(t *testing.T) (*Service, *workshops.Service, *fakeMCP, *fakeSender,
 	m := &fakeMCP{price: 10000, stock: 12}
 	sender := &fakeSender{}
 	s := New(ws.DB(), m, sender)
+	s.WB.Tools = testPipelineTools{s.WB}
 	s.Now = func() time.Time { return time.Date(2026, 9, 24, 6, 0, 0, 0, time.UTC) }
 	return s, ws, m, sender, u, w
 }
@@ -208,7 +209,7 @@ func TestSnapshotsDiffAggregateAndInventoryIsolation(t *testing.T) {
 	if scalar(t, s, `SELECT COUNT(*) FROM wb_daily_snapshots`) != 6 || scalar(t, s, `SELECT COUNT(*) FROM wb_daily_diffs`) != 2 || scalar(t, s, `SELECT COUNT(*) FROM products`) != before {
 		t.Fatal("history or inventory changed")
 	}
-	if len(sender.messages) != 2 || !strings.Contains(sender.messages[1], "изменилось — 1") || strings.Join(m.calls, ",") != "prices,stocks,prices,stocks" {
+	if len(sender.messages) != 2 || !strings.Contains(sender.messages[1], "Изменилось товаров: 1") || strings.Join(m.calls, ",") != "prices,stocks,prices,stocks" {
 		t.Fatal(sender.messages, m.calls)
 	}
 	if scalar(t, s, `SELECT current_stock FROM materials WHERE name='Workshop material'`) != 400 || scalar(t, s, `SELECT cost_cents FROM fixture_internal_cost`) != 99999 {
@@ -220,7 +221,7 @@ func TestPartialFailureAndSafeErrors(t *testing.T) {
 		price, stock bool
 		want         string
 		n            int
-	}{{false, true, "partial_success", 1}, {true, false, "partial_success", 2}, {true, true, "failed", 0}} {
+	}{{false, true, "partial_success", 1}, {true, false, "partial_success", 2}, {true, true, "partial_success", 0}} {
 		t.Run(tc.want+string(rune('0'+tc.n)), func(t *testing.T) {
 			s, _, m, sender, u, w := fixture(t)
 			if tc.price {
@@ -259,6 +260,7 @@ func TestPauseResumeCancelRestartAndCatchup(t *testing.T) {
 		t.Fatal(e)
 	}
 	restarted := New(s.DB, m, nil)
+	restarted.WB.Tools = testPipelineTools{restarted.WB}
 	restarted.Now = func() time.Time { return time.Date(2026, 10, 1, 10, 0, 0, 0, time.UTC) }
 	_ = restarted.Tick(context.Background())
 	_ = restarted.Tick(context.Background())
@@ -319,4 +321,33 @@ func TestOverlapManualScheduledAndScope(t *testing.T) {
 	if e = s.DB.QueryRow(`SELECT parameters_json FROM background_jobs WHERE workshop_id=?`, w).Scan(&params); e != nil || strings.Contains(params, "SECRET") {
 		t.Fatal("secret persisted", e)
 	}
+}
+
+// Local unit-test boundary; production always injects the MCP manager.
+type testPipelineTools struct{ ex *WBDailySyncExecutor }
+
+func (t testPipelineTools) CallPipelineTool(ctx context.Context, p PipelineContext, name string, in, out any) error {
+	switch name {
+	case BuildTool:
+		v, e := t.ex.BuildMarketSummary(ctx, p, in.(MarketInput))
+		if e == nil {
+			*out.(*Aggregate) = v
+		}
+		return e
+	case SaveTool:
+		v, e := t.ex.SaveMarketSnapshot(ctx, p, in.(SaveInput))
+		if e == nil {
+			*out.(*SaveResult) = v
+		}
+		return e
+	}
+	return ErrInput
+}
+
+func (f *fakeMCP) StockSource(ctx context.Context, seller string, source wb.StockSource) (wb.StockBatch, error) {
+	if source == wb.StockSeller {
+		return wb.NewStockBatch(source, []wb.Stock{}, nil), nil
+	}
+	v, e := f.Stocks(ctx, seller)
+	return wb.NewStockBatch(source, v.Value.Data, e), e
 }

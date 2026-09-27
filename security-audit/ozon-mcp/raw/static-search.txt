@@ -1,0 +1,155 @@
+secrets docker-compose.yml:11:       - OZON_API_KEY=${OZON_API_KEY:-}
+secrets docker-compose.yml:13:       - OZON_PERF_CLIENT_SECRET=${OZON_PERF_CLIENT_SECRET:-}
+secrets docker-compose.yml:14:       - MCP_AUTH_TOKEN=${MCP_AUTH_TOKEN:-}
+network docker-compose.yml:19:       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+danger docker-compose.yml:19:       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+secrets pyproject.toml:4: description = "MCP server for Ozon Seller API + Performance API: 156 tools for prices, promos, ads, orders, returns and finance, with response sizes measured on a live account and trimmed from 476k to 64k tokens across a 16-response corpus"
+network pyproject.toml:42:     "httpx>=0.27.0",
+network pyproject.toml:52: Homepage = "https://github.com/DeviceIngineering/ozon-mcp-server"
+network pyproject.toml:53: Repository = "https://github.com/DeviceIngineering/ozon-mcp-server"
+network pyproject.toml:54: Issues = "https://github.com/DeviceIngineering/ozon-mcp-server/issues"
+network start.sh:5: echo "Done. Running at http://localhost:8000"
+secrets ozon_mcp\app.py:28: MCP_AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN", "").strip()
+secrets ozon_mcp\app.py:49:         if not shop.get("ozon_client_id") or not shop.get("ozon_api_key"):
+secrets ozon_mcp\app.py:102:     """Проверка Bearer-токена для /sse и /messages. Без MCP_AUTH_TOKEN — пропуск."""
+secrets ozon_mcp\app.py:103:     if not MCP_AUTH_TOKEN:
+secrets ozon_mcp\app.py:105:     auth = request.headers.get("authorization", "")
+secrets ozon_mcp\app.py:106:     token = auth.removeprefix("Bearer ").strip()
+secrets ozon_mcp\app.py:107:     if not token:
+secrets ozon_mcp\app.py:108:         token = request.query_params.get("token", "")
+secrets ozon_mcp\app.py:109:     return secrets.compare_digest(token, MCP_AUTH_TOKEN)
+secrets ozon_mcp\app.py:117:     через ?token=... : в endpoint-событии токена нет, и они не могут повторить
+network ozon_mcp\app.py:152:     after response already completed` (у клиента — httpx.ReadError на initialize).
+secrets ozon_mcp\app.py:198:             "seller_keys_set": bool(shop.get("ozon_client_id") and shop.get("ozon_api_key")),
+secrets ozon_mcp\app.py:199:             "perf_keys_set": bool(shop.get("ozon_perf_client_id") and shop.get("ozon_perf_client_secret")),
+secrets ozon_mcp\app.py:233:     if not shop.get("ozon_client_id") or not shop.get("ozon_api_key"):
+secrets ozon_mcp\app.py:292:     akey = shop.get("ozon_api_key", "")
+secrets ozon_mcp\app.py:306:     psecret = shop.get("ozon_perf_client_secret", "")
+secrets ozon_mcp\app.py:334:         "auth_enabled": bool(MCP_AUTH_TOKEN),
+network ozon_mcp\client.py:5: import httpx
+network ozon_mcp\client.py:9: SELLER_BASE = "https://api-seller.ozon.ru"
+network ozon_mcp\client.py:10: PERF_BASE = "https://api-performance.ozon.ru"
+secrets ozon_mcp\client.py:16:     def __init__(self, client_id: str, api_key: str):
+secrets ozon_mcp\client.py:18:         self.api_key = api_key
+network ozon_mcp\client.py:19:         self._http = httpx.AsyncClient(
+secrets ozon_mcp\client.py:21:             headers={"Client-Id": client_id, "Api-Key": api_key},
+secrets ozon_mcp\client.py:1168:     def __init__(self, client_id: str, client_secret: str):
+secrets ozon_mcp\client.py:1170:         self.client_secret = client_secret
+secrets ozon_mcp\client.py:1171:         self._token: str | None = None
+secrets ozon_mcp\client.py:1172:         self._token_at: float = 0.0
+network ozon_mcp\client.py:1173:         self._http = httpx.AsyncClient(
+secrets ozon_mcp\client.py:1178:     async def _ensure_token(self):
+secrets ozon_mcp\client.py:1181:         if self._token and (_t.monotonic() - self._token_at) < 1740:
+secrets ozon_mcp\client.py:1184:             "/api/client/token",
+secrets ozon_mcp\client.py:1187:                 "client_secret": self.client_secret,
+secrets ozon_mcp\client.py:1188:                 "grant_type": "client_credentials",
+secrets ozon_mcp\client.py:1192:         self._token = r.json()["access_token"]
+secrets ozon_mcp\client.py:1193:         self._token_at = _t.monotonic()
+secrets ozon_mcp\client.py:1194:         self._http.headers["Authorization"] = f"Bearer {self._token}"
+secrets ozon_mcp\client.py:1197:         await self._ensure_token()
+secrets ozon_mcp\client.py:1203:         await self._ensure_token()
+secrets ozon_mcp\client.py:1209:         await self._ensure_token()
+secrets ozon_mcp\client.py:1272:         await self._ensure_token()
+secrets ozon_mcp\client.py:1369:                 await self._ensure_token()
+network ozon_mcp\diagnostics.py:23: import httpx
+network ozon_mcp\diagnostics.py:25: SELLER_HOST = "https://api-seller.ozon.ru"
+network ozon_mcp\diagnostics.py:26: PERF_HOST = "https://api-performance.ozon.ru"
+network ozon_mcp\diagnostics.py:35:         async with httpx.AsyncClient(timeout=10.0) as client:
+network ozon_mcp\diagnostics.py:116:         except httpx.HTTPStatusError as e:
+secrets ozon_mcp\diagnostics.py:152: async def probe_performance(client_id: str, client_secret: str) -> dict[str, Any]:
+secrets ozon_mcp\diagnostics.py:154:     if not client_id or not client_secret:
+network ozon_mcp\diagnostics.py:159:         async with httpx.AsyncClient(base_url=PERF_HOST, timeout=15.0) as c:
+secrets ozon_mcp\diagnostics.py:160:             r = await c.post("/api/client/token", json={
+secrets ozon_mcp\diagnostics.py:161:                 "client_id": client_id, "client_secret": client_secret,
+secrets ozon_mcp\diagnostics.py:162:                 "grant_type": "client_credentials",
+secrets ozon_mcp\diagnostics.py:167:             "category": "Реклама", "endpoint": "POST /api/client/token", "ok": True,
+secrets ozon_mcp\diagnostics.py:169:             "token_expires_in_sec": data.get("expires_in"),
+network ozon_mcp\diagnostics.py:171:     except httpx.HTTPStatusError as e:
+secrets ozon_mcp\diagnostics.py:173:             "category": "Реклама", "endpoint": "POST /api/client/token", "ok": False,
+secrets ozon_mcp\diagnostics.py:181:             "category": "Реклама", "endpoint": "POST /api/client/token", "ok": False,
+secrets ozon_mcp\diagnostics.py:222:         "seller_keys_set": bool(keys.get("ozon_client_id") and keys.get("ozon_api_key")),
+secrets ozon_mcp\diagnostics.py:223:         "perf_keys_set": bool(keys.get("ozon_perf_client_id") and keys.get("ozon_perf_client_secret")),
+secrets ozon_mcp\diagnostics.py:230:         probe_performance(keys.get("ozon_perf_client_id", ""), keys.get("ozon_perf_client_secret", "")),
+secrets ozon_mcp\server.py:57:     api_key = keys.get("ozon_api_key", "")
+secrets ozon_mcp\server.py:58:     if not client_id or not api_key:
+secrets ozon_mcp\server.py:59:         raise ValueError(f"Магазин '{shop_id}': не заданы OZON_CLIENT_ID / OZON_API_KEY")
+secrets ozon_mcp\server.py:60:     client = OzonSellerClient(client_id, api_key)
+secrets ozon_mcp\server.py:72:     client_secret = keys.get("ozon_perf_client_secret", "")
+secrets ozon_mcp\server.py:73:     if not client_id or not client_secret:
+secrets ozon_mcp\server.py:74:         raise ValueError(f"Магазин '{shop_id}': не заданы OZON_PERF_CLIENT_ID / OZON_PERF_CLIENT_SECRET")
+secrets ozon_mcp\server.py:75:     client = OzonPerformanceClient(client_id, client_secret)
+network ozon_mcp\server.py:815:           "Buyer 'want a discount' requests. status: NEW | SEEN | APPROVED | PARTLY_APPROVED | DECLINED | AUTO_DECLINED (заявки на скидку).",
+secrets ozon_mcp\server.py:926:     token = _CALL_CONTEXT.set((name, arguments))
+secrets ozon_mcp\server.py:935:         _CALL_CONTEXT.reset(token)
+secrets ozon_mcp\settings.py:10:     "ozon_api_key",
+secrets ozon_mcp\settings.py:12:     "ozon_perf_client_secret",
+secrets ozon_mcp\settings.py:17:     "ozon_api_key": "OZON_API_KEY",
+secrets ozon_mcp\settings.py:19:     "ozon_perf_client_secret": "OZON_PERF_CLIENT_SECRET",
+secrets ozon_mcp\settings.py:24:     key_file = data_dir / ".encryption_key"
+danger ozon_mcp\settings.py:30:         key_file.write_bytes(key)
+danger ozon_mcp\settings.py:98:     (data_dir / "shops.json").write_text(json.dumps(data, indent=2))
+secrets ozon_mcp\shaping.py:12: Потолок вывода одного вызова у клиента — 25 000 токенов (MAX_MCP_OUTPUT_TOKENS
+secrets scripts\collect_corpus.py:40: ID_KEY = re.compile(r"(sid|seller_?id|supplier_?id|shop_?id|client_?id|api_?key|token)", re.I)
+danger scripts\collect_corpus.py:103:         (out_dir / f"{name}.json").write_text(
+secrets scripts\measure_corpus.py:8: Без tiktoken считает символы, с ним — токены (cl100k, близко к токенайзеру Claude).
+secrets scripts\measure_corpus.py:19:     import tiktoken
+secrets scripts\measure_corpus.py:20:     _enc = tiktoken.get_encoding("cl100k_base")
+network tests\test_mcp_sse.py:7: как httpx.ReadError на стадии initialize.
+secrets tests\test_mcp_sse.py:11: без MCP_AUTH_TOKEN и с ним.
+network tests\test_mcp_sse.py:16: import socket
+danger tests\test_mcp_sse.py:17: import subprocess
+network tests\test_mcp_sse.py:23: import httpx
+secrets tests\test_mcp_sse.py:30: TOKEN = "test-token-placeholder"
+network tests\test_mcp_sse.py:34:     with closing(socket.socket()) as s:
+secrets tests\test_mcp_sse.py:41:     """Живой сервер на свободном порту. Возвращает (base_url, token|None)."""
+secrets tests\test_mcp_sse.py:48:         "MCP_AUTH_TOKEN": TOKEN if request.param else "",
+danger tests\test_mcp_sse.py:51:     proc = subprocess.Popen(
+danger tests\test_mcp_sse.py:55:         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+network tests\test_mcp_sse.py:57:     base = f"http://127.0.0.1:{port}"
+network tests\test_mcp_sse.py:63:                 if httpx.get(f"{base}/api/health", timeout=1).status_code == 200:
+network tests\test_mcp_sse.py:65:             except httpx.HTTPError:
+secrets tests\test_mcp_sse.py:70:         yield base, (TOKEN if request.param else None)
+danger tests\test_mcp_sse.py:75:         except subprocess.TimeoutExpired:
+secrets tests\test_mcp_sse.py:79: async def _session_probe(base: str, token: str | None):
+secrets tests\test_mcp_sse.py:80:     headers = {"Authorization": f"Bearer {token}"} if token else None
+secrets tests\test_mcp_sse.py:91:     base, token = server
+secrets tests\test_mcp_sse.py:92:     tools, result = asyncio.run(asyncio.wait_for(_session_probe(base, token), 60))
+secrets tests\test_mcp_sse.py:103:     base, token = server
+secrets tests\test_mcp_sse.py:104:     if token is None:
+network tests\test_mcp_sse.py:107:     assert httpx.get(f"{base}/sse", timeout=5).status_code == 401
+network tests\test_mcp_sse.py:108:     assert httpx.post(
+secrets tests\test_settings.py:10:         "shop1": {"name": "Альфа", "ozon_client_id": "111", "ozon_api_key": "aaa"},
+secrets tests\test_settings.py:11:         "shop2": {"name": "Бета", "ozon_client_id": "222", "ozon_api_key": "bbb"},
+secrets tests\test_settings.py:17:     assert loaded["shop2"]["ozon_api_key"] == "bbb"
+secrets tests\test_settings.py:26:     save_shops(tmp_path, {"s1": {"name": "S1", "ozon_client_id": "x", "ozon_api_key": "y"}})
+secrets tests\test_settings.py:49:     shop = {"name": "Test", "ozon_client_id": "1234567890", "ozon_api_key": "abc", "ozon_perf_client_id": ""}
+secrets tests\test_settings.py:52:     assert masked["ozon_api_key"] == "***"
+secrets tests\test_settings.py:56: def test_encryption(tmp_path):
+secrets tests\test_settings.py:57:     save_shops(tmp_path, {"s1": {"name": "X", "ozon_api_key": "secret123"}})
+secrets tests\test_settings.py:61:     assert loaded["s1"]["ozon_api_key"] == "secret123"
+secrets tests\test_settings.py:68:     (tmp_path / ".encryption_key").write_bytes(key)
+danger tests\test_settings.py:68:     (tmp_path / ".encryption_key").write_bytes(key)
+secrets tests\test_settings.py:72:         "ozon_api_key": f.encrypt(b"old_key").decode(),
+secrets tests\test_settings.py:74:         "ozon_perf_client_secret": "",
+danger tests\test_settings.py:76:     (tmp_path / "settings.json").write_text(json.dumps(old_data))
+danger tests\test_stdio_stats.py:96:     blocker.write_text("")
+danger tests\test_tools.py:18:     (tmp_path / "shops.json").write_text(json.dumps({"a": {"name": "A"}, "b": {"name": "B"}}))
+secrets tests\test_tools.py:43:     В Claude Code потолок вывода одного вызова — MAX_MCP_OUTPUT_TOKENS,
+secrets tests\test_web.py:44:         "ozon_api_key": "222",
+network ozon_mcp\templates\base.html:7:     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+network ozon_mcp\templates\base.html:8:     <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+network ozon_mcp\templates\dashboard.html:99:     <p>Пока нет вызовов. Подключите Claude Desktop или Claude Code к <code>http://&lt;host&gt;:8000/sse</code></p>
+secrets ozon_mcp\templates\settings.html:15:         <input type="password" id="ozon_api_key" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" value="{{ settings.ozon_api_key }}">
+secrets ozon_mcp\templates\settings.html:25:         <input type="password" id="ozon_perf_client_secret" placeholder="yyyyyyyyyyyyyyyy" value="{{ settings.ozon_perf_client_secret }}">
+secrets ozon_mcp\templates\settings.html:45:             ozon_api_key: document.getElementById('ozon_api_key').value,
+secrets ozon_mcp\templates\settings.html:47:             ozon_perf_client_secret: document.getElementById('ozon_perf_client_secret').value,
+secrets ozon_mcp\templates\shops.html:14:         <label>API Key <input type="password" data-shop="{{ shop_id }}" data-key="ozon_api_key" value="{{ shop.ozon_api_key }}"></label>
+secrets ozon_mcp\templates\shops.html:16:         <label>Perf Secret <input type="password" data-shop="{{ shop_id }}" data-key="ozon_perf_client_secret" value="{{ shop.ozon_perf_client_secret }}"></label>
+secrets ozon_mcp\templates\shops.html:33:         <label>API Key <input type="password" id="new-ozon_api_key"></label>
+secrets ozon_mcp\templates\shops.html:35:         <label>Perf Secret <input type="password" id="new-ozon_perf_client_secret"></label>
+secrets ozon_mcp\templates\shops.html:83:         ozon_api_key: document.getElementById('new-ozon_api_key').value,
+secrets ozon_mcp\templates\shops.html:85:         ozon_perf_client_secret: document.getElementById('new-ozon_perf_client_secret').value,
+danger .github\workflows\ci.yml:53:           python -c "import json,sys;t=[json.loads(l)['result']['tools'] for l in open('out.json') if '\"id\":2' in l][0];print('инструментов в каталоге:',len(t));sys.exit(0 if len(t)>100 else 1)"
+secrets .github\workflows\publish-registry.yml:25:       id-token: write
+network .github\workflows\publish-registry.yml:32:           curl -sSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_$(uname -s | tr '[:upper:]' '[:lower:]')_$(uname -m | sed 's/x86_64/amd64/').tar.gz" \
+secrets .github\workflows\publish.yml:63:       id-token: write   # обязательно для Trusted Publishing

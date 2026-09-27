@@ -115,7 +115,10 @@ func TestRetryAfterAndRateWaitRespectCancellation(t *testing.T) {
 	if time.Until(c.next["common"]) < 119*time.Second {
 		t.Fatal("Retry-After shortened")
 	}
-	if retryDelay(time.Now().Add(time.Minute).UTC().Format(http.TimeFormat), 0) < 59*time.Second {
+	h := http.Header{}
+	h.Set("Retry-After", time.Now().Add(time.Minute).UTC().Format(http.TimeFormat))
+	delay, _ := rateDelay(h, time.Now(), 0)
+	if delay < 59*time.Second {
 		t.Fatal("HTTP date not honored")
 	}
 }
@@ -203,7 +206,7 @@ func TestStockContractsAndIncompleteResponse(t *testing.T) {
 		}
 		return response(200, `{"stocks":[]}`), nil
 	})
-	if _, err = c.SellerStocks(context.Background(), []Card{{ID: 2, Sizes: []Size{{ID: 3}}}}); err != InvalidResponse {
+	if _, err = c.SellerStocks(context.Background(), []Card{{ID: 2, Sizes: []Size{{ID: 3}}}}); !errors.Is(err, InvalidResponse) {
 		t.Fatal("missing stock accepted", err)
 	}
 }

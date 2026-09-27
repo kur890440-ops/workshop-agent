@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"sync"
 	"time"
+	wb "workshop-agent/internal/marketplace/wildberries"
 )
 
 // Scheduler is the single engine. Executors own business logic, not clocks.
@@ -149,6 +150,11 @@ func (s *Scheduler) execute(ctx context.Context, id int64, manual bool) error {
 	if e = tx.Commit(); e != nil {
 		return e
 	}
+	caller := "wb_daily_sync"
+	if manual {
+		caller = "run_now"
+	}
+	ctx = wb.WithTrace(ctx, wb.CallMetadata{WorkshopID: j.WorkshopID, Caller: caller})
 	ctx, cancel := context.WithTimeout(ctx, 4*time.Minute)
 	defer cancel()
 	heartDone := make(chan struct{})
@@ -196,7 +202,7 @@ func (s *Scheduler) execute(ctx context.Context, id int64, manual bool) error {
 		return e
 	}
 	defer final.Rollback()
-	res, e = final.Exec(`UPDATE background_job_runs SET status=?,finished_at=?,duration_ms=?,result_json=?,aggregate_json=?,error_code=?,error_message=? WHERE id=? AND lease_owner=? AND status='running' AND lease_until>?`, status, finished.Unix(), finished.Sub(now).Milliseconds(), string(raw), string(araw), code, code, run, owner, finished.Unix())
+	res, e = final.Exec(`UPDATE background_job_runs SET status=?,finished_at=?,duration_ms=?,result_json=?,aggregate_json=?,error_code=?,error_message=?,retry_not_before=? WHERE id=? AND lease_owner=? AND status='running' AND lease_until>?`, status, finished.Unix(), finished.Sub(now).Milliseconds(), string(raw), string(araw), code, code, result.RetryNotBefore, run, owner, finished.Unix())
 	if e != nil {
 		return e
 	}

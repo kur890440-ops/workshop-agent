@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sync/atomic"
 	"time"
 
@@ -69,6 +70,8 @@ func RunDay18(ctx context.Context) (string, error) {
 	api.Mode = "changed"
 	second := client
 	restarted := background.New(ws.DB(), second, sender)
+	restarted.WB.Tools = manager
+	s.Now = func() time.Time { return restarted.Now() }
 	restarted.Now = func() time.Time { return time.Date(2026, 9, 27, 6, 0, 0, 0, time.UTC) }
 	if e = restarted.Tick(ctx); e != nil {
 		return "", e
@@ -104,7 +107,7 @@ func RunDay18(ctx context.Context) (string, error) {
 		return "", e
 	}
 	summaryWBCalls := apiCalls.Load() - beforeSummary
-	if storedSummary.Aggregate == nil || *storedSummary.Aggregate != a || summaryWBCalls != 0 {
+	if storedSummary.Aggregate == nil || !reflect.DeepEqual(*storedSummary.Aggregate, a) || summaryWBCalls != 0 {
 		return "", errors.New("stored summary MCP acceptance failed")
 	}
 	summaryJSON, _ := json.MarshalIndent(storedSummary, "", "  ")
@@ -114,7 +117,7 @@ func RunDay18(ctx context.Context) (string, error) {
 	if e = second.Close(); e != nil {
 		return "", e
 	}
-	passed := runs == 2 && snapshots == 8 && diffs == 2 && len(sender.Messages) == 2 && a.PriceChanges == 1 && a.StockChanges == 1 && a.ZeroStock == 1 && a.LowStock == 2 && a.Errors == 0 && second.State().ServerClosed
+	passed := runs == 2 && snapshots == 10 && diffs == 2 && len(sender.Messages) == 2 && a.PriceChanges == 1 && a.StockChanges == 1 && a.ZeroStock == 1 && a.LowStock == 2 && a.Errors == 0 && second.State().ServerClosed
 	r := struct {
 		StoredSummary          background.DailySummary
 		SummaryWBCalls         int64

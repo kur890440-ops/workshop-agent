@@ -77,7 +77,7 @@ func listTools(ctx context.Context, session *mcp.ClientSession) (out Discovery, 
 				return out, errors.New("mcp_invalid_schema")
 			}
 			readOnly := tool.Annotations != nil && tool.Annotations.ReadOnlyHint
-			if !readOnly && tool.Name == "schedule_wb_daily_sync" {
+			if !readOnly && (tool.Name == "schedule_wb_daily_sync" || tool.Name == "wb_save_market_snapshot") {
 				out.LocalMutationTools++
 			} else if !readOnly {
 				out.WriteToolsExposed++
