@@ -1,0 +1,1126 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Ozon Stage A · WA-D167</title><style>body{max-width:1180px;margin:32px auto;padding:0 20px;font:16px/1.6 system-ui;color:#183047}section{border-top:1px solid #d9e0e7;padding:12px 0}pre{padding:16px;background:#eef3f8;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere}.status{background:#fff0cc;padding:20px;font-weight:700}</style><h1>Ozon Stage A · WA-D167</h1><p class="status">PARTIALLY ACCEPTED · MCP/storage/UI verified offline · official/live verification pending</p><section><h2>1. Реализованная цепочка</h2><p>Application → существующий MCP client → in-memory SDK → ozonmcp module → Go request controller → local TLS HTTP mock. Один production процесс сохранён. EXE не заменялся; проверочная сборка направлена в NUL. Production API/Telegram/DB не использовались.</p></section><section><h2>2. Endpoints и contract evidence</h2><p>POST /v3/product/list; POST /v3/product/info/list; POST /v2/product/info/stocks-by-warehouse/fbs; POST /v1/analytics/stocks. Requests: audited reference b95da59689cdacb544c659c5c0c1fcbecc50a995. Response fields: опубликованные reference models/examples. Текущая официальная OpenAPI и live permissions ещё не проверены; детали provenance в docs/ozon-stage-a-implementation.md. Поэтому общий статус PARTIALLY ACCEPTED, хотя offline цепочка реализована.</p></section><section><h2>3. Настоящий ListTools</h2><p>Получено через SDK initialize/ListTools: 14 tools, в том числе3 Ozon READ tools. Ozon WRITE tools=0. Два существующих WB local mutation tools не являются Ozon API writes.</p><pre>[
+  &quot;ozon_get_ozon_stocks&quot;,
+  &quot;ozon_get_seller_stocks&quot;,
+  &quot;ozon_list_products&quot;,
+  &quot;schedule_wb_daily_sync&quot;,
+  &quot;wb_build_market_summary&quot;,
+  &quot;wb_get_daily_summary&quot;,
+  &quot;wb_get_new_orders&quot;,
+  &quot;wb_get_order_statuses&quot;,
+  &quot;wb_get_prices&quot;,
+  &quot;wb_get_products&quot;,
+  &quot;wb_get_seller&quot;,
+  &quot;wb_get_seller_stocks&quot;,
+  &quot;wb_get_wb_stocks&quot;,
+  &quot;wb_save_market_snapshot&quot;
+]</pre></section><section><h2>4. CallTool и пагинация</h2><p>Настоящий MCP CallTool: каталог SUCCESS. 100 товаров,2 страницы каталога,1 details batch100. Всего3 HTTP requests. Offset90 возвращает последние10 товаров без API. Повторный cursor ограничивает загрузку и даёт PARTIAL.</p><pre>{
+  &quot;status&quot;: &quot;SUCCESS&quot;,
+  &quot;total&quot;: 100,
+  &quot;metrics&quot;: {
+    &quot;http_request_count&quot;: 3,
+    &quot;pages_requested&quot;: 2,
+    &quot;records_received&quot;: 100,
+    &quot;records_valid&quot;: 100,
+    &quot;records_invalid&quot;: 0,
+    &quot;records_saved&quot;: 100
+  },
+  &quot;products&quot;: [
+    {
+      &quot;product_id&quot;: 1,
+      &quot;offer_id&quot;: &quot;OFFER-1&quot;,
+      &quot;skus&quot;: [
+        2001
+      ],
+      &quot;name&quot;: &quot;Товар 1&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 2,
+      &quot;offer_id&quot;: &quot;OFFER-2&quot;,
+      &quot;skus&quot;: [
+        2002
+      ],
+      &quot;name&quot;: &quot;Товар 2&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 3,
+      &quot;offer_id&quot;: &quot;OFFER-3&quot;,
+      &quot;skus&quot;: [
+        2003
+      ],
+      &quot;name&quot;: &quot;Товар 3&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 4,
+      &quot;offer_id&quot;: &quot;OFFER-4&quot;,
+      &quot;skus&quot;: [
+        2004
+      ],
+      &quot;name&quot;: &quot;Товар 4&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 5,
+      &quot;offer_id&quot;: &quot;OFFER-5&quot;,
+      &quot;skus&quot;: [
+        2005
+      ],
+      &quot;name&quot;: &quot;Товар 5&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 6,
+      &quot;offer_id&quot;: &quot;OFFER-6&quot;,
+      &quot;skus&quot;: [
+        2006
+      ],
+      &quot;name&quot;: &quot;Товар 6&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 7,
+      &quot;offer_id&quot;: &quot;OFFER-7&quot;,
+      &quot;skus&quot;: [
+        2007
+      ],
+      &quot;name&quot;: &quot;Товар 7&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 8,
+      &quot;offer_id&quot;: &quot;OFFER-8&quot;,
+      &quot;skus&quot;: [
+        2008
+      ],
+      &quot;name&quot;: &quot;Товар 8&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 9,
+      &quot;offer_id&quot;: &quot;OFFER-9&quot;,
+      &quot;skus&quot;: [
+        2009
+      ],
+      &quot;name&quot;: &quot;Товар 9&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 10,
+      &quot;offer_id&quot;: &quot;OFFER-10&quot;,
+      &quot;skus&quot;: [
+        2010
+      ],
+      &quot;name&quot;: &quot;Товар 10&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 11,
+      &quot;offer_id&quot;: &quot;OFFER-11&quot;,
+      &quot;skus&quot;: [
+        2011
+      ],
+      &quot;name&quot;: &quot;Товар 11&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 12,
+      &quot;offer_id&quot;: &quot;OFFER-12&quot;,
+      &quot;skus&quot;: [
+        2012
+      ],
+      &quot;name&quot;: &quot;Товар 12&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 13,
+      &quot;offer_id&quot;: &quot;OFFER-13&quot;,
+      &quot;skus&quot;: [
+        2013
+      ],
+      &quot;name&quot;: &quot;Товар 13&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 14,
+      &quot;offer_id&quot;: &quot;OFFER-14&quot;,
+      &quot;skus&quot;: [
+        2014
+      ],
+      &quot;name&quot;: &quot;Товар 14&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    },
+    {
+      &quot;product_id&quot;: 15,
+      &quot;offer_id&quot;: &quot;OFFER-15&quot;,
+      &quot;skus&quot;: [
+        2015
+      ],
+      &quot;name&quot;: &quot;Товар 15&quot;,
+      &quot;updated_at&quot;: &quot;2026-09-27T10:00:00Z&quot;,
+      &quot;last_seen_at&quot;: &quot;2026-09-27T20:52:23.4287716Z&quot;
+    }
+  ]
+}</pre></section><section><h2>5. Cache и identity</h2><p>SQLite marketplace_catalog + marketplace_catalog_skus: product_id/offer_id/SKU хранятся отдельно, возможны несколько SKU на product. Явный catalog refresh; нет startup/catalog-refresh-on-stock-view. Перезапуск SQLite/client/manager сохраняет100 товаров. Stock names читаются локальным SQL join.</p></section><section><h2>6. Seller source</h2><p>OZON_SELLER_STOCK, quantity=free_stock, ключ SKU/warehouse.2 страницы,2 HTTP requests,3 валидные записи. Явное0 отображается как ZERO.</p><pre>{
+  &quot;provider&quot;: &quot;OZON&quot;,
+  &quot;source&quot;: &quot;OZON_SELLER_STOCK&quot;,
+  &quot;status&quot;: &quot;SUCCESS&quot;,
+  &quot;error_code&quot;: &quot;&quot;,
+  &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+  &quot;last_success&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+  &quot;retry_not_before&quot;: &quot;&quot;,
+  &quot;cache_state&quot;: &quot;BYPASS&quot;,
+  &quot;dedup_state&quot;: &quot;NEW&quot;,
+  &quot;run_id&quot;: 2,
+  &quot;metrics&quot;: {
+    &quot;http_request_count&quot;: 2,
+    &quot;pages_requested&quot;: 2,
+    &quot;records_received&quot;: 3,
+    &quot;records_valid&quot;: 3,
+    &quot;records_invalid&quot;: 0,
+    &quot;records_saved&quot;: 3
+  },
+  &quot;last_sync_metrics&quot;: {
+    &quot;http_request_count&quot;: 2,
+    &quot;pages_requested&quot;: 2,
+    &quot;records_received&quot;: 3,
+    &quot;records_valid&quot;: 3,
+    &quot;records_invalid&quot;: 0,
+    &quot;records_saved&quot;: 3
+  },
+  &quot;diagnostics&quot;: [],
+  &quot;products&quot;: [],
+  &quot;stocks&quot;: [
+    {
+      &quot;observation&quot;: &quot;AVAILABLE&quot;,
+      &quot;product_id&quot;: 1,
+      &quot;offer_id&quot;: &quot;OFFER-1&quot;,
+      &quot;sku&quot;: 2001,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;Склад продавца&quot;,
+      &quot;quantity&quot;: 5,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+      &quot;name&quot;: &quot;Товар 1&quot;
+    },
+    {
+      &quot;observation&quot;: &quot;ZERO&quot;,
+      &quot;product_id&quot;: 2,
+      &quot;offer_id&quot;: &quot;&quot;,
+      &quot;sku&quot;: 2002,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;&quot;,
+      &quot;quantity&quot;: 0,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+      &quot;name&quot;: &quot;Товар 2&quot;
+    },
+    {
+      &quot;observation&quot;: &quot;AVAILABLE&quot;,
+      &quot;product_id&quot;: 3,
+      &quot;offer_id&quot;: &quot;&quot;,
+      &quot;sku&quot;: 2003,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;&quot;,
+      &quot;quantity&quot;: 2,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+      &quot;name&quot;: &quot;Товар 3&quot;
+    }
+  ],
+  &quot;total&quot;: 3,
+  &quot;offset&quot;: 0,
+  &quot;untrusted_data&quot;: true
+}</pre></section><section><h2>7. Ozon-side source</h2><p>OZON_FBO_AVAILABLE, quantity=available_stock_count. FBO analytics по SKU локального каталога; не online-total всех видов запасов.1 batch/1 HTTP request. Reference-backed parsing; актуальная официальная семантика/права требуют отдельной сверки.</p><pre>{
+  &quot;provider&quot;: &quot;OZON&quot;,
+  &quot;source&quot;: &quot;OZON_FBO_AVAILABLE&quot;,
+  &quot;status&quot;: &quot;SUCCESS&quot;,
+  &quot;error_code&quot;: &quot;&quot;,
+  &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5859946Z&quot;,
+  &quot;last_success&quot;: &quot;2026-09-27T20:52:23.5859946Z&quot;,
+  &quot;retry_not_before&quot;: &quot;&quot;,
+  &quot;cache_state&quot;: &quot;BYPASS&quot;,
+  &quot;dedup_state&quot;: &quot;NEW&quot;,
+  &quot;run_id&quot;: 3,
+  &quot;metrics&quot;: {
+    &quot;http_request_count&quot;: 1,
+    &quot;pages_requested&quot;: 1,
+    &quot;records_received&quot;: 1,
+    &quot;records_valid&quot;: 1,
+    &quot;records_invalid&quot;: 0,
+    &quot;records_saved&quot;: 1
+  },
+  &quot;last_sync_metrics&quot;: {
+    &quot;http_request_count&quot;: 1,
+    &quot;pages_requested&quot;: 1,
+    &quot;records_received&quot;: 1,
+    &quot;records_valid&quot;: 1,
+    &quot;records_invalid&quot;: 0,
+    &quot;records_saved&quot;: 1
+  },
+  &quot;diagnostics&quot;: [],
+  &quot;products&quot;: [],
+  &quot;stocks&quot;: [
+    {
+      &quot;observation&quot;: &quot;AVAILABLE&quot;,
+      &quot;product_id&quot;: 0,
+      &quot;offer_id&quot;: &quot;&quot;,
+      &quot;sku&quot;: 2001,
+      &quot;warehouse_id&quot;: 9,
+      &quot;warehouse_name&quot;: &quot;Ozon FBO&quot;,
+      &quot;quantity&quot;: 9,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5859946Z&quot;,
+      &quot;name&quot;: &quot;Товар 1&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;offset&quot;: 0,
+  &quot;untrusted_data&quot;: true
+}</pre></section><section><h2>8. Current/history и source separation</h2><p>marketplace_stock_current и append-only marketplace_stock_history отдельны. Seller partial обновляет только полученную запись: бывший zero, отсутствующий в новом ответе, имеет MISSING, не становится новым подтверждённым ZERO.4 seller history rows после initial+partial; FBO9 не меняется. Workshop Inventory не изменяется.</p><pre>{
+  &quot;provider&quot;: &quot;OZON&quot;,
+  &quot;source&quot;: &quot;OZON_SELLER_STOCK&quot;,
+  &quot;status&quot;: &quot;PARTIAL&quot;,
+  &quot;error_code&quot;: &quot;INVALID_RESPONSE&quot;,
+  &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.6685876Z&quot;,
+  &quot;last_success&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+  &quot;retry_not_before&quot;: &quot;&quot;,
+  &quot;cache_state&quot;: &quot;BYPASS&quot;,
+  &quot;dedup_state&quot;: &quot;NEW&quot;,
+  &quot;run_id&quot;: 4,
+  &quot;metrics&quot;: {
+    &quot;http_request_count&quot;: 1,
+    &quot;pages_requested&quot;: 1,
+    &quot;records_received&quot;: 2,
+    &quot;records_valid&quot;: 1,
+    &quot;records_invalid&quot;: 1,
+    &quot;records_saved&quot;: 1
+  },
+  &quot;last_sync_metrics&quot;: {
+    &quot;http_request_count&quot;: 1,
+    &quot;pages_requested&quot;: 1,
+    &quot;records_received&quot;: 2,
+    &quot;records_valid&quot;: 1,
+    &quot;records_invalid&quot;: 1,
+    &quot;records_saved&quot;: 1
+  },
+  &quot;diagnostics&quot;: [
+    {
+      &quot;operation&quot;: &quot;seller_stocks&quot;,
+      &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+      &quot;index&quot;: 1,
+      &quot;field&quot;: &quot;sku/warehouse/quantity&quot;,
+      &quot;expected&quot;: &quot;unique IDs and explicit nonnegative quantity&quot;,
+      &quot;actual&quot;: &quot;invalid_missing_or_duplicate&quot;
+    }
+  ],
+  &quot;products&quot;: [],
+  &quot;stocks&quot;: [
+    {
+      &quot;observation&quot;: &quot;AVAILABLE&quot;,
+      &quot;product_id&quot;: 1,
+      &quot;offer_id&quot;: &quot;OFFER-1&quot;,
+      &quot;sku&quot;: 2001,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;&quot;,
+      &quot;quantity&quot;: 7,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.6685876Z&quot;,
+      &quot;name&quot;: &quot;Товар 1&quot;
+    },
+    {
+      &quot;observation&quot;: &quot;MISSING&quot;,
+      &quot;product_id&quot;: 2,
+      &quot;offer_id&quot;: &quot;&quot;,
+      &quot;sku&quot;: 2002,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;&quot;,
+      &quot;quantity&quot;: 0,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+      &quot;name&quot;: &quot;Товар 2&quot;
+    },
+    {
+      &quot;observation&quot;: &quot;MISSING&quot;,
+      &quot;product_id&quot;: 3,
+      &quot;offer_id&quot;: &quot;&quot;,
+      &quot;sku&quot;: 2003,
+      &quot;warehouse_id&quot;: 8,
+      &quot;warehouse_name&quot;: &quot;&quot;,
+      &quot;quantity&quot;: 2,
+      &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+      &quot;name&quot;: &quot;Товар 3&quot;
+    }
+  ],
+  &quot;total&quot;: 3,
+  &quot;offset&quot;: 0,
+  &quot;untrusted_data&quot;: true
+}</pre></section><section><h2>9. No N+1 / cache</h2><p>Batch100 details=1 request; catalog total=3requests. Cached products/stocks проходят MCP без Product API calls. source refresh не обновляет каталог. Дополнительных Product API requests при stock rendering:0.</p><pre>{
+  &quot;additional_product_api_requests&quot;: 0
+}</pre></section><section><h2>10. Dedup / access</h2><p>Request-layer singleflight и whole-refresh singleflight проверены. Два одинаковых concurrent refresh дают1 HTTP sequence/1 committed run. Scope проверяется до HTTP и commit. Forged grant, чужая мастерская, wrong provider/connection, stale active workshop и disabled/revoked connection отвергнуты. HTTP после denied=0.</p></section><section><h2>11. 429 и restart</h2><p>401/403 без retry, temporary5xx max2attempts, Retry-After3600 не обрезается. Persistent integration_cooldowns пережил закрытие SQLite и создание нового service/client/manager. После restart BLOCKED_LOCALLY, HTTP requests0, last-known-good сохранён.</p><pre>{
+  &quot;rate&quot;: {
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;source&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;status&quot;: &quot;RATE_LIMITED&quot;,
+    &quot;error_code&quot;: &quot;RATE_LIMITED&quot;,
+    &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.7316897Z&quot;,
+    &quot;last_success&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;run_id&quot;: 5,
+    &quot;metrics&quot;: {
+      &quot;http_request_count&quot;: 1,
+      &quot;pages_requested&quot;: 1,
+      &quot;records_received&quot;: 0,
+      &quot;records_valid&quot;: 0,
+      &quot;records_invalid&quot;: 0,
+      &quot;records_saved&quot;: 0
+    },
+    &quot;last_sync_metrics&quot;: {
+      &quot;http_request_count&quot;: 1,
+      &quot;pages_requested&quot;: 1,
+      &quot;records_received&quot;: 0,
+      &quot;records_valid&quot;: 0,
+      &quot;records_invalid&quot;: 0,
+      &quot;records_saved&quot;: 0
+    },
+    &quot;diagnostics&quot;: [],
+    &quot;products&quot;: [],
+    &quot;stocks&quot;: [
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 1,
+        &quot;offer_id&quot;: &quot;OFFER-1&quot;,
+        &quot;sku&quot;: 2001,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 7,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.6685876Z&quot;,
+        &quot;name&quot;: &quot;Товар 1&quot;
+      },
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 2,
+        &quot;offer_id&quot;: &quot;&quot;,
+        &quot;sku&quot;: 2002,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 0,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+        &quot;name&quot;: &quot;Товар 2&quot;
+      },
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 3,
+        &quot;offer_id&quot;: &quot;&quot;,
+        &quot;sku&quot;: 2003,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 2,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+        &quot;name&quot;: &quot;Товар 3&quot;
+      }
+    ],
+    &quot;total&quot;: 3,
+    &quot;offset&quot;: 0,
+    &quot;untrusted_data&quot;: true
+  },
+  &quot;after_restart&quot;: {
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;source&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;status&quot;: &quot;RATE_LIMITED&quot;,
+    &quot;error_code&quot;: &quot;RATE_LIMITED&quot;,
+    &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.82737Z&quot;,
+    &quot;last_success&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;run_id&quot;: 6,
+    &quot;metrics&quot;: {
+      &quot;http_request_count&quot;: 0,
+      &quot;pages_requested&quot;: 0,
+      &quot;records_received&quot;: 0,
+      &quot;records_valid&quot;: 0,
+      &quot;records_invalid&quot;: 0,
+      &quot;records_saved&quot;: 0
+    },
+    &quot;last_sync_metrics&quot;: {
+      &quot;http_request_count&quot;: 0,
+      &quot;pages_requested&quot;: 0,
+      &quot;records_received&quot;: 0,
+      &quot;records_valid&quot;: 0,
+      &quot;records_invalid&quot;: 0,
+      &quot;records_saved&quot;: 0
+    },
+    &quot;diagnostics&quot;: [],
+    &quot;products&quot;: [],
+    &quot;stocks&quot;: [
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 1,
+        &quot;offer_id&quot;: &quot;OFFER-1&quot;,
+        &quot;sku&quot;: 2001,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 7,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.6685876Z&quot;,
+        &quot;name&quot;: &quot;Товар 1&quot;
+      },
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 2,
+        &quot;offer_id&quot;: &quot;&quot;,
+        &quot;sku&quot;: 2002,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 0,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+        &quot;name&quot;: &quot;Товар 2&quot;
+      },
+      {
+        &quot;observation&quot;: &quot;STALE&quot;,
+        &quot;product_id&quot;: 3,
+        &quot;offer_id&quot;: &quot;&quot;,
+        &quot;sku&quot;: 2003,
+        &quot;warehouse_id&quot;: 8,
+        &quot;warehouse_name&quot;: &quot;&quot;,
+        &quot;quantity&quot;: 2,
+        &quot;captured_at&quot;: &quot;2026-09-27T20:52:23.5234175Z&quot;,
+        &quot;name&quot;: &quot;Товар 3&quot;
+      }
+    ],
+    &quot;total&quot;: 3,
+    &quot;offset&quot;: 0,
+    &quot;untrusted_data&quot;: true
+  }
+}</pre></section><section><h2>12. Реальный safe trace из mock-теста</h2><p>HTTP: request start/finish/status/count/page/received/valid, saved0 до транзакции. SYNC: фактически сохранённые counts/status. CACHE и DEDUP не считаются HTTP. Caller=mcp_tool для этого Application теста; Telegram передаёт собственный caller. Секретных значений и headers в этих данных нет.</p><pre>[
+  {
+    &quot;stage&quot;: &quot;CACHE&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.8931038Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;CATALOG&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;HIT&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.877137Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;result&quot;: &quot;RATE_LIMITED&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.8283693Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;seller_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;SellerStocksPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: null,
+    &quot;records_valid&quot;: null,
+    &quot;records_saved&quot;: null,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;result&quot;: &quot;BLOCKED_LOCALLY&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.778143Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;result&quot;: &quot;RATE_LIMITED&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.7321996Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.7474548Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.7321996Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;seller_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;SellerStocksPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 429,
+    &quot;duration_ms&quot;: 15,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: null,
+    &quot;records_valid&quot;: null,
+    &quot;records_saved&quot;: null,
+    &quot;retry_not_before&quot;: &quot;2026-09-27T21:52:23.7327101Z&quot;,
+    &quot;retry_after_seconds&quot;: 3600,
+    &quot;result&quot;: &quot;RATE_LIMITED&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;CACHE&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.7168772Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_FBO_AVAILABLE&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_ozon_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;HIT&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.7005213Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 2,
+    &quot;records_valid&quot;: 1,
+    &quot;records_saved&quot;: 1,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;PARTIAL&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.6701018Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.6701018Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.6695916Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;seller_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;SellerStocksPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 2,
+    &quot;records_valid&quot;: 1,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;CACHE&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.6531323Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;CATALOG&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;HIT&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;CACHE&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.6372991Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;HIT&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 0,
+    &quot;records_valid&quot;: 0,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.6193069Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_FBO_AVAILABLE&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_ozon_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 1,
+    &quot;records_valid&quot;: 1,
+    &quot;records_saved&quot;: 1,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.5865086Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.5870176Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.5865086Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;analytics_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_ozon_stocks&quot;,
+    &quot;go_method&quot;: &quot;AnalyticsStocksBatch&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v1/analytics/stocks&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 1,
+    &quot;records_valid&quot;: 1,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.570149Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;OZON_SELLER_STOCK&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 3,
+    &quot;records_valid&quot;: 3,
+    &quot;records_saved&quot;: 3,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.5392881Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.5398024Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.5392881Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;seller_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;SellerStocksPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 2,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 1,
+    &quot;records_valid&quot;: 1,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.5239305Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.5244355Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.5239305Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;seller_stocks&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_get_seller_stocks&quot;,
+    &quot;go_method&quot;: &quot;SellerStocksPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v2/product/info/stocks-by-warehouse/fbs&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 2,
+    &quot;records_valid&quot;: 2,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;SYNC&quot;,
+    &quot;request_started_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;request_finished_at&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.5078521Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;CATALOG&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;Service.Execute&quot;,
+    &quot;http_method&quot;: &quot;&quot;,
+    &quot;endpoint&quot;: &quot;&quot;,
+    &quot;attempt&quot;: 0,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 0,
+    &quot;duration_ms&quot;: 0,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 0,
+    &quot;records_received&quot;: 100,
+    &quot;records_valid&quot;: 100,
+    &quot;records_saved&quot;: 100,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.4708367Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.4718368Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.4708367Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;product_details&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;ProductDetailsBatch&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v3/product/info/list&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 1,
+    &quot;page&quot;: 0,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 100,
+    &quot;records_valid&quot;: 100,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.4481405Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.4491407Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.4481405Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;products&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;ProductsPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v3/product/list&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 1,
+    &quot;page&quot;: 2,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 40,
+    &quot;records_valid&quot;: 40,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  },
+  {
+    &quot;stage&quot;: &quot;HTTP&quot;,
+    &quot;request_started_at&quot;: &quot;2026-09-27T20:52:23.4297931Z&quot;,
+    &quot;request_finished_at&quot;: &quot;2026-09-27T20:52:23.4323491Z&quot;,
+    &quot;timestamp&quot;: &quot;2026-09-27T20:52:23.4297931Z&quot;,
+    &quot;workshop_id&quot;: 1,
+    &quot;marketplace_connection_id&quot;: 2,
+    &quot;provider&quot;: &quot;OZON&quot;,
+    &quot;caller&quot;: &quot;mcp_tool&quot;,
+    &quot;operation&quot;: &quot;products&quot;,
+    &quot;mcp_tool&quot;: &quot;ozon_list_products&quot;,
+    &quot;go_method&quot;: &quot;ProductsPage&quot;,
+    &quot;http_method&quot;: &quot;POST&quot;,
+    &quot;endpoint&quot;: &quot;/v3/product/list&quot;,
+    &quot;attempt&quot;: 1,
+    &quot;cache_state&quot;: &quot;BYPASS&quot;,
+    &quot;dedup_state&quot;: &quot;NEW&quot;,
+    &quot;http_status&quot;: 200,
+    &quot;duration_ms&quot;: 2,
+    &quot;page&quot;: 1,
+    &quot;http_request_count&quot;: 1,
+    &quot;records_received&quot;: 60,
+    &quot;records_valid&quot;: 60,
+    &quot;records_saved&quot;: 0,
+    &quot;retry_not_before&quot;: &quot;0001-01-01T00:00:00Z&quot;,
+    &quot;result&quot;: &quot;SUCCESS&quot;
+  }
+]</pre></section><section><h2>13. Telegram output</h2><p>Ниже реальный форматтер над результатами CallTool из acceptance fixture. Отдельные Telegram mock tests проверили команды, кнопки, secret input rejection до memory, немедленный ответ при refresh и подавление ответа после отключения.</p><pre>Ozon · Товары
+Обновлено
+Последняя попытка: 2026-09-27T20:52:23.4287716Z
+Полный успех: 2026-09-27T20:52:23.4287716Z
+
+1. Товар 1
+Артикул: OFFER-1
+
+2. Товар 2
+Артикул: OFFER-2
+
+3. Товар 3
+Артикул: OFFER-3
+
+4. Товар 4
+Артикул: OFFER-4
+
+5. Товар 5
+Артикул: OFFER-5
+
+6. Товар 6
+Артикул: OFFER-6
+
+7. Товар 7
+Артикул: OFFER-7
+
+8. Товар 8
+Артикул: OFFER-8
+
+9. Товар 9
+Артикул: OFFER-9
+
+10. Товар 10
+Артикул: OFFER-10
+
+11. Товар 11
+Артикул: OFFER-11
+
+12. Товар 12
+Артикул: OFFER-12
+
+13. Товар 13
+Артикул: OFFER-13
+
+14. Товар 14
+Артикул: OFFER-14
+
+15. Товар 15
+Артикул: OFFER-15
+
+Далее: /ozon products 15
+
+---
+
+Ozon · Остатки продавца / FBS, rFBS
+Обновлено
+Последняя попытка: 2026-09-27T20:52:23.5234175Z
+Полный успех: 2026-09-27T20:52:23.5234175Z
+Склад мастерской и другие источники не суммируются.
+
+Товар 1 · SKU 2001
+Склад: Склад продавца · доступно: 5
+Снимок: 2026-09-27T20:52:23.5234175Z
+
+Товар 2 · SKU 2002
+Склад: 8 · доступно: 0
+Снимок: 2026-09-27T20:52:23.5234175Z
+
+Товар 3 · SKU 2003
+Склад: 8 · доступно: 2
+Снимок: 2026-09-27T20:52:23.5234175Z
+
+
+---
+
+Ozon · FBO Ozon · доступно к продаже (аналитика)
+Обновлено
+Последняя попытка: 2026-09-27T20:52:23.5859946Z
+Полный успех: 2026-09-27T20:52:23.5859946Z
+Только SKU локального каталога; это аналитические данные, не онлайн-баланс.
+Склад мастерской и другие источники не суммируются.
+
+Товар 1 · SKU 2001
+Склад: Ozon FBO · доступно: 9
+Снимок: 2026-09-27T20:52:23.5859946Z
+</pre></section><section><h2>14. Migration118</h2><p>Provider-aware marketplace_connections: WB id1 сохранён, Ozon id2 owner-bound. Новые catalog/SKU/run/current/history/cooldown/trace tables. FK rebuild тест проверил WB данные и ссылки, idempotency и запрет Ozon rows под WB connection. Рабочая DB не открывалась, migration применится при будущем запуске новой сборки.</p></section><section><h2>15. Secret safety</h2><p>OZON_CLIENT_ID/OZON_API_KEY читаются только server-side при startup; пустые placeholders в .env.example. В SQLite только secret_ref и cabinet identity fingerprint. MCP input содержит refresh/offset, без credentials/user/workshop/URL. Input guard, escaped response-secret redaction, bounded HTTPS/TLS, no redirects, no proxy, safe errors проверены.</p></section><section><h2>16. Regression / build</h2><p>go test ./...: exit0; 377 successful test events; 19 packages passed; failures0. go build -o NUL ./cmd/workshop-agent: exit0. WB, Day18/19/background, Tasks/Memory/Users/Telegram tests прошли. tests.jsonl — полный вывод.</p><pre>[
+  &quot;workshop-agent/internal/agent&quot;,
+  &quot;workshop-agent/internal/cli&quot;,
+  &quot;workshop-agent/internal/config&quot;,
+  &quot;workshop-agent/internal/background&quot;,
+  &quot;workshop-agent/internal/integrations/mcpclient&quot;,
+  &quot;workshop-agent/internal/invariants&quot;,
+  &quot;workshop-agent/internal/llm&quot;,
+  &quot;workshop-agent/internal/inventory&quot;,
+  &quot;workshop-agent/internal/personalization&quot;,
+  &quot;workshop-agent/internal/integrations/wbmcp&quot;,
+  &quot;workshop-agent/internal/memory&quot;,
+  &quot;workshop-agent/internal/marketplace/wildberries&quot;,
+  &quot;workshop-agent/internal/marketplace&quot;,
+  &quot;workshop-agent/internal/products&quot;,
+  &quot;workshop-agent/internal/storage&quot;,
+  &quot;workshop-agent/internal/marketplace/ozon&quot;,
+  &quot;workshop-agent/internal/workshops&quot;,
+  &quot;workshop-agent/internal/integrations/mcpmanager&quot;,
+  &quot;workshop-agent/internal/telegram&quot;
+]</pre></section><section><h2>17. Ограничения приёмки</h2><p>PARTIALLY ACCEPTED. MCP/storage/UI и offline acceptance реализованы. Остаётся официальная/live сверка актуальных response fields, FBO semantics, прав кабинета и лимитов. Reference fixtures — не реальные ответы вашего кабинета. Ozon jobs/pipelines/Performance/postings/write operations не добавлялись. EXE не обновлён согласно заданию.</p></section></html>

@@ -1,4 +1,14 @@
+[WA-D170 - Ozon Seller v2 mandatory cached SKU filter](../ozon-seller-v2-fix.md): supersedes unfiltered WA-D167/168; warehouse breakdown retained.
+
+[WA-D166 — Ozon Stage A: текущая работа и ограничения схем](../ozon-stage-a.md). Stage A ещё не принят.
+
 # Marketplace — карта документации
+
+[Day20 / WA-D169 — Orchestration MCP](../day20-mcp-orchestration.md): typed intent,
+два внутренних домена, READ_ONLY router, сравнение, приёмка и отчёт.
+
+[WA-D168 — аудит Ozon Seller HTTP 400](../ozon-seller-400.md): сравнение Python/Go,
+диагностика, проверка identifiers и ограничения перехода на v4.
 
 [WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.
 

@@ -1,0 +1,3 @@
+go build -o NUL ./cmd/workshop-agent
+exit_code=0
+No EXE created or replaced.

@@ -58,7 +58,7 @@ func (*WBDailySyncExecutor) Validate(q auth.Querier, user, workshop int64, raw s
 	}
 	var id int64
 	var seller string
-	if q.QueryRow(`SELECT id,seller_id FROM marketplace_connections WHERE workshop_id=? AND enabled=1`, workshop).Scan(&id, &seller) != nil || seller == "" || p.ConnectionID != 0 && p.ConnectionID != id {
+	if q.QueryRow(`SELECT id,seller_id FROM marketplace_connections WHERE workshop_id=? AND enabled=1 AND provider='wildberries'`, workshop).Scan(&id, &seller) != nil || seller == "" || p.ConnectionID != 0 && p.ConnectionID != id {
 		return "", ErrScope
 	}
 	p.ConnectionID = id
@@ -83,7 +83,7 @@ func check(q auth.Querier, j wbJob, revision int64) (string, error) {
 	}
 	var seller string
 	var rev int64
-	e := q.QueryRow(`SELECT seller_id,revision FROM marketplace_connections WHERE id=? AND workshop_id=? AND enabled=1`, j.ConnectionID, j.WorkshopID).Scan(&seller, &rev)
+	e := q.QueryRow(`SELECT seller_id,revision FROM marketplace_connections WHERE id=? AND workshop_id=? AND enabled=1 AND provider='wildberries'`, j.ConnectionID, j.WorkshopID).Scan(&seller, &rev)
 	if e != nil || seller == "" || revision != 0 && rev != revision {
 		return "", ErrScope
 	}

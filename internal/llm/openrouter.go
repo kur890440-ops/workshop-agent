@@ -19,6 +19,8 @@ type OpenRouterClient struct {
 	HTTPClient *http.Client
 }
 
+var ErrResponseTruncated = errors.New("LLM response truncated by output budget")
+
 func NewOpenRouterClient(apiKey, baseURL, model string) (*OpenRouterClient, error) {
 	apiKey = strings.TrimSpace(apiKey)
 	baseURL = strings.TrimSpace(baseURL)
@@ -132,14 +134,16 @@ func (c *OpenRouterClient) request(ctx context.Context, prompt string, jsonObjec
 	if err := json.Unmarshal(data, &llmResp); err != nil {
 		return "", nil, fmt.Errorf("decode llm response: %w", err)
 	}
+	// A reasoning model may spend the entire budget before producing content.
+	// Check the finish reason first, including empty and otherwise valid JSON.
+	if len(llmResp.Choices) > 0 && llmResp.Choices[0].FinishReason == "length" {
+		return strings.TrimSpace(llmResp.Choices[0].Message.Content), &llmResp.Usage, ErrResponseTruncated
+	}
 	if len(llmResp.Choices) == 0 || strings.TrimSpace(llmResp.Choices[0].Message.Content) == "" {
 		return "", &llmResp.Usage, errors.New("empty llm response")
 	}
 
 	content := strings.TrimSpace(llmResp.Choices[0].Message.Content)
-	if !jsonObject && llmResp.Choices[0].FinishReason == "length" {
-		return content, &llmResp.Usage, errors.New("LLM response truncated by output budget")
-	}
 	content = strings.TrimPrefix(content, "```json")
 	content = strings.TrimSuffix(content, "```")
 	content = strings.TrimSpace(content)

@@ -1,0 +1,3 @@
+go build -o bin/workshop-agent.exe ./cmd/workshop-agent
+exit=0
+WorkshopAgent v0.21.1

@@ -118,7 +118,7 @@ func connection(q auth.Querier, scope Scope, enabled bool) (Connection, error) {
 	if scope.ConnectionID <= 0 {
 		return c, ErrScope
 	}
-	err := q.QueryRow(`SELECT id,workshop_id,revision,enabled,seller_id,seller_name,checked_at,check_error FROM marketplace_connections WHERE id=? AND workshop_id=?`, scope.ConnectionID, scope.WorkshopID).Scan(&c.ID, &c.WorkshopID, &c.Revision, &c.Enabled, &c.SellerID, &c.SellerName, &c.CheckedAt, &c.CheckError)
+	err := q.QueryRow(`SELECT id,workshop_id,revision,enabled,seller_id,seller_name,checked_at,check_error FROM marketplace_connections WHERE id=? AND workshop_id=? AND provider='wildberries'`, scope.ConnectionID, scope.WorkshopID).Scan(&c.ID, &c.WorkshopID, &c.Revision, &c.Enabled, &c.SellerID, &c.SellerName, &c.CheckedAt, &c.CheckError)
 	if err != nil {
 		return c, ErrScope
 	}
@@ -134,7 +134,7 @@ func (s *Service) Status(scope Scope) (Connection, error) {
 	}
 	if scope.ConnectionID == 0 {
 		var id int64
-		err := s.db.QueryRow(`SELECT id FROM marketplace_connections WHERE workshop_id=?`, scope.WorkshopID).Scan(&id)
+		err := s.db.QueryRow(`SELECT id FROM marketplace_connections WHERE workshop_id=? AND provider='wildberries'`, scope.WorkshopID).Scan(&id)
 		if errors.Is(err, sql.ErrNoRows) {
 			return Connection{Configured: s.api.Configured()}, nil
 		}

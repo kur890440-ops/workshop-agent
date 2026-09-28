@@ -1,4 +1,14 @@
+[WA-D170 - Ozon Seller v2 mandatory cached SKU filter](../ozon-seller-v2-fix.md): supersedes unfiltered WA-D167/168; warehouse breakdown retained.
+
+[WA-D166 — Ozon Stage A: текущая работа и ограничения схем](../ozon-stage-a.md). Stage A ещё не принят.
+
 # L2 — контракты, инварианты и решения
+
+[WA-D169 — Day20 orchestration](../day20-mcp-orchestration.md): доверенные маршруты,
+явные сопоставления, неизвестный остаток не равен нулю; права и изоляция сохраняются.
+
+[WA-D168 — Ozon Seller HTTP 400](../ozon-seller-400.md): ограниченная безопасная
+диагностика ошибки; endpoint и семантика остатков не меняются.
 
 [WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.
 

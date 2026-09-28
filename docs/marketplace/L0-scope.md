@@ -1,3 +1,7 @@
+[WA-D170 - Ozon Seller v2 mandatory cached SKU filter](../ozon-seller-v2-fix.md): supersedes unfiltered WA-D167/168; warehouse breakdown retained.
+
+[WA-D166 — Ozon Stage A: текущая работа и ограничения схем](../ozon-stage-a.md). Stage A ещё не принят.
+
 # L0 — цель и границы Marketplace
 
 [WA-D163 — независимые операции без seller-info preflight](../wb-independent-operations.md). Имеет приоритет над прежними правилами preflight и просмотра `/wb stocks`.

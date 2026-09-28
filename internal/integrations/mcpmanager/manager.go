@@ -6,13 +6,16 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"workshop-agent/internal/background"
 	"workshop-agent/internal/integrations/mcpclient"
+	"workshop-agent/internal/integrations/ozonmcp"
 	"workshop-agent/internal/integrations/wbmcp"
+	"workshop-agent/internal/marketplace/ozon"
 )
 
 const ScheduleTool = "schedule_wb_daily_sync"
@@ -41,13 +44,14 @@ type scope struct {
 	tool           string
 }
 type Manager struct {
+	OzonModule     *ozonmcp.Module
 	Client         *mcpclient.Service
 	mu             sync.Mutex
 	grants         map[string]scope
 	pipelineGrants map[string]pipelineGrant
 }
 
-func New(ctx context.Context, api wbmcp.API, jobs *background.Service) (*Manager, error) {
+func New(ctx context.Context, api wbmcp.API, jobs *background.Service, ozonServices ...*ozon.Service) (*Manager, error) {
 	server, err := wbmcp.New(api)
 	if err != nil {
 		return nil, err
@@ -75,6 +79,9 @@ func New(ctx context.Context, api wbmcp.API, jobs *background.Service) (*Manager
 		})
 	m.registerSummary(server, jobs)
 	m.registerPipeline(server, jobs)
+	if len(ozonServices) > 0 && ozonServices[0] != nil {
+		m.OzonModule = ozonmcp.Register(server, ozonServices[0])
+	}
 	m.Client, err = mcpclient.NewInMemory(ctx, server)
 	if err != nil {
 		return nil, err
@@ -101,3 +108,25 @@ func (m *Manager) ScheduleWB(ctx context.Context, user, workshop int64, in Sched
 	return
 }
 func (m *Manager) Close() error { return m.Client.Close() }
+
+func (m *Manager) Ozon(ctx context.Context, a ozon.Access, tool string, in ozon.Input) (ozon.Result, error) {
+	if m.OzonModule == nil {
+		return ozon.Result{}, errors.New("ozon_not_configured")
+	}
+	key, release, e := m.OzonModule.Grant(a, tool, ozon.TraceMetadata(ctx).Caller)
+	if e != nil {
+		return ozon.Result{}, e
+	}
+	defer release()
+	return m.Client.Ozon(ctx, tool, key, in)
+}
+
+func (m *Manager) OzonDiscovery() string {
+	d := m.Client.State()
+	var b strings.Builder
+	b.WriteString("MCP Transport: in-memory\nListTools (при initialize):\n")
+	for _, t := range d.Tools {
+		b.WriteString(t.Name + "\n")
+	}
+	return b.String()
+}

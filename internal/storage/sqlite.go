@@ -64,7 +64,11 @@ func (s *Store) Migrate() error {
 	var rateDone int
 	var incidentDone int
 	var stockSourcesDone int
+	var ozonDone int
+	var queryDone int
 	if legacy > 0 {
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=119`).Scan(&queryDone)
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=118`).Scan(&ozonDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=117`).Scan(&stockSourcesDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=116`).Scan(&incidentDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=115`).Scan(&rateDone)
@@ -77,12 +81,18 @@ func (s *Store) Migrate() error {
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=112`).Scan(&pacingDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if (done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0 || rateDone == 0 || incidentDone == 0 || stockSourcesDone == 0) && s.Path != "" && s.Path != ":memory:" {
+		if (queryDone == 0 || done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0 || rateDone == 0 || incidentDone == 0 || stockSourcesDone == 0 || ozonDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
 			}
 		}
+	}
+	if ozonDone == 0 {
+		if _, err := s.DB.Exec(`PRAGMA foreign_keys=OFF`); err != nil {
+			return err
+		}
+		defer s.DB.Exec(`PRAGMA foreign_keys=ON`)
 	}
 	tx, err := s.DB.Begin()
 	if err != nil {
@@ -150,6 +160,27 @@ func (s *Store) Migrate() error {
 	}
 	if err := migrateStockSources(tx); err != nil {
 		return err
+	}
+	if err := migrateOzon(tx); err != nil {
+		return fmt.Errorf("Ozon migration: %w", err)
+	}
+	if err := migrateMarketplaceQuery(tx); err != nil {
+		return err
+	}
+	if ozonDone == 0 {
+		rows, err := tx.Query(`PRAGMA foreign_key_check`)
+		if err != nil {
+			return err
+		}
+		bad := rows.Next()
+		err = rows.Err()
+		rows.Close()
+		if err != nil {
+			return err
+		}
+		if bad {
+			return fmt.Errorf("Ozon migration: foreign key check failed")
+		}
 	}
 
 	return tx.Commit()

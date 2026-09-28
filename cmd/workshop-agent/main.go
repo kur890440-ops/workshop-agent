@@ -19,7 +19,9 @@ import (
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
+	"workshop-agent/internal/marketplace/ozon"
 	"workshop-agent/internal/marketplace/wildberries"
+	"workshop-agent/internal/marketplacequery"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/telegram"
@@ -229,7 +231,9 @@ func main() {
 	defer marketplaceSvc.Close()
 	agentSvc.Marketplace = marketplaceSvc
 	jobs := background.New(wsSvc.DB(), nil, nil)
-	manager, err := mcpmanager.New(context.Background(), wbAPI, jobs)
+	ozonSvc := ozon.NewService(wsSvc.DB(), os.Getenv("OZON_CLIENT_ID"), os.Getenv("OZON_API_KEY"))
+	defer ozonSvc.Close()
+	manager, err := mcpmanager.New(context.Background(), wbAPI, jobs, ozonSvc)
 	if err != nil {
 		log.Fatal("MCP initialization failed")
 	}
@@ -248,6 +252,12 @@ func main() {
 
 	_ = context.Background()
 	bot.Marketplace = marketplaceSvc
+	bot.Ozon = ozonSvc
+	bot.OzonTools = manager
+	bot.MarketQuery = &marketplacequery.MarketplaceOrchestrator{
+		Store: &marketplacequery.Repository{DB: wsSvc.DB(), Sensitive: func(s string) bool { return marketplaceSvc.SensitiveInput(s) || ozonSvc.SensitiveInput(s) }},
+		MCP:   &mcpmanager.QueryAdapter{Manager: manager, WB: marketplaceSvc, Ozon: ozonSvc},
+	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	jobs.Sender = bot

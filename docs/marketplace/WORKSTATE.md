@@ -1,3 +1,180 @@
+# WA-D173 - semantic output truncation recovery
+
+Detect finish_reason=length before empty-content check, JSON included.
+One bounded recovery1024->4096, summed usage, explicit typed terminal error.
+Actual screenshot cause unconfirmed without provider finish reason.
+go test ./... final exit0; canonical bin/workshop-agent.exe v0.21.4 built
+and --version verified. No live requests, no .env reads.
+Evidence: reports/ozon-seller-v2-fix/llm-0.21.4-tests.txt.
+See docs/day20-mcp-orchestration.md WA-D173.
+
+# WA-D172 - named product totals and follow-up context
+
+Implemented optional product_name/total semantic fields, local matching, separate
+source totals with partial-data labels, existing scoped short-term intent memory.
+go test ./... exit0; TestDay20SemanticTelegramAndTrace separately exit0.
+No live LLM/vendor requests. See docs/day20-mcp-orchestration.md WA-D172.
+
+# WA-D171 - free-form marketplace LLM interpretation
+
+Existing semantic prompt extended for colloquial names, source ambiguity and
+negation. Generic plural stock questions use AUTO (existing SELLER default).
+Explicit FBS/FBO and BOTH preserved; no architecture/API changes.
+go test ./... exit0; final LLM prompt tests exit0. Canonical EXE rebuilt,
+--version WorkshopAgent v0.21.2. No live model/vendor calls, .env unread.
+Mock tests verify schema/routing, not live language accuracy.
+See docs/day20-mcp-orchestration.md WA-D171.
+
+# WA-D170 - Seller v2 filter fix, offline verified
+
+See docs/ozon-seller-v2-fix.md. Targeted client/SQLite/actual MCP tests pass.
+25 cached products/27 valid SKU verified read-only. Full suite exit0:20 packages,406 passed tests,0 failures.
+Canonical bin/workshop-agent.exe built; --version WorkshopAgent v0.21.1.
+Evidence: reports/ozon-seller-v2-fix/tests.jsonl, mock-refresh.txt, build.txt.
+Live API compatibility remains unverified; awaiting user refresh after restart. No real API call, .env unread.
+
+# Day20 — WA-D169 implemented / offline verified
+
+Task: attachment65696e54-e143-423c-9118-65c8ab56c31b. Read docs/day20-mcp-orchestration.md
+for L0-L3 decisions. Implemented typed intent/router/query read-model, existing
+MCP dispatch, normalization/mapping/trace, semantic Telegram, migration119.
+Targeted tests passed: actual SDK calls WB+Ozon/WB-only/Ozon-only/long/partial/
+mapping; LLM schema/mock variants; Telegram semantic route. Evidence generated:
+reports/day20-mcp-orchestration/20260928-day20/evidence.json.
+Full go test -json ./... exit0 (session19174):20 passed packages,397 pass events,
+0 failures. git diff --check exit0. Standalone report.html generated (15sections).
+Canonical bin/workshop-agent.exe build exit0; --version WorkshopAgent v0.21.0.
+No running process; no new executable name, no bot startup or production migration.
+Changed Day20: marketplacequery/*, llm types/semantic/tests, mcpclient call/query,
+mcpmanager query/tests, storage migration119/sqlite, Telegram semantic/query/tests/
+bot, main/version, docs/layer links and report artifacts. Prior unrelated changes retained.
+No live requests or .env reads. Stop at Day20; live-model/vendor validation and
+previously proven Ozon seller missing sku/offer filter remain explicit limitations.
+
+# Release 0.20.1 — 2026-09-28
+
+User instruction: rebuild canonical bin/workshop-agent.exe by default after code
+changes; keep the same filename and do not create extra executables.
+No running workshop-agent process found. Build exit0; --version output:
+WorkshopAgent v0.20.1. Includes WA-D168 HTTP400 diagnostics.
+Application/bot not started; .env not read; no live API calls.
+This release supersedes the no-rebuild statements in the historical audit below.
+
+# WA-D168 — targeted Ozon Seller 400 audit (2026-09-28)
+
+Source of truth: docs/ozon-seller-400.md. Pinned Python and Go default body both
+{"limit":100}; no proven schema mismatch. No endpoint switch or N+1 added.
+Added bounded sanitized400 diagnostics, BAD_REQUEST, owner debug pointer and tests.
+Changed: ozon request.go/request_test.go/format.go, new diagnostics.go/test,
+docs/ozon-seller-400.md, marketplace README/L2/L3/WORKSTATE.
+Targeted Go tests passed; full go test ./... exit0 (session43398, Telegram69.684s),
+git diff --check exit0. Read-only catalog inspection:
+25 products/27 unique positive SKU, no identity substitution; seller sends none.
+No inherited credentials, .env unread, no live requests, no EXE build/bot startup.
+Next: stop with unknown historical400 cause and v4 proposal
+awaiting architectural approval. Existing EXE remains0.20.0 without this patch.
+
+# Release 0.20.0 - canonical EXE updated
+
+User requested EXE build. No running workshop-agent process found.
+go build -o bin/workshop-agent.exe ./cmd/workshop-agent: exit0.
+bin/workshop-agent.exe --version: WorkshopAgent v0.20.0.
+No application startup, .env read, API calls or production DB migration performed.
+WA-D167 remains PARTIALLY ACCEPTED pending official/live contract verification.
+
+# WA-D167 ? PARTIALLY ACCEPTED / offline end-to-end verified
+
+2026-09-27. ?????????? ????????????: docs/ozon-stage-a-implementation.md.
+????????118 + Go client/decoders/service/SQLite + ozonmcp module + existing MCP
+client/manager + Telegram /ozon + startup wiring ??????????? ? ?????????.
+????????? go test -json ./... session74333: exit0, 19 passed packages,
+377 successful test events, zero failures. WB/Day18/19/Tasks/Memory/Users passed.
+????????? go build -o NUL ./cmd/workshop-agent: exit0 (????? ?????????? decoder/metrics fix).
+git diff --check: exit0 (?????? CRLF notices); git check-ignore .env ???????????.
+reports/ozon-stage-a/20260927T204000Z/report.html, evidence.json, tests.jsonl:
+????????? MCP ListTools14 tools (3 Ozon READ); catalog100 ->2 pages+1 batch=3 HTTP;
+seller2 HTTP/FBO1; cache rendering0 Product calls; partial valid saved/missing
+retained; source history separated; reopened DB cooldown ->HTTP0/pages0.
+????? Telegram tests: commands/buttons/cache, credentials ?? history/memory,
+async return/revoked late reply. Migration test: WB rows/FKs retained/provider guard.
+????????? invalid schema ?????? INVALID_RESPONSE; missing pagination+valid rows
+??????????? ??? PARTIAL. Trace ?????? HTTP/SYNC/CACHE/DEDUP ?? ????????? HTTP200
+? ???????? ???????? normalized records.
+????????: ??????????? ?????????? official OpenAPI/?????????/??????/????? ?????????
+endpoints; live ??????? ?? ????????. Reference models ???????????? ???? ? provenance.
+??????? real API/Telegram/production DB/.env reads/EXE changes.
+????????? ??? ?????? ??? ????????? ??????????? ???????????: official/live validation;
+?? ????????? Ozon scheduler/pipelines/writes. ??????? ????? schema blocker WA-D166
+?? ?????????? ?????????? MCP/storage/UI ?? ????????? ???????????? WA-D167.
+
+# WA-D167 ? ???????? ?????????? / ????????? ????????
+
+????????? migration118, ???????? ???????/SKU relation/current/history/run/cooldown/
+trace, auth/scope/revision service, ?????????? ??????????? decoders, ozonmcp module,
+?????? MCP client dispatcher/manager, main wiring, /ozon commands/menu/async refresh.
+???????? ListTools ????????14 tools (3 Ozon read + ???????????? WB/local).
+CallTool ? local TLS HTTP mock ? temp SQLite ??????: 100 products ->2 pages+1 batch
+(details100); seller2 pages; FBO1 batch; rendering0 Product API calls; restart
+cooldown blocked HTTP0; partial98/invalid semantics covered by small equivalent
+fixtures, FK migration preserves WB; auth/forged grant/stale callback/disable tested.
+?????? ozon/storage/mcpmanager ? ????? Telegram tests ??????.
+?????? go test -json ./... ?????? session62528; ?????????:
+reports/ozon-stage-a/20260927T204000Z/tests.jsonl + evidence.json.
+NEXT: ??????????? ?????? exit, build -o NUL, HTML report, final docs/state.
+??????? real API/production DB/.env reads/EXE changes.
+
+# WA-D167 ? Ozon Stage A continuation / IMPLEMENTING
+
+2026-09-27. Source: attachment e0d91aa3-109a-4d49-bf3e-9a655e04fed3.
+WA-D167 in docs/ozon-stage-a.md supersedes whole-task contract blocker.
+Implemented pending acceptance: migration118 provider-aware connection rebuild,
+normalized catalog/SKU relation, source runs/current/history, cooldown/trace;
+Ozon service authorized attach/disable, persistent State, source singleflight,
+reference-backed minimal decoders with bounded pagination and batch details;
+ozonmcp module and dedicated mcpclient dispatcher on existing manager/session;
+/ozon commands/menu, cached views, explicit async refresh, main startup wiring,
+empty local env example keys and pre-history credential input rejection.
+Focused pre-integration tests ozon/mcpmanager/storage passed before final UI edits.
+No .env or production DB read; no real API calls; EXE unchanged.
+NEXT: integration tests through real in-memory MCP with mock HTTP + temp SQLite;
+security/restart/scope/partial tests, report, full regression/build.
+Models evidence: audited Python requests + public OzonFromGAS types.ts seller v2,
+public ru-marketplaces-api-docs response examples; official current response
+schema/live permissions still not verified. This is reference evidence, not live API.
+
+# WA-D166 — Ozon Stage A / IN PROGRESS, CONTRACT BLOCKER
+
+2026-09-27. Основной документ: ../ozon-stage-a.md. Это не завершённый production этап.
+Изучены текущая архитектура, WB model, auth, migrations117 и audited upstream.
+Официальные Seller docs/OpenAPI снова недоступны (redirect loop); response schemas
+stock endpoints в Python reference не типизированы. У пользователя запрошен путь
+к official OpenAPI или обезличенным response fixtures. Не угадывать quantity/SKU/
+warehouse/termination; не регистрировать fake tools.
+
+Добавлены internal/marketplace/ozon/request.go и request_test.go: подтверждённые
+request shapes четырёх read endpoints, fixed HTTPS/redirect denial/response bound,
+server-only secrets, guard hook, singleflight, serial request gate, bounded retries,
+429 deadline без обрезания, State interface и safe traces. Ответы остаются RawMessage
+внутри клиента, поскольку нормализованный контракт не подтверждён. State пока не
+имеет production SQLite implementation: нельзя заявлять persistent cooldown готовым.
+
+НЕТ production wiring, Ozon MCP registration, SQLite migration, catalog cache,
+source snapshots, Telegram UI или Ozon background jobs. EXE/.env/рабочая DB не менялись.
+Основная MCP architecture, WB и scheduler сохранены. HTTP calls только mock.
+
+Добавлен security-audit/ozon-mcp/go.mod как граница Python audit fixture subtree:
+исходный go test ./... упирался в Access denied на pytest-temp. Upstream source
+аудита не изменён. Старые и текущие аудиторские файлы не удалялись.
+
+Проверки: новый пакет go test прошёл; полный go test ./... exit0; go build -o NUL
+./cmd/workshop-agent exit0. Финальный JSON test run с доступом к Go cache: exit0;
+reports/ozon-stage-a/20260927T194512Z/tests.jsonl. Предыдущая sandbox-попытка имела
+Access denied к Go cache; это устранено повтором с необходимым доступом.
+Автономный промежуточный отчёт: reports/ozon-stage-a/20260927T194512Z/report.html;
+trace.json содержит фактическую запись mock HTTP test, не реального Ozon API.
+Следующий шаг: получить подтверждённые response contracts, продолжить п.4–8 L3
+WA-D166; не выдавать mock HTTP tests за приёмку всего Stage A.
+
 # WA-D165 — IMPLEMENTED / VERIFIED
 
 Source0.19.4. Seller summary items in existing aggregate/MCP compute-save, one formatter morning/retrieval, old run snapshot compatibility, UTF16 chunks. Read-only real preview67 rows ->23 positions, one message. go test ./... exit0 (Telegram52.403s). go build -o NUL ./cmd/workshop-agent exit0. git diff --check exit0. Day19 report exit0: reports/day19-mcp-composition/20260927T131952.129608200Z/report.html. Real saved preview: reports/wb-morning-summary/report.html; raw normalized aggregate and tests.txt alongside. Canonical0.19.3 currently running PID72336; do not overwrite live EXE. No live WB/Telegram/production changes.

@@ -328,6 +328,9 @@ func (b *Bot) home(key sessionKey) error {
 	choices = append(choices, choice{Text: "Задачи", Action: "orders_all", Workshop: active})
 	if b.Marketplace != nil {
 		choices = append(choices, choice{Text: "Wildberries", Action: "wb_status", Workshop: active})
+		if b.Ozon != nil {
+			choices = append(choices, choice{Text: "Ozon", Action: "ozon_status", Workshop: active})
+		}
 	}
 	choices = append(choices, choice{Text: "📊 Сводка за сегодня", Action: "daily_summary", Workshop: active})
 	return b.screen(key, "⚙️ Мастерская\n🏭 Текущая мастерская: "+current.Name+"\nВаша роль: "+roleName(current.Role)+"\n\nСклад: /materials, /products, /stock, /to_order\nНастройка: /setup", choices...)
@@ -502,6 +505,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 	}
 	if strings.HasPrefix(a.Action, "wb_") {
 		return b.wbButton(a)
+	}
+	if strings.HasPrefix(a.Action, "ozon_") {
+		return b.ozonButton(a)
 	}
 	if strings.HasPrefix(a.Action, "bg_") {
 		return b.backgroundButton(a)

@@ -1,0 +1,15 @@
+=== RUN   TestSellerCachedCatalogRefreshPreservesLastGood
+    seller_filter_test.go:63: mock refresh: HTTP200 catalog=CACHE HIT products=25 identifiers=27 batches=1 requests=1 rows=2 warehouses=2 saved=2
+    seller_filter_test.go:64: Ozon · Остатки продавца
+        Обновлено
+        Последняя попытка: 28.09.2026 11:45 MSK
+        Обновлено полностью: 28.09.2026 11:45 MSK
+        
+        Product A
+        • Warehouse A — 8 шт.
+          Снимок: 2026-09-28T08:45:32.4465803Z
+        • Warehouse B — 4 шт.
+          Снимок: 2026-09-28T08:45:32.4465803Z
+        Всего — 12 шт.
+        
+--- PASS: TestSellerCachedCatalogRefreshPreservesLastGood (0.63s)

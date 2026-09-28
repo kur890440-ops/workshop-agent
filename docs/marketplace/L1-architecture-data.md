@@ -1,3 +1,7 @@
+[WA-D170 - Ozon Seller v2 mandatory cached SKU filter](../ozon-seller-v2-fix.md): supersedes unfiltered WA-D167/168; warehouse breakdown retained.
+
+[WA-D166 — Ozon Stage A: текущая работа и ограничения схем](../ozon-stage-a.md). Stage A ещё не принят.
+
 # L1 — модули, сущности и размещение данных
 
 [WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.

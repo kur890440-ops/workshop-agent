@@ -122,7 +122,7 @@ func (s *Service) Schedule(ctx context.Context, grant string, input, out any) er
 
 // callTool is the only dispatch point. Discovery does not grant execution rights.
 func (s *Service) callTool(ctx context.Context, name string, input NoArgs, out any) error {
-	if (name != SellerStocksTool && name != StocksTool && name != "wb_get_seller" && name != "wb_get_prices") || !s.readOnly(name) {
+	if (name != SellerStocksTool && name != StocksTool && name != "wb_get_seller" && name != "wb_get_prices" && name != "wb_get_products") || !s.readOnly(name) {
 		return Error("mcp_tool_not_allowed")
 	}
 	result, err := s.session.CallTool(ctx, &mcp.CallToolParams{Name: name, Arguments: input, Meta: mcp.Meta{"wb-call": wb.TraceMetadata(ctx)}})

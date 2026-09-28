@@ -3,6 +3,7 @@ package telegram
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -143,8 +144,14 @@ func (b *Bot) semanticMessage(key sessionKey, workshop int64, text string) (bool
 	raw, _ = json.Marshal(contextData)
 	cmd, usage, err := client.Interpret(context.Background(), string(raw), text)
 	if err != nil {
-		log.Printf("semantic route=llm validation=failed")
-		return true, b.sendMessage(key.ChatID, "Не удалось надёжно разобрать запрос. Уточните материал или используйте /materials.\n"+formatTokenUsage(usage))
+		reason := "request_or_schema_failed"
+		message := "Не удалось получить корректную команду от модели. Попробуйте повторить запрос с названием товара и источником остатков."
+		if errors.Is(err, llm.ErrResponseTruncated) {
+			reason = "output_truncated"
+			message = "Модель исчерпала лимит ответа даже после повторной попытки. Запрос остатков не выполнялся. Попробуйте коротко: «Сколько трапов на WB и Ozon?»"
+		}
+		log.Printf("semantic route=llm validation=failed reason=%s", reason)
+		return true, b.sendMessage(key.ChatID, message+"\n"+formatTokenUsage(usage))
 	}
 	if err = llm.ValidateSemantic(cmd); err != nil {
 		return true, b.sendMessage(key.ChatID, "Некорректная команда интерпретатора. Данные не изменены. Используйте /materials.")
@@ -328,6 +335,17 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 	}
 	switch cmd.Action {
+	case "marketplace_query":
+		if err = b.executeMarketQuery(key, workshop, text, *cmd.Marketplace); err != nil {
+			return err
+		}
+		m := b.Agent.Memory.ForUser(key.UserID)
+		if sc, e := m.EnsureSession(memory.Scope{UserID: key.UserID, WorkshopID: workshop}, key.ChatID); e == nil {
+			intent, _ := json.Marshal(cmd.Marketplace)
+			_ = m.AppendShortTerm(sc, "user", text)
+			_ = m.AppendShortTerm(sc, "assistant", "Marketplace query context (intent only; not stock data): "+string(intent))
+		}
+		return nil
 	case "get_all_product_stock":
 		return b.productsMenu(key, workshop)
 	case "list_assembly_tasks":

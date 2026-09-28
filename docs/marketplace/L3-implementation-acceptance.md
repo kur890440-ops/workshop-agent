@@ -1,3 +1,18 @@
+[WA-D170 - Ozon Seller v2 mandatory cached SKU filter](../ozon-seller-v2-fix.md): supersedes unfiltered WA-D167/168; warehouse breakdown retained.
+
+[Day20 / WA-D169](../day20-mcp-orchestration.md): 2026-09-28, полный go test ./...
+exit0 (20 пакетов,397 успешных test events); actual SDK mock-сценарии и Telegram
+проверены. Отчёт: reports/day20-mcp-orchestration/20260928-day20/report.html.
+Основной EXE v0.21.0 собран. Live API/LLM и production migration119 не выполнялись.
+
+[WA-D168 — аудит Seller HTTP400](../ozon-seller-400.md): 2026-09-28,
+целевые тесты Ozon и полный `go test ./...` прошли (exit0, session43398).
+Диагностика реализована; причина исторического400 неизвестна; live test не выполнен.
+Endpoint не менялся, EXE не пересобирался. Следующий шаг — отдельная live-проверка
+из окружения с credentials; переход на v4 требует согласования семантики.
+
+[WA-D166 — Ozon Stage A: текущая работа и ограничения схем](../ozon-stage-a.md). Stage A ещё не принят.
+
 # L3 — этапы реализации и приёмка
 
 [WA-D165 — утренняя сводка по товарам](../wb-morning-summary.md): SELLER aggregate, варианты, частичные суммы, сохранённая сводка и chunking.

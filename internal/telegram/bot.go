@@ -21,6 +21,8 @@ import (
 	"workshop-agent/internal/inventory"
 	"workshop-agent/internal/llm"
 	"workshop-agent/internal/marketplace"
+	"workshop-agent/internal/marketplace/ozon"
+	"workshop-agent/internal/marketplacequery"
 	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/storage"
@@ -39,6 +41,9 @@ type Bot struct {
 	HTTPClient    *http.Client
 	Agent         *agent.WorkshopAgent
 	Marketplace   *marketplace.Service
+	Ozon          *ozon.Service
+	OzonTools     ozonTools
+	MarketQuery   *marketplacequery.MarketplaceOrchestrator
 	Background    *background.Service
 	DailySummary  dailySummaryReader
 	JobContext    context.Context
@@ -184,8 +189,8 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		return auth.ErrDenied
 	}
 	text := strings.TrimSpace(msg.Text)
-	if b.Marketplace.SensitiveInput(text) {
-		return b.sendMessage(msg.Chat.ID, "Токены через Telegram не принимаются и не сохраняются приложением. Задайте WB_API_TOKEN локально и перезапустите приложение.")
+	if b.Marketplace.SensitiveInput(text) || b.Ozon.SensitiveInput(text) {
+		return b.sendMessage(msg.Chat.ID, "Токены через Telegram не принимаются и не сохраняются приложением. Задайте credentials WB/Ozon локально в .env и перезапустите приложение.")
 	}
 	chatID := msg.Chat.ID
 	userID, err := b.WS.UpsertUser(msg.From.ID, msg.From.Username, msg.From.FirstName, msg.From.LastName)
@@ -198,6 +203,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 	if text == "" {
 		return nil
 	}
+	if handled, e := b.marketQueryCommand(sessionKey{chatID, userID}, text); handled {
+		return e
+	}
 	if handled, e := b.mcpStocksMessage(sessionKey{chatID, userID}, text); handled {
 		return e
 	}
@@ -205,6 +213,9 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		return e
 	}
 	if handled, e := b.wbMessage(sessionKey{chatID, userID}, text); handled {
+		return e
+	}
+	if handled, e := b.ozonMessage(sessionKey{chatID, userID}, text); handled {
 		return e
 	}
 	if handled, e := b.formMessage(sessionKey{chatID, userID}, text); handled {

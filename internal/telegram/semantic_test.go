@@ -289,7 +289,7 @@ func TestSemanticFailureAndFormPriority(t *testing.T) {
 	}
 	s.fail = true
 	h.message(t, 900001, "какой остаток 2")
-	if !strings.Contains(lastAnswer(h), "/materials") {
+	if !strings.Contains(lastAnswer(h), "корректную команду от модели") {
 		t.Fatal(lastAnswer(h))
 	}
 	calls := s.calls

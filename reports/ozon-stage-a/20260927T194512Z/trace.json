@@ -1,0 +1,26 @@
+[
+  {
+    "timestamp": "2026-09-27T19:53:43.0885143Z",
+    "workshop_id": 1,
+    "marketplace_connection_id": 2,
+    "provider": "OZON",
+    "caller": "telegram:ozon_seller_stocks",
+    "operation": "seller_stocks",
+    "mcp_tool": "ozon_get_seller_stocks",
+    "go_method": "SellerStocksPage",
+    "http_method": "POST",
+    "endpoint": "/v2/product/info/stocks-by-warehouse/fbs",
+    "attempt": 1,
+    "cache": "BYPASS",
+    "dedup": "NEW",
+    "http_status": 200,
+    "duration_ms": 0,
+    "page": 1,
+    "http_request_count": 1,
+    "records_received": null,
+    "records_valid": null,
+    "records_saved": null,
+    "retry_not_before": "0001-01-01T00:00:00Z",
+    "result": "SUCCESS"
+  }
+]
