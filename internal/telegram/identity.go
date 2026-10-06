@@ -170,6 +170,7 @@ func (b *Bot) api(method string, payload any, out any) error {
 		}
 		return &telegramAPIError{Code: code, RetryAfter: envelope.Parameters.RetryAfter, Missing: code == 400 && strings.Contains(strings.ToLower(envelope.Description), "message to delete not found")}
 	}
+	b.speechReplyAcknowledged(method, raw)
 	if method == "sendMessage" {
 		var msg telegramMessage
 		if err := json.Unmarshal(envelope.Result, &msg); err != nil {

@@ -6,24 +6,36 @@ import (
 	"path/filepath"
 	"strconv"
 	"time"
+	"workshop-agent/internal/speech"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
-	TelegramBotToken     string
-	LLMAPIKey            string
-	LLMBaseURL           string
-	LLMModel             string
-	DatabasePath         string
-	InviteTTL            time.Duration
-	InviteMaxUses        int
-	ShortTermMaxMessages int
-	ShortTermMaxTokens   int
+	Speech                      speech.Config
+	SpeechPaths                 SpeechPaths
+	TelegramBotToken            string
+	TelegramVoiceShowTranscript bool
+	LLMAPIKey                   string
+	LLMBaseURL                  string
+	LLMModel                    string
+	DatabasePath                string
+	InviteTTL                   time.Duration
+	InviteMaxUses               int
+	ShortTermMaxMessages        int
+	ShortTermMaxTokens          int
 }
 
 func Load() (*Config, error) {
-	_ = godotenv.Load()
+	cwd, err := os.Getwd()
+	if err != nil {
+		return nil, err
+	}
+	executable, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
+	_ = godotenv.Load(filepath.Join(applicationRoot(cwd, executable), ".env"))
 	cfg := &Config{
 		TelegramBotToken: os.Getenv("TELEGRAM_BOT_TOKEN"),
 		LLMAPIKey:        os.Getenv("LLM_API_KEY"),
@@ -34,6 +46,16 @@ func Load() (*Config, error) {
 	if cfg.DatabasePath == "" {
 		cfg.DatabasePath = "./data/workshop.db"
 	}
+	var speechErr error
+	cfg.Speech, speechErr = loadSpeech()
+	if speechErr != nil {
+		return nil, speechErr
+	}
+	cfg.TelegramVoiceShowTranscript, err = loadVoiceShowTranscript()
+	if err != nil {
+		return nil, err
+	}
+	cfg.SpeechPaths = resolveSpeechPaths(&cfg.Speech, cwd, executable)
 	cfg.InviteTTL = 24 * time.Hour
 	cfg.InviteMaxUses = 1
 	cfg.ShortTermMaxMessages = 20

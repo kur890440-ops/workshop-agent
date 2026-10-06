@@ -23,6 +23,7 @@ import (
 	"workshop-agent/internal/marketplace/wildberries"
 	"workshop-agent/internal/marketplacequery"
 	"workshop-agent/internal/products"
+	"workshop-agent/internal/speech"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/telegram"
 	"workshop-agent/internal/workshops"
@@ -98,6 +99,15 @@ func main() {
 	cfg, err := config.Load()
 	if err != nil {
 		log.Fatal(err)
+	}
+	if len(os.Args) > 1 && os.Args[1] == "speech" {
+		ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+		defer stop()
+		if e := speech.RunCLI(ctx, cfg.Speech, os.Args[2:], os.Stdout); e != nil {
+			log.Print(e)
+			os.Exit(1)
+		}
+		return
 	}
 
 	if len(os.Args) > 1 && os.Args[1] == "setup" {
@@ -260,6 +270,11 @@ func main() {
 	}
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
+	speechProvider := speech.New(cfg.Speech)
+	defer speechProvider.Close()
+	bot.ConfigureSpeech(speechProvider, cfg.Speech)
+	bot.VoiceShowTranscript = cfg.TelegramVoiceShowTranscript
+	logSpeechStartup(cfg, speechProvider.Status(ctx))
 	jobs.Sender = bot
 	bot.Background = jobs
 	bot.DailySummary = manager

@@ -1,0 +1,38 @@
+{
+  "inputs": [
+    {
+      "name": "features",
+      "dtype": "FLOAT",
+      "shape": [
+        "batch_size",
+        64,
+        "seq_len"
+      ]
+    },
+    {
+      "name": "feature_lengths",
+      "dtype": "INT64",
+      "shape": [
+        "batch_size"
+      ]
+    }
+  ],
+  "outputs": [
+    {
+      "name": "log_probs",
+      "dtype": "FLOAT",
+      "shape": [
+        "batch_size",
+        "seq_len",
+        34
+      ]
+    },
+    {
+      "name": "encoded_lengths",
+      "dtype": "INT32",
+      "shape": [
+        "batch_size"
+      ]
+    }
+  ]
+}

@@ -5,6 +5,12 @@
 .vscode/
 .DS_Store
 bin/
+.tmp/
+assets/gigaam-v3-ctc/
+assets/onnxruntime/
 reports/task-only-refactor/migration-before.json
 reports/day11-memory/preview-profile/
 reports/day11-memory/preview-profile-cdp/
+
+# Dev-only Python preparation bytecode
+scripts/__pycache__/

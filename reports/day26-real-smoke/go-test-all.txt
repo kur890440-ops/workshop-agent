@@ -1,0 +1,31 @@
+?   	workshop-agent/cmd/init-db	[no test files]
+?   	workshop-agent/cmd/workshop-agent	[no test files]
+ok  	workshop-agent/internal/agent	(cached)
+?   	workshop-agent/internal/audit	[no test files]
+?   	workshop-agent/internal/auth	[no test files]
+ok  	workshop-agent/internal/background	(cached)
+?   	workshop-agent/internal/bootstrap	[no test files]
+ok  	workshop-agent/internal/cli	(cached)
+ok  	workshop-agent/internal/config	0.850s
+?   	workshop-agent/internal/experiment	[no test files]
+ok  	workshop-agent/internal/integrations/mcpclient	(cached)
+ok  	workshop-agent/internal/integrations/mcpmanager	(cached)
+?   	workshop-agent/internal/integrations/ozonmcp	[no test files]
+ok  	workshop-agent/internal/integrations/wbmcp	(cached)
+?   	workshop-agent/internal/integrations/wbmcpfixture	[no test files]
+ok  	workshop-agent/internal/invariants	(cached)
+ok  	workshop-agent/internal/inventory	(cached)
+ok  	workshop-agent/internal/llm	(cached)
+ok  	workshop-agent/internal/marketplace	(cached)
+ok  	workshop-agent/internal/marketplace/ozon	(cached)
+ok  	workshop-agent/internal/marketplace/wildberries	(cached)
+ok  	workshop-agent/internal/marketplacequery	(cached)
+ok  	workshop-agent/internal/memory	(cached)
+?   	workshop-agent/internal/models	[no test files]
+ok  	workshop-agent/internal/personalization	(cached)
+ok  	workshop-agent/internal/products	(cached)
+ok  	workshop-agent/internal/speech	4.163s
+ok  	workshop-agent/internal/storage	(cached)
+ok  	workshop-agent/internal/telegram	29.667s
+?   	workshop-agent/internal/testkit	[no test files]
+ok  	workshop-agent/internal/workshops	(cached)

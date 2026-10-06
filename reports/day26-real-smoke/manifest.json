@@ -1,0 +1,8 @@
+{
+  "config.json": "940648caa415f0f8f8e83545a1b46de7e55ab44a80e2659de303e3e9a22a7dc9",
+  "metadata.json": "f4dd4be2e8e95c3f73d243c67fc40a4c220c772db73d7692dc48aed3abbc2716",
+  "model.onnx": "814a3bf0082465fdfae75d5cd0527e0ce892e0950cb62912911f740374bada99",
+  "onnx-contract.json": "b5b3c750e3f403f4b327014c876c3079bcab70cfa7e12ceb80fd8996e849ea7a",
+  "reference-config.yaml": "b69958b88c26a6cc3d09cb6ef3718aff9a0df2e4811c8cad694e1b5c36f89584",
+  "vocab.json": "fcdd22214febeb4b910d7f91bd43de2601f1d924cdce6a82befe74011cddeb51"
+}

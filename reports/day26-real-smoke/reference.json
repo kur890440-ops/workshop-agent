@@ -1,0 +1,17 @@
+{
+  "source": "https://cdn.chatwm.opensmodel.sberdevices.ru/GigaAM/example.wav",
+  "wav_sha256": "d8aaaa18a5098d7c6de0595ae7ac1e64cacd0d4022af3595213bdaf23be77e69",
+  "transcript": "ничьих не требуя похвал счастлив уж я надеждой сладкой что дева с трепетом любви посмотрит может быть украдкой на песни грешные мои у лукоморья дуб зеленый",
+  "sample_rate": 16000,
+  "duration_seconds": 11.29,
+  "feature_shape": [
+    1,
+    64,
+    1128
+  ],
+  "feature_lengths": [
+    1128
+  ],
+  "official_float32_vs_float64_max_log_error": 0.0006425305324384567,
+  "opus_encoder": "soundfile/libsndfile in-process; no ffmpeg"
+}

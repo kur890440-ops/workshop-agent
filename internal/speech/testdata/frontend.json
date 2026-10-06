@@ -1,0 +1,25 @@
+{
+  "frontend": {
+    "sample_rate": 16000,
+    "n_fft": 320,
+    "win_length": 320,
+    "hop_length": 160,
+    "features": 64,
+    "center": false,
+    "mel_scale": "htk",
+    "power": 2,
+    "window": "hann_periodic",
+    "normalization": "log_clamp_1e-9_1e9"
+  },
+  "shape": [
+    1,
+    64,
+    99
+  ],
+  "torch": "2.14.1+cpu",
+  "torchaudio": "2.11.0+cpu",
+  "source": "https://github.com/salute-developers/GigaAM/blob/main/gigaam/preprocess.py",
+  "source_sha256": "d4cd47b7c07664c0aab682148155a1fb2eab4829a91730cb14b1c75dddfcc22f",
+  "pcm_sha256": "ebad72208de54fa9a657027df1d6cc4100de8f7f612e64aa1a57ab218e162716",
+  "absolute_tolerance": 0.0002
+}

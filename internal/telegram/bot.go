@@ -25,35 +25,43 @@ import (
 	"workshop-agent/internal/marketplacequery"
 	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
+	"workshop-agent/internal/speech"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/workshops"
 )
 
 type Bot struct {
-	materialLists map[sessionKey]materialListContext
-	completions   map[sessionKey]completionContext
-	Token         string
-	WS            *workshops.Service
-	Inv           *inventory.Service
-	Prod          *products.Service
-	Audit         *audit.Service
-	Started       bool
-	HTTPClient    *http.Client
-	Agent         *agent.WorkshopAgent
-	Marketplace   *marketplace.Service
-	Ozon          *ozon.Service
-	OzonTools     ozonTools
-	MarketQuery   *marketplacequery.MarketplaceOrchestrator
-	Background    *background.Service
-	DailySummary  dailySummaryReader
-	JobContext    context.Context
-	wbWait        sync.WaitGroup
-	setupMu       sync.Mutex
-	setup         map[sessionKey]*setupSession
-	uiMu          sync.Mutex
-	ui            map[sessionKey]*uiState
-	buttons       map[string]buttonAction
-	BotUsername   string
+	Speech              speech.SpeechRecognitionProvider
+	VoiceShowTranscript bool
+	speechConfig        speech.Config
+	speechSlots         chan struct{}
+	speechResults       chan speechCompletion
+	speechWait          sync.WaitGroup
+	speechReplies       sync.Map
+	materialLists       map[sessionKey]materialListContext
+	completions         map[sessionKey]completionContext
+	Token               string
+	WS                  *workshops.Service
+	Inv                 *inventory.Service
+	Prod                *products.Service
+	Audit               *audit.Service
+	Started             bool
+	HTTPClient          *http.Client
+	Agent               *agent.WorkshopAgent
+	Marketplace         *marketplace.Service
+	Ozon                *ozon.Service
+	OzonTools           ozonTools
+	MarketQuery         *marketplacequery.MarketplaceOrchestrator
+	Background          *background.Service
+	DailySummary        dailySummaryReader
+	JobContext          context.Context
+	wbWait              sync.WaitGroup
+	setupMu             sync.Mutex
+	setup               map[sessionKey]*setupSession
+	uiMu                sync.Mutex
+	ui                  map[sessionKey]*uiState
+	buttons             map[string]buttonAction
+	BotUsername         string
 }
 
 type setupSession struct {
@@ -84,7 +92,7 @@ func NewBot(token string, ws *workshops.Service, inv *inventory.Service, prod *p
 	if token == "" {
 		return nil, logError("TELEGRAM_BOT_TOKEN is empty")
 	}
-	return &Bot{Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Agent: agentSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[sessionKey]*setupSession)}, nil
+	return &Bot{VoiceShowTranscript: true, Token: token, WS: ws, Inv: inv, Prod: prod, Audit: auditSvc, Agent: agentSvc, Started: true, HTTPClient: &http.Client{Timeout: 15 * time.Second}, setup: make(map[sessionKey]*setupSession)}, nil
 }
 
 func logError(msg string) error {
@@ -98,47 +106,83 @@ func (e *botError) Error() string { return e.msg }
 func (b *Bot) Start() {
 	b.StartContext(context.Background())
 }
-func (b *Bot) WaitBackground() { b.wbWait.Wait() }
+func (b *Bot) WaitBackground() { b.wbWait.Wait(); b.speechWait.Wait() }
 func (b *Bot) StartContext(ctx context.Context) {
 	if !b.Started {
 		log.Println("Telegram-бот не инициализирован.")
 		return
 	}
 	log.Println("Telegram-бот запущен. Начинаю long-polling обновлений.")
-	offset := int64(0)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	updates := make(chan telegramUpdate)
+	pollDone := make(chan struct{})
+	go func() {
+		defer close(pollDone)
+		offset := int64(0)
+		for ctx.Err() == nil {
+			batch, err := b.getUpdatesContext(ctx, offset)
+			if err != nil {
+				if ctx.Err() != nil {
+					return
+				}
+				log.Printf("polling error: %v", err)
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(5 * time.Second):
+				}
+				continue
+			}
+			for _, u := range batch {
+				select {
+				case updates <- u:
+					if u.UpdateID >= offset {
+						offset = u.UpdateID + 1
+					}
+				case <-ctx.Done():
+					return
+				}
+			}
+			if len(batch) == 0 {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(time.Second):
+				}
+			}
+		}
+	}()
+	defer func() { cancel(); <-pollDone; b.speechWait.Wait() }()
 	for {
-		if ctx.Err() != nil {
+		select {
+		case <-ctx.Done():
 			return
-		}
-		updates, err := b.getUpdatesContext(ctx, offset)
-		if err != nil {
-			log.Printf("polling error: %v", err)
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(5 * time.Second):
+		case completion := <-b.speechResults:
+			if ctx.Err() == nil {
+				if err := b.finishAudio(completion); err != nil {
+					log.Print("speech delivery failed")
+				}
 			}
-			continue
-		}
-		for _, update := range updates {
-			if update.UpdateID >= offset {
-				offset = update.UpdateID + 1
-			}
+		case update := <-updates:
 			if update.CallbackQuery != nil {
 				if err := b.handleCallback(update.CallbackQuery); err != nil {
-					log.Printf("callback failed")
+					log.Print("callback failed")
 				}
 				continue
 			}
 			if update.Message == nil {
 				continue
 			}
-			if err := b.handleMessage(update.Message); err != nil {
-				log.Printf("handle message error")
+			var err error
+			if update.Message.Voice != nil || update.Message.Audio != nil {
+				err = b.startAudio(ctx, update.Message)
+			} else {
+				err = b.handleMessage(update.Message)
 			}
-		}
-		if len(updates) == 0 {
-			time.Sleep(1 * time.Second)
+			if err != nil {
+				log.Print("handle message error")
+			}
 		}
 	}
 }
@@ -809,6 +853,9 @@ type telegramUpdate struct {
 }
 
 type telegramMessage struct {
+	Voice     *telegramAudio  `json:"voice,omitempty"`
+	Audio     *telegramAudio  `json:"audio,omitempty"`
+	Speech    *speechMetadata `json:"-"`
 	Date      int64           `json:"date"`
 	Dice      json.RawMessage `json:"dice"`
 	MessageID int64           `json:"message_id"`

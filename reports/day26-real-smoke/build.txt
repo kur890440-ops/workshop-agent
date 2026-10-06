@@ -1,0 +1,4 @@
+PASS: go build ./...
+PASS: go build -o bin/workshop-agent.exe ./cmd/workshop-agent
+PASS: python scripts/prepare_gigaam_v3_ctc.py (full export, repeated hash identical)
+PASS: python scripts/prepare_gigaam_v3_ctc.py --reuse-export (exit 0)

@@ -1,0 +1,21 @@
+{
+  "Sample": "A: gigaam-example.ogg",
+  "Result": {
+    "Text": "ничьих не требуя похвал счастлив уж я надеждой сладкой что дева с трепетом любви посмотрит может быть украдкой на песни грешные мои у лукоморья дуб зеленый",
+    "Language": "ru",
+    "Provider": "gigaam",
+    "Model": "v3_ctc",
+    "Device": "cpu",
+    "AudioDuration": 11290000000,
+    "ProcessingDuration": 1284511400,
+    "Status": "SUCCESS",
+    "ErrorCode": "",
+    "Timings": {
+      "Decode": 759488200,
+      "Preprocess": 14515200,
+      "Inference": 510508000,
+      "Tokens": 0
+    }
+  },
+  "RealTimeFactor": 0.11377426040744021
+}

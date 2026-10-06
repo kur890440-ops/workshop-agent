@@ -1,0 +1,10 @@
+{
+  "Enabled": true,
+  "Provider": "gigaam",
+  "Model": "v3_ctc",
+  "Device": "cpu",
+  "ModelLoaded": true,
+  "RuntimeLoaded": true,
+  "LastError": "",
+  "FallbackReason": "cuda: CUDA options: RUNTIME_NOT_AVAILABLE: CUDA execution provider is not enabled in this build."
+}
