@@ -59,6 +59,9 @@ func (b *Bot) audioAuthorization(m *telegramMessage) (int64, error) {
 	return w, auth.Require(b.WS.DB(), user, w, auth.WorkshopRead)
 }
 func (b *Bot) startAudio(ctx context.Context, m *telegramMessage) error {
+	if m == nil || m.Chat.Type != "private" || m.Chat.ID <= 0 || m.From.ID <= 0 {
+		return auth.ErrDenied
+	}
 	trace := &voiceTrace{ID: voiceTraceID.Add(1), VoiceReceived: m.Voice != nil, SpeechEnabled: b.speechConfig.Enabled, ProviderPresent: b.Speech != nil, DecodeStatus: "NOT_RUN", TranscriptionStatus: "NOT_RUN"}
 	slog.Info("telegram voice received", "voice_request_id", trace.ID, "voice_received", trace.VoiceReceived)
 	var status speech.SpeechProviderStatus
@@ -252,7 +255,11 @@ func (b *Bot) finishAudio(c speechCompletion) error {
 	m.Speech = &speechMetadata{InputType: "VOICE", Provider: c.result.Provider, Model: c.result.Model, ChatID: m.Chat.ID, SenderID: m.From.ID, MessageID: m.MessageID, AudioDuration: c.result.AudioDuration, ProcessingDuration: c.result.ProcessingDuration}
 	// This is the same existing entrypoint as typed text, including all confirmations.
 	c.trace.TextHandlerCalled = true
-	return b.handleMessage(&m)
+	ctx := b.JobContext
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return b.submitTelegram(ctx, &m)
 }
 func speechError(c speech.Code) string {
 	switch c {

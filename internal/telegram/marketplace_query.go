@@ -54,6 +54,23 @@ func (b *Bot) executeMarketQuery(key sessionKey, workshop int64, text string, i 
 	if e := b.sendMessage(key.ChatID, "Проверяю выбранные источники маркетплейсов. Результат пришлю отдельно."); e != nil {
 		return e
 	}
+	if b.requestOwned() {
+		var textResult string
+		e := b.network(b.llmContext(), func(ctx context.Context) error {
+			r, e := b.MarketQuery.Execute(ctx, sc, text, i)
+			if e == nil {
+				textResult = q.Render(r)
+			}
+			return e
+		})
+		if e != nil {
+			return e
+		}
+		if e = b.MarketQuery.Store.Authorize(sc); e != nil {
+			return e
+		}
+		return b.sendMessage(key.ChatID, textResult)
+	}
 	parent := b.JobContext
 	if parent == nil {
 		parent = context.Background()

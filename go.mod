@@ -3,6 +3,7 @@ module workshop-agent
 go 1.25.0
 
 require (
+	github.com/dlclark/regexp2 v1.11.5
 	github.com/ebitengine/purego v0.10.0
 	github.com/glebarez/sqlite v1.8.0
 	github.com/google/jsonschema-go v0.4.3

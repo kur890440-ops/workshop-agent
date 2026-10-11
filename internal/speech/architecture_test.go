@@ -35,7 +35,7 @@ func TestProductionSpeechHasNoSubprocess(t *testing.T) {
 	if e != nil {
 		t.Fatal(e)
 	}
-	if strings.Count(string(b), "b.handleMessage(&m)") != 1 {
-		t.Fatal("speech must deliver once through existing handler")
+	if strings.Count(string(b), "b.submitTelegram(ctx, &m)") != 1 {
+		t.Fatal("speech must enter shared admission once")
 	}
 }

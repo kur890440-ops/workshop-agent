@@ -1,0 +1,17 @@
+{
+	admin off
+	auto_https disable_redirects
+	skip_install_trust
+	storage file_system {
+		root C:/TEMP/WorkshopAgent/.tmp/lan-proxy/data
+	}
+	servers {
+		protocols h1 h2
+	}
+}
+
+https://192.168.11.41:8443 {
+	bind 192.168.11.41
+	tls internal
+	reverse_proxy 127.0.0.1:8080
+}

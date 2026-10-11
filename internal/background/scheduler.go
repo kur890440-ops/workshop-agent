@@ -12,6 +12,8 @@ import (
 
 // Scheduler is the single engine. Executors own business logic, not clocks.
 type Scheduler struct {
+	// Maintenance runs on the existing scheduler clock, configured before Start.
+	Maintenance func(context.Context) error
 	*Service
 	mu     sync.Mutex
 	cancel context.CancelFunc
@@ -51,6 +53,11 @@ func (s *Scheduler) Close() {
 func (s *Scheduler) Tick(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		return err
+	}
+	if s.Maintenance != nil {
+		if err := s.Maintenance(ctx); err != nil {
+			return err
+		}
 	}
 	now := s.Now().Unix()
 	// Expired workers lose write authority. History remains one run per date.

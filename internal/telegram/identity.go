@@ -2,6 +2,7 @@ package telegram
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -21,6 +22,7 @@ import (
 	"workshop-agent/internal/marketplace"
 	wb "workshop-agent/internal/marketplace/wildberries"
 	"workshop-agent/internal/memory"
+	"workshop-agent/internal/message"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/workshops"
 )
@@ -142,6 +144,19 @@ func roleName(role auth.Role) string {
 }
 
 func (b *Bot) api(method string, payload any, out any) error {
+	if p, ok := payload.(map[string]any); ok {
+		if chat, ok := p["chat_id"].(int64); ok && chat < 0 {
+			if method == "sendMessage" {
+				text, _ := p["text"].(string)
+				return b.deliverWeb(chat, message.Output{Role: "assistant", Text: text})
+			}
+			if method == "editMessageReplyMarkup" {
+				return nil
+			}
+			return auth.ErrDenied
+		}
+	}
+
 	raw, err := json.Marshal(payload)
 	if err != nil {
 		return err
@@ -231,6 +246,15 @@ func (b *Bot) screen(key sessionKey, text string, choices ...choice) error {
 		rows = append(rows, []inlineButton{{Text: c.Text, Data: "wa:" + id}})
 	}
 	b.uiMu.Unlock()
+	if key.ChatID < 0 {
+		out := message.Output{Role: "assistant", Text: text}
+		for _, row := range rows {
+			for _, button := range row {
+				out.Buttons = append(out.Buttons, message.Button{Text: button.Text, ID: button.Data})
+			}
+		}
+		return b.deliverWeb(key.ChatID, out)
+	}
 	var msg telegramMessage
 	err := b.api("sendMessage", map[string]any{"chat_id": key.ChatID, "text": text, "reply_markup": map[string]any{"inline_keyboard": rows}, "disable_web_page_preview": true}, &msg)
 	if s != nil && s.navigation != nil && err == nil {
@@ -432,6 +456,21 @@ func (b *Bot) invitesScreen(key sessionKey, workshop int64) error {
 	return b.screen(key, strings.Join(lines, "\n"), choices...)
 }
 func (b *Bot) handleCallback(c *telegramCallback) error {
+	return b.handleCallbackContext(context.Background(), c)
+}
+func (b *Bot) handleCallbackContext(ctx context.Context, c *telegramCallback) error {
+	if c != nil && c.Message != nil && (c.Message.Chat.Type != "private" || c.Message.Chat.ID <= 0 || c.From.ID <= 0) {
+		return auth.ErrDenied
+	}
+	if c == nil || c.Message == nil {
+		return nil
+	}
+	userID, _ := auth.ExistingTelegramUser(b.WS.DB(), c.From.ID)
+	done := b.enterApplication(ctx, userID)
+	defer done()
+	if e := ctx.Err(); e != nil {
+		return e
+	}
 	if c == nil || c.Message == nil {
 		return nil
 	}
@@ -449,7 +488,15 @@ func (b *Bot) handleCallback(c *telegramCallback) error {
 			return err
 		}
 	}
-	id := strings.TrimPrefix(c.Data, "wa:")
+	if c.Message.Chat.Type != "private" {
+		return auth.ErrDenied
+	}
+	return b.handleConfirmation(key, c.Data)
+}
+
+// handleConfirmation is the common callback handler for both transports.
+func (b *Bot) handleConfirmation(key sessionKey, data string) error {
+	id := strings.TrimPrefix(data, "wa:")
 	b.uiMu.Lock()
 	action, ok := b.buttons[id]
 	if ok && action.Key == key && action.Action != "completion_post" {
@@ -459,12 +506,19 @@ func (b *Bot) handleCallback(c *telegramCallback) error {
 	if !ok || action.Key != key || time.Now().After(action.Expires) {
 		return b.sendMessage(key.ChatID, "Кнопка устарела или принадлежит другому пользователю. Откройте /workshop заново.")
 	}
-	// Management links may reveal invitations; use private chats for these screens.
-	if c.Message.Chat.Type != "private" {
-		return b.sendMessage(key.ChatID, "Управление мастерской доступно в личном чате с ботом: /workshop.")
+	if !strings.HasPrefix(action.Action, "hybrid_") {
+		for id, p := range b.hybridPending {
+			if p.Key == key {
+				delete(b.hybridPending, id)
+			}
+		}
 	}
-	err = b.executeButton(action)
+	err := b.executeButton(action)
 	if err != nil {
+		if key.ChatID < 0 {
+			_ = b.sendMessage(key.ChatID, publicError(err))
+			return err
+		}
 		return b.sendMessage(key.ChatID, publicError(err))
 	}
 	return nil
@@ -503,6 +557,9 @@ func (b *Bot) executeButton(a buttonAction) error {
 				return errors.New("workshop context changed")
 			}
 		}
+	}
+	if strings.HasPrefix(a.Action, "hybrid_") {
+		return b.hybridButton(a)
 	}
 	if strings.HasPrefix(a.Action, "wb_") {
 		return b.wbButton(a)

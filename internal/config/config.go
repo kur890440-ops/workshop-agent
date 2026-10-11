@@ -5,13 +5,17 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 	"workshop-agent/internal/speech"
+	"workshop-agent/internal/webchat"
 
 	"github.com/joho/godotenv"
 )
 
 type Config struct {
+	Hybrid                      HybridConfig
+	Web                         webchat.Config
 	Speech                      speech.Config
 	SpeechPaths                 SpeechPaths
 	TelegramBotToken            string
@@ -45,6 +49,39 @@ func Load() (*Config, error) {
 	}
 	if cfg.DatabasePath == "" {
 		cfg.DatabasePath = "./data/workshop.db"
+	}
+	cfg.Hybrid, err = loadHybrid()
+	if err != nil {
+		return nil, err
+	}
+	cfg.Web = webchat.Config{ListenAddress: "127.0.0.1:8080", PublicBaseURL: "http://127.0.0.1:8080", SessionTTL: 12 * time.Hour, LoginCodeTTL: 2 * time.Minute}
+	if value := os.Getenv("WEB_ENABLED"); value != "" {
+		cfg.Web.Enabled, err = strconv.ParseBool(value)
+		if err != nil {
+			return nil, fmt.Errorf("invalid WEB_ENABLED")
+		}
+	}
+	if value := os.Getenv("WEB_LISTEN_ADDRESS"); value != "" {
+		cfg.Web.ListenAddress = value
+	}
+	if value := os.Getenv("WEB_PUBLIC_BASE_URL"); value != "" {
+		cfg.Web.PublicBaseURL = value
+	}
+	for key, target := range map[string]*time.Duration{"WEB_SESSION_TTL": &cfg.Web.SessionTTL, "WEB_LOGIN_CODE_TTL": &cfg.Web.LoginCodeTTL} {
+		if value := os.Getenv(key); value != "" {
+			*target, err = time.ParseDuration(value)
+			if err != nil {
+				return nil, fmt.Errorf("invalid %s", key)
+			}
+		}
+	}
+	if value := os.Getenv("WEB_TRUSTED_PROXIES"); value != "" {
+		for _, v := range strings.Split(value, ",") {
+			cfg.Web.TrustedProxies = append(cfg.Web.TrustedProxies, strings.TrimSpace(v))
+		}
+	}
+	if err = cfg.Web.Validate(); err != nil {
+		return nil, err
 	}
 	var speechErr error
 	cfg.Speech, speechErr = loadSpeech()

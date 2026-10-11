@@ -423,3 +423,19 @@ Telegram: `/wb_auto`, `/wb_auto enable`, `/wb_auto run`, `pause`, `resume`, `can
 
 Последняя сохранённая сводка: `/wb_auto summary` или кнопка «Последняя сводка».
 [Day18 summary через MCP](docs/day18-summary.md).
+
+
+### Day30 — Web Chat через Telegram
+
+@PROJECT:WORKSHOP_AGENT @L3:DAY30_WEB_CHAT_TELEGRAM_AUTH @PRESERVE
+
+Встроенный Web Chat запускается тем же `workshop-agent.exe` при `WEB_ENABLED=true`.
+Локально: `http://127.0.0.1:8080/chat`. Вход — одноразовый `/login CODE` в существующем
+Telegram-боте; нужны существующие права пользователя на мастерскую. Web использует
+общие message/confirmation handlers, Agent, Task FSM и MCP. Настройка HTTPS,
+сессии, ограничения и демонстрация: [Day30 Web Chat](docs/DAY30_WEB_CHAT.md).
+
+
+### Day30 Hybrid LLM
+
+Local Qwen routing, provider modes, request-scoped cloud consent and read-only recheck: [implementation and verification](docs/DAY30_HYBRID_LLM.md). Configuration: `LLM_MODE`, `LLM_LOCAL_*`, `LLM_CLOUD_*` in `.env.example`.

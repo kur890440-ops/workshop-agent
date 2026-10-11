@@ -1,7 +1,6 @@
 package telegram
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -140,18 +139,28 @@ func (b *Bot) semanticMessage(key sessionKey, workshop int64, text string) (bool
 	if buildErr != nil {
 		return true, buildErr
 	}
+	if r := llm.RunFrom(b.llmContext()); r != nil && (len(built.Trace.Warnings) > 0 || len(history) > 4 || len(items) > 100) {
+		r.HistoryReduced = true
+	}
 	contextData["agent_context"] = built.Prompt
 	raw, _ = json.Marshal(contextData)
-	cmd, usage, err := client.Interpret(context.Background(), string(raw), text)
+	cmd, usage, err := client.Interpret(b.llmContext(), string(raw), text)
 	if err != nil {
+		var consent *llm.ConsentRequired
+		if errors.As(err, &consent) {
+			return true, err
+		}
 		reason := "request_or_schema_failed"
 		message := "Не удалось получить корректную команду от модели. Попробуйте повторить запрос с названием товара и источником остатков."
 		if errors.Is(err, llm.ErrResponseTruncated) {
 			reason = "output_truncated"
 			message = "Модель исчерпала лимит ответа даже после повторной попытки. Запрос остатков не выполнялся. Попробуйте коротко: «Сколько трапов на WB и Ozon?»"
 		}
+		if b.Hybrid != nil {
+			message = hybridError(err)
+		}
 		log.Printf("semantic route=llm validation=failed reason=%s", reason)
-		return true, b.sendMessage(key.ChatID, message+"\n"+formatTokenUsage(usage))
+		return true, b.reportError(key.ChatID, message+"\n"+formatTokenUsage(usage), err)
 	}
 	if err = llm.ValidateSemantic(cmd); err != nil {
 		return true, b.sendMessage(key.ChatID, "Некорректная команда интерпретатора. Данные не изменены. Используйте /materials.")
@@ -403,7 +412,7 @@ func (b *Bot) executeSemantic(key sessionKey, workshop int64, cmd *llm.Structure
 		}
 		answer = formatPurchaseNeeds(needs)
 	case "get_task":
-		answer, _, err = b.Agent.HandleMessageForWorkshop(context.Background(), workshop, key.UserID, key.ChatID, "/task")
+		answer, _, err = b.Agent.HandleMessageForWorkshop(b.llmContext(), workshop, key.UserID, key.ChatID, "/task")
 		if err != nil {
 			return err
 		}

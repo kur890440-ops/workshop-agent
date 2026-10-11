@@ -23,14 +23,23 @@ import (
 	"workshop-agent/internal/marketplace"
 	"workshop-agent/internal/marketplace/ozon"
 	"workshop-agent/internal/marketplacequery"
+	"workshop-agent/internal/message"
 	"workshop-agent/internal/personalization"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/speech"
+	"workshop-agent/internal/stability"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/workshops"
 )
 
 type Bot struct {
+	Runtime             *stability.Runtime
+	Hybrid              *llm.HybridClient
+	hybridContext       context.Context
+	hybridPending       map[string]hybridPending
+	applicationMu       sync.Mutex
+	WebLogin            func(int64, string) error
+	WebOutput           func(int64, message.Output) error
 	Speech              speech.SpeechRecognitionProvider
 	VoiceShowTranscript bool
 	speechConfig        speech.Config
@@ -166,7 +175,7 @@ func (b *Bot) StartContext(ctx context.Context) {
 			}
 		case update := <-updates:
 			if update.CallbackQuery != nil {
-				if err := b.handleCallback(update.CallbackQuery); err != nil {
+				if err := b.submitCallback(ctx, update.CallbackQuery); err != nil {
 					log.Print("callback failed")
 				}
 				continue
@@ -178,7 +187,7 @@ func (b *Bot) StartContext(ctx context.Context) {
 			if update.Message.Voice != nil || update.Message.Audio != nil {
 				err = b.startAudio(ctx, update.Message)
 			} else {
-				err = b.handleMessage(update.Message)
+				err = b.submitTelegram(ctx, update.Message)
 			}
 			if err != nil {
 				log.Print("handle message error")
@@ -222,22 +231,35 @@ func (b *Bot) getUpdatesContext(ctx context.Context, offset int64) ([]telegramUp
 	return payload.Result, nil
 }
 
-func (b *Bot) processMessage(msg *telegramMessage) error {
+func (b *Bot) processWorkshopMessage(msg *telegramMessage) error {
 	if msg == nil {
 		return nil
 	}
 	if msg.Chat.Type != "private" {
 		return b.sendMessage(msg.Chat.ID, "Работа с мастерской доступна в личном чате с ботом. Откройте /start там.")
 	}
-	if msg.Chat.ID != msg.From.ID {
+	if msg.Input == nil && msg.Chat.ID != msg.From.ID {
 		return auth.ErrDenied
 	}
 	text := strings.TrimSpace(msg.Text)
+	if fields := strings.Fields(text); msg.Input == nil && len(fields) > 0 && strings.Split(fields[0], "@")[0] == "/login" {
+		if b.WebLogin == nil {
+			return b.sendMessage(msg.Chat.ID, "Web Chat отключён.")
+		}
+		code := ""
+		if len(fields) == 2 {
+			code = fields[1]
+		}
+		if err := b.WebLogin(msg.From.ID, code); err != nil {
+			return b.sendMessage(msg.Chat.ID, err.Error())
+		}
+		return b.sendMessage(msg.Chat.ID, "Вход в Web Chat подтвержден.")
+	}
 	if b.Marketplace.SensitiveInput(text) || b.Ozon.SensitiveInput(text) {
 		return b.sendMessage(msg.Chat.ID, "Токены через Telegram не принимаются и не сохраняются приложением. Задайте credentials WB/Ozon локально в .env и перезапустите приложение.")
 	}
 	chatID := msg.Chat.ID
-	userID, err := b.WS.UpsertUser(msg.From.ID, msg.From.Username, msg.From.FirstName, msg.From.LastName)
+	userID, err := b.inboundUser(msg)
 	if err != nil {
 		return b.sendMessage(chatID, publicError(err))
 	}
@@ -312,7 +334,7 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		if err != nil {
 			return err
 		}
-		answer, _, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
+		answer, _, err := b.Agent.HandleMessageForWorkshop(b.llmContext(), workshopID, userID, chatID, text)
 		if err != nil {
 			return err
 		}
@@ -517,8 +539,12 @@ func (b *Bot) processMessage(msg *telegramMessage) error {
 		if handled, err := b.semanticMessage(sessionKey{chatID, userID}, workshopID, text); handled {
 			return err
 		}
-		answer, usage, err := b.Agent.HandleMessageForWorkshop(context.Background(), workshopID, userID, chatID, text)
+		answer, usage, err := b.Agent.HandleMessageForWorkshop(b.llmContext(), workshopID, userID, chatID, text)
 		if err != nil {
+			var consent *llm.ConsentRequired
+			if errors.As(err, &consent) {
+				return err
+			}
 			return b.sendMessage(chatID, publicError(err)+"\n"+formatTokenUsage(usage))
 		}
 		return b.sendMessage(chatID, answer+"\n\n"+formatTokenUsage(usage))
@@ -740,6 +766,41 @@ func (b *Bot) ensureWorkshop(chatID, userID int64, msg *telegramMessage) (int64,
 }
 
 func (b *Bot) handleMessage(msg *telegramMessage) error {
+	return b.handleMessageContext(context.Background(), msg)
+}
+func (b *Bot) handleMessageContext(ctx context.Context, msg *telegramMessage) error {
+	if msg != nil && msg.Input == nil {
+		if msg.Chat.Type != "private" {
+			return b.api("sendMessage", map[string]any{"chat_id": strconv.FormatInt(msg.Chat.ID, 10), "text": "Работа с мастерской доступна в личном чате с ботом. Откройте /start там."}, nil)
+		}
+		if msg.Chat.ID <= 0 || msg.From.ID <= 0 {
+			return auth.ErrDenied
+		}
+	}
+	if msg == nil {
+		return nil
+	}
+	if e := ctx.Err(); e != nil {
+		return e
+	}
+	user, e := auth.ExistingTelegramUser(b.WS.DB(), msg.From.ID)
+	if msg.Input != nil {
+		user, e = b.inboundUser(msg)
+		if e != nil {
+			return e
+		}
+	}
+	done := b.enterApplication(ctx, user)
+	defer done()
+	if e := ctx.Err(); e != nil {
+		return e
+	}
+	if handled, e := b.limitsCommand(ctx, msg); handled {
+		if e != nil && msg.Input == nil {
+			_ = b.sendMessage(msg.Chat.ID, limitMessage(e))
+		}
+		return e
+	}
 	err := b.processMessage(msg)
 	if errors.Is(err, auth.ErrChooseWorkshop) && msg != nil {
 		var userID int64
@@ -748,14 +809,29 @@ func (b *Bot) handleMessage(msg *telegramMessage) error {
 		}
 	}
 	if err != nil && msg != nil {
-		return b.sendMessage(msg.Chat.ID, publicError(err))
+		var reported *reportedError
+		if errors.As(err, &reported) {
+			if msg.Input != nil {
+				return err
+			}
+			return nil
+		}
+		if msg.Input != nil {
+			return err
+		}
+		return b.sendMessage(msg.Chat.ID, limitMessage(err))
 	}
 	return err
 }
 
 func (b *Bot) sendMessage(chatID int64, text string) error {
 	var formUser int64
-	if b.WS.DB().QueryRow("SELECT id FROM users WHERE telegram_user_id=?", chatID).Scan(&formUser) == nil && b.getSetup(chatID, formUser) != nil {
+	if chatID < 0 {
+		_ = b.WS.DB().QueryRow("SELECT user_id FROM web_sessions WHERE id=?", -chatID).Scan(&formUser)
+	} else {
+		_ = b.WS.DB().QueryRow("SELECT id FROM users WHERE telegram_user_id=?", chatID).Scan(&formUser)
+	}
+	if formUser > 0 && b.getSetup(chatID, formUser) != nil {
 		return b.screen(sessionKey{chatID, formUser}, text)
 	}
 	if formUser > 0 {
@@ -773,6 +849,9 @@ func (b *Bot) sendMessage(chatID int64, text string) error {
 	}
 	if text == "" {
 		return nil
+	}
+	if chatID < 0 {
+		return b.deliverWeb(chatID, message.Output{Role: "assistant", Text: text})
 	}
 	for _, part := range materialMessageParts(text) {
 		if err := b.api("sendMessage", map[string]any{"chat_id": chatID, "text": part, "disable_web_page_preview": true}, nil); err != nil {
@@ -853,15 +932,16 @@ type telegramUpdate struct {
 }
 
 type telegramMessage struct {
-	Voice     *telegramAudio  `json:"voice,omitempty"`
-	Audio     *telegramAudio  `json:"audio,omitempty"`
-	Speech    *speechMetadata `json:"-"`
-	Date      int64           `json:"date"`
-	Dice      json.RawMessage `json:"dice"`
-	MessageID int64           `json:"message_id"`
-	Text      string          `json:"text"`
-	Chat      telegramChat    `json:"chat"`
-	From      telegramUser    `json:"from"`
+	Input     *message.Inbound `json:"-"`
+	Voice     *telegramAudio   `json:"voice,omitempty"`
+	Audio     *telegramAudio   `json:"audio,omitempty"`
+	Speech    *speechMetadata  `json:"-"`
+	Date      int64            `json:"date"`
+	Dice      json.RawMessage  `json:"dice"`
+	MessageID int64            `json:"message_id"`
+	Text      string           `json:"text"`
+	Chat      telegramChat     `json:"chat"`
+	From      telegramUser     `json:"from"`
 }
 
 type telegramChat struct {

@@ -78,6 +78,19 @@ func (a *WorkshopAgent) handleLegacyMessage(ctx context.Context, workshopID, use
 	if err != nil {
 		return "", usage, err
 	}
+	return a.HandlePlannedLegacyCommand(ctx, workshopID, userID, chatID, cmd, usage)
+}
+
+// HandlePlannedLegacyCommand continues the existing legacy pipeline after
+// generation has completed. It never requests another model completion.
+func (a *WorkshopAgent) HandlePlannedLegacyCommand(ctx context.Context, workshopID, userID, chatID int64, cmd *llm.StructuredCommand, usage *llm.Usage) (string, *llm.Usage, error) {
+	if err := auth.Require(a.WS.DB(), userID, workshopID, auth.WorkshopRead); err != nil {
+		return "", usage, err
+	}
+	bound := *a
+	bound.Inv = a.Inv.ForUser(userID)
+	bound.Prod = a.Prod.ForUser(userID)
+	a = &bound
 	if cmd == nil {
 		return "Не удалось понять запрос. Попробуйте сформулировать проще.", usage, nil
 	}

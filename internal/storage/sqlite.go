@@ -66,7 +66,9 @@ func (s *Store) Migrate() error {
 	var stockSourcesDone int
 	var ozonDone int
 	var queryDone int
+	var webDone int
 	if legacy > 0 {
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=120`).Scan(&webDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=119`).Scan(&queryDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=118`).Scan(&ozonDone)
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=117`).Scan(&stockSourcesDone)
@@ -81,7 +83,9 @@ func (s *Store) Migrate() error {
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=112`).Scan(&pacingDone)
 		// A missing version table is also a legacy database.
 		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number IN (100,101,102,103)`).Scan(&done)
-		if (queryDone == 0 || done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0 || rateDone == 0 || incidentDone == 0 || stockSourcesDone == 0 || ozonDone == 0) && s.Path != "" && s.Path != ":memory:" {
+		var stabilityDone int
+		_ = s.DB.QueryRow(`SELECT COUNT(*) FROM schema_migrations WHERE number=122`).Scan(&stabilityDone)
+		if (stabilityDone == 0 || webDone == 0 || queryDone == 0 || done != 4 || taskOnlyDone == 0 || controlledDone == 0 || marketplaceDone == 0 || cooldownDone == 0 || pacingDone == 0 || backgroundDone == 0 || genericDone == 0 || rateDone == 0 || incidentDone == 0 || stockSourcesDone == 0 || ozonDone == 0) && s.Path != "" && s.Path != ":memory:" {
 			backup := s.Path + ".backup-" + time.Now().UTC().Format("20060102T150405.000000000") + ".db"
 			if _, err := s.DB.Exec(`VACUUM INTO ?`, backup); err != nil {
 				return fmt.Errorf("backup before migration: %w", err)
@@ -164,7 +168,16 @@ func (s *Store) Migrate() error {
 	if err := migrateOzon(tx); err != nil {
 		return fmt.Errorf("Ozon migration: %w", err)
 	}
+	if err := migrateWebChat(tx); err != nil {
+		return err
+	}
+	if err := migrateHybrid(tx); err != nil {
+		return err
+	}
 	if err := migrateMarketplaceQuery(tx); err != nil {
+		return err
+	}
+	if err := migrateStability(tx); err != nil {
 		return err
 	}
 	if ozonDone == 0 {

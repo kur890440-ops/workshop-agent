@@ -92,6 +92,24 @@ func (b *Bot) ozonButton(a buttonAction) error {
 		if e = b.sendMessage(a.Key.ChatID, "Ozon: обновление запущено. Результат пришлю после загрузки."); e != nil {
 			return e
 		}
+		if b.requestOwned() {
+			var answer string
+			e := b.network(b.llmContext(), func(ctx context.Context) error {
+				out, e := b.OzonTools.Ozon(ozonContext(ctx, tool), sc, tool, ozon.Input{Refresh: true})
+				if e == nil {
+					answer = ozon.Format(out)
+				}
+				return e
+			})
+			if e != nil {
+				return e
+			}
+			current, e := b.Ozon.Status(sc)
+			if e != nil || !current.Enabled || current.Revision != c.Revision {
+				return auth.ErrDenied
+			}
+			return b.sendMessage(a.Key.ChatID, answer)
+		}
 		parent := b.JobContext
 		if parent == nil {
 			parent = context.Background()
@@ -128,7 +146,7 @@ func (b *Bot) ozonButton(a buttonAction) error {
 				return b.sendMessage(a.Key.ChatID, ozonHelp)
 			}
 		}
-		out, e := b.OzonTools.Ozon(ozonContext(context.Background(), ozonTool(action)), sc, ozonTool(action), ozon.Input{Offset: offset})
+		out, e := b.OzonTools.Ozon(ozonContext(b.llmContext(), ozonTool(action)), sc, ozonTool(action), ozon.Input{Offset: offset})
 		if e != nil {
 			return b.sendMessage(a.Key.ChatID, "Не удалось прочитать сохранённые данные Ozon. Проверьте подключение /ozon.")
 		}

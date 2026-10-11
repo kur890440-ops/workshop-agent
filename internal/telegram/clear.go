@@ -34,6 +34,9 @@ func (b *Bot) ownChat(key sessionKey) error {
 	return nil
 }
 func (b *Bot) trackMessage(msg *telegramMessage, user int64) error {
+	if msg != nil && msg.Input != nil {
+		return nil
+	}
 	if msg == nil || msg.MessageID <= 0 || msg.Chat.Type != "private" {
 		return nil
 	}

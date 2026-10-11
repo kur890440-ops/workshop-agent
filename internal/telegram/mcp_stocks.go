@@ -37,6 +37,18 @@ func (b *Bot) mcpStocksMessage(key sessionKey, text string) (bool, error) {
 	if err = b.sendMessage(key.ChatID, "Запрашиваю остатки WB через MCP. Результат пришлю после загрузки."); err != nil {
 		return true, err
 	}
+	if b.requestOwned() {
+		var answer string
+		e := b.network(b.llmContext(), func(ctx context.Context) error {
+			var e error
+			answer, _, e = b.Agent.MCPStocks(ctx, key.UserID, workshop, len(f) == 2)
+			return e
+		})
+		if e != nil {
+			return true, e
+		}
+		return true, b.sendMessage(key.ChatID, answer)
+	}
 	b.wbWait.Add(1)
 	go func() {
 		defer b.wbWait.Done()

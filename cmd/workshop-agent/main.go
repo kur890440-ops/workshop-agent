@@ -4,8 +4,14 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
+	"sync"
+	"time"
+	"workshop-agent/internal/webchat"
 
 	"workshop-agent/internal/agent"
 	"workshop-agent/internal/audit"
@@ -24,6 +30,7 @@ import (
 	"workshop-agent/internal/marketplacequery"
 	"workshop-agent/internal/products"
 	"workshop-agent/internal/speech"
+	"workshop-agent/internal/stability"
 	"workshop-agent/internal/storage"
 	"workshop-agent/internal/telegram"
 	"workshop-agent/internal/workshops"
@@ -131,6 +138,9 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 && os.Args[1] == "day11-memory-report" {
+		if cfg.Hybrid.Mode == llm.LocalOnly {
+			log.Fatal("LOCAL_ONLY: cloud experiment disabled")
+		}
 		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
 		if err != nil {
 			log.Fatal(err)
@@ -143,6 +153,9 @@ func main() {
 		return
 	}
 	if len(os.Args) == 2 && os.Args[1] == "day12-personalization-report" {
+		if cfg.Hybrid.Mode == llm.LocalOnly {
+			log.Fatal("LOCAL_ONLY: cloud experiment disabled")
+		}
 		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
 		if err != nil {
 			log.Fatal("LLM configuration invalid")
@@ -179,6 +192,9 @@ func main() {
 		return
 	}
 	if len(os.Args) == 2 && os.Args[1] == "semantic-report" {
+		if cfg.Hybrid.Mode == llm.LocalOnly {
+			log.Fatal("LOCAL_ONLY: cloud experiment disabled")
+		}
 		client, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
 		if err != nil {
 			log.Fatal("LLM configuration invalid")
@@ -197,13 +213,13 @@ func main() {
 	if cfg.TelegramBotToken == "" {
 		log.Fatal("TELEGRAM_BOT_TOKEN is required in .env")
 	}
-	if cfg.LLMAPIKey == "" {
+	if cfg.Hybrid.Mode == llm.CloudOnly && cfg.LLMAPIKey == "" {
 		log.Fatal("LLM_API_KEY is required in .env")
 	}
-	if cfg.LLMBaseURL == "" {
+	if cfg.Hybrid.Mode == llm.CloudOnly && cfg.LLMBaseURL == "" {
 		log.Fatal("LLM_BASE_URL is required in .env")
 	}
-	if cfg.LLMModel == "" {
+	if cfg.Hybrid.Mode == llm.CloudOnly && cfg.LLMModel == "" {
 		log.Fatal("LLM_MODEL is required in .env")
 	}
 	if cfg.DatabasePath == "" {
@@ -227,7 +243,7 @@ func main() {
 	auditSvc := audit.NewService(cfg.DatabasePath)
 	defer auditSvc.Close()
 
-	llmClient, err := llm.NewOpenRouterClient(cfg.LLMAPIKey, cfg.LLMBaseURL, cfg.LLMModel)
+	llmClient, err := newHybridClient(cfg)
 	if err != nil {
 		log.Fatalf("failed to initialize LLM client: %v", err)
 	}
@@ -262,6 +278,61 @@ func main() {
 
 	_ = context.Background()
 	bot.Marketplace = marketplaceSvc
+	bot.Hybrid = llmClient
+	baseLimits, e := stability.FromEnv()
+	if e != nil {
+		log.Fatal(e)
+	}
+	limitStore, e := stability.NewStore(wsSvc.DB(), baseLimits)
+	if e != nil {
+		log.Fatal(e)
+	}
+	localCapacity := 0
+	if local, ok := llmClient.Local.(*llm.OllamaClient); ok {
+		local.RequireCapabilities = true
+		cctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		localCapacity, _, _ = local.Capabilities(cctx)
+		cancel()
+	}
+	cloudCapacity := 0
+	if cloud, ok := llmClient.Cloud.(*llm.OpenRouterClient); ok {
+		cloud.RequireCapabilities = true
+		cc, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		cloudCapacity, _ = cloud.Capabilities(cc)
+		cancel()
+	}
+	localHardwareCapacity := 1
+	if value := os.Getenv("LIMIT_LOCAL_CAPACITY"); value != "" {
+		n, e := strconv.Atoi(value)
+		if e != nil || n < 1 || n > 4 {
+			log.Fatal("invalid LIMIT_LOCAL_CAPACITY")
+		}
+		localHardwareCapacity = n
+	}
+	if limitStore.Get().Local > localHardwareCapacity {
+		log.Fatal("local concurrency exceeds operator-validated hardware capacity")
+	}
+	limitStore.ValidateModel = func(s stability.Settings) error {
+		if s.Local > localHardwareCapacity {
+			return fmt.Errorf("HARDWARE_CAPACITY_UNVERIFIED: exceeds LIMIT_LOCAL_CAPACITY")
+		}
+		if localCapacity <= 0 {
+			return fmt.Errorf("MODEL_CAPACITY_UNVERIFIED")
+		}
+		if llmClient.Cloud != nil && (cloudCapacity <= 0 || s.MaxContext > cloudCapacity) {
+			return fmt.Errorf("CLOUD_MODEL_CAPACITY_UNVERIFIED_OR_UNSUPPORTED")
+		}
+		if s.MaxContext > localCapacity {
+			return fmt.Errorf("MODEL_CONTEXT_UNSUPPORTED")
+		}
+		return nil
+	}
+	if localCapacity > 0 && limitStore.Get().MaxContext > localCapacity {
+		log.Fatal("runtime context exceeds model capacity")
+	}
+	runtimeLimits := stability.New(limitStore)
+	bot.EnableLimits(runtimeLimits)
+
 	bot.Ozon = ozonSvc
 	bot.OzonTools = manager
 	bot.MarketQuery = &marketplacequery.MarketplaceOrchestrator{
@@ -279,10 +350,56 @@ func main() {
 	bot.Background = jobs
 	bot.DailySummary = manager
 	bot.JobContext = ctx
+	stopWeb := func() {}
+	if cfg.Web.Enabled {
+		web, err := webchat.New(wsSvc.DB(), cfg.Web)
+		if err != nil {
+			log.Fatal(err)
+		}
+		web.Runtime = runtimeLimits
+		web.Root = ctx
+		_, err = wsSvc.DB().Exec("UPDATE web_requests SET status='CANCELLED',error_code='PROCESS_RESTARTED',updated_at=unixepoch() WHERE status IN ('QUEUED','RUNNING')")
+		if err != nil {
+			log.Fatal("request recovery failed")
+		}
+		web.Handle = bot.HandleInbound
+		bot.WebLogin = web.ConfirmLogin
+		bot.WebOutput = web.Deliver
+		jobs.Scheduler.Maintenance = web.Cleanup
+		listener, err := net.Listen("tcp", cfg.Web.ListenAddress)
+		if err != nil {
+			log.Fatal("Web Chat listener failed: ", err)
+		}
+		server := &http.Server{BaseContext: func(net.Listener) context.Context { return ctx }, Handler: web.Handler(), ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 20 * time.Second, WriteTimeout: 5 * time.Minute, IdleTimeout: 60 * time.Second, MaxHeaderBytes: 16384}
+		webDone := make(chan struct{})
+		go func() {
+			defer close(webDone)
+			if err := server.Serve(listener); err != nil && err != http.ErrServerClosed {
+				log.Print("Web Chat HTTP server stopped")
+				stop()
+			}
+		}()
+		var closeOnce sync.Once
+		stopWeb = func() {
+			closeOnce.Do(func() {
+				shutdown, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+				defer cancel()
+				if server.Shutdown(shutdown) != nil {
+					_ = server.Close()
+				}
+				<-webDone
+			})
+		}
+		defer stopWeb()
+		log.Printf("Web Chat: %s/chat", cfg.Web.PublicBaseURL)
+	}
 	jobs.Scheduler.Start(ctx)
 	defer jobs.Scheduler.Close()
 	fmt.Println("WorkshopAgent готов. Telegram token и LLM настроены из .env.")
 	bot.StartContext(ctx)
+	stop()
+	runtimeLimits.Wait()
+	stopWeb()
 	jobs.Scheduler.Close()
 	bot.WaitBackground()
 }

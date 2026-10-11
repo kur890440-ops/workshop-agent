@@ -1,7 +1,6 @@
 package telegram
 
 import (
-	"context"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -44,7 +43,7 @@ func (b *Bot) profileMessage(key sessionKey, text string) (bool, error) {
 		if err != nil {
 			return true, err
 		}
-		answer, usage, err := b.Agent.HandleMessageForWorkshop(context.Background(), w, key.UserID, key.ChatID, text)
+		answer, usage, err := b.Agent.HandleMessageForWorkshop(b.llmContext(), w, key.UserID, key.ChatID, text)
 		if err != nil {
 			return true, err
 		}

@@ -30,7 +30,10 @@ func TestProductionArchitectureNoChildProcessListenerOrSecondScheduler(t *testin
 			}
 			for _, imp := range file.Imports {
 				value, _ := strconv.Unquote(imp.Path.Value)
-				if value == "os/exec" || value == "net" || value == "net/http" {
+				// Day30 explicitly authorizes one Web HTTP listener in the composition root.
+				// MCP transports and background executors remain in-process only.
+				webComposition := dir == "cmd/workshop-agent" && entry.Name() == "main.go"
+				if value == "os/exec" || (!webComposition && (value == "net" || value == "net/http")) {
 					t.Fatalf("process/listener/HTTP bypass: %s: %s", path, value)
 				}
 			}

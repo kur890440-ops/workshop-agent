@@ -16,10 +16,7 @@ func (b *Bot) backgroundSummary(a buttonAction, trace bool) error {
 	if b.DailySummary == nil {
 		return b.sendMessage(a.Key.ChatID, "Чтение сводки MCP не настроено.")
 	}
-	parent := b.JobContext
-	if parent == nil {
-		parent = context.Background()
-	}
+	parent := b.llmContext()
 	ctx, cancel := context.WithTimeout(parent, 10*time.Second)
 	defer cancel()
 	out, e := b.DailySummary.DailySummary(ctx, a.Key.UserID, a.Workshop)

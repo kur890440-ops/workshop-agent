@@ -23,7 +23,7 @@ func TestSemanticTruncationRecovery(t *testing.T) {
 				}
 				expected := float64(1024)
 				if calls == 2 {
-					expected = 4096
+					expected = 2048 // runtime max_output caps recovery
 				}
 				if calls > 2 || body["max_tokens"] != expected {
 					t.Fatal("unbounded or wrong recovery", calls, body["max_tokens"])

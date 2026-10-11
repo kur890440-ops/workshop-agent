@@ -1,0 +1,17 @@
+LAN Web Chat deployment: 2026-10-11
+URL: https://192.168.11.41:8443/chat
+HTTPS proxy: Caddy v2.11.7, scripts/Caddyfile.lan
+Backend: 127.0.0.1:8080, trusted proxy 127.0.0.1/32
+Firewall: WorkshopAgent-WebChat-LAN-8443, TCP 8443, remote Any, program bin/caddy.exe
+Subnet source restriction removed from proxy and firewall at user request on 2026-10-11. Listener address and authentication unchanged.
+Verification from server with CA validation:
+GET /chat => 200, login page, Secure cookie
+GET /api/chat/messages/status without authentication => 401
+GET backend directly without HTTPS proxy => 403
+Public CA certificate: reports/workshop-lan-root.crt
+CA private material stays under ignored .tmp/lan-proxy/data; do not distribute it.
+Other LAN devices need the public CA certificate installed as trusted for browser validation.
+Other physical devices were not available for testing.
+Restart command: powershell.exe -NoProfile -ExecutionPolicy Bypass -File C:\TEMP\WorkshopAgent\scripts\start-web-lan.ps1
+No Windows boot auto-start was installed.
+Caddy TLS documentation: https://caddyserver.com/docs/caddyfile/directives/tls
